@@ -1,0 +1,109 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import type { Amr, MapResource, MapTopology, Task } from '../../types/domain'
+
+const props = defineProps<{
+  amrs: Amr[]
+  resources: MapResource[]
+  tasks: Task[]
+  topology: MapTopology
+  selectedAmrId: string | null
+  selectedTaskId: string | null
+  inspectorOpen: boolean
+}>()
+
+const emit = defineEmits<{ selectAmr: [id: string] }>()
+const pan = ref({ x: 0, y: 0 })
+const dragging = ref(false)
+let dragOrigin = { x: 0, y: 0 }
+let panOrigin = { x: 0, y: 0 }
+
+const networkNodes = computed(() => props.topology.columns.flatMap((x, column) => props.topology.rows.map((y, row) => ({ x, y, id: `P-${String(column * props.topology.rows.length + row + 1).padStart(2, '0')}` }))))
+const selectedTask = computed(() => props.tasks.find((task) => task.id === props.selectedTaskId))
+const selectedAmr = computed(() => props.amrs.find((amr) => amr.id === props.selectedAmrId))
+const selectedRoute = computed(() => selectedTask.value?.plannedPath)
+const selectedTraveledRoute = computed(() => selectedTask.value?.traveledPath)
+const selectedServiceResources = computed(() => new Set([...(selectedAmr.value?.serviceDevices ?? []), ...(selectedAmr.value?.serviceStations ?? [])]))
+const visibleResources = computed(() => props.resources.filter((resource) => resource.type === 'machine' || resource.type === 'home'))
+
+const mapTransform = computed(() => {
+  let inspectorShift = 0
+  if (!props.selectedAmrId || !props.inspectorOpen) return `translate(${pan.value.x}px, ${pan.value.y}px)`
+  const position = selectedAmr.value?.position
+  if (position && position.x >= 430) inspectorShift = -18
+  return `translate(${pan.value.x}px, ${pan.value.y}px) translateX(${inspectorShift}%)`
+})
+
+const gridPosition = computed(() => `${pan.value.x}px ${pan.value.y}px`)
+
+function startPan(event: PointerEvent) {
+  if ((event.target as Element).closest('.map-amr, .map-route-legend')) return
+  dragging.value = true
+  dragOrigin = { x: event.clientX, y: event.clientY }
+  panOrigin = { ...pan.value }
+  const target = event.currentTarget as HTMLElement
+  if (event.pointerId && target.setPointerCapture) {
+    try { target.setPointerCapture(event.pointerId) } catch { /* 浏览器会继续通过移动事件完成平移 */ }
+  }
+}
+
+function movePan(event: PointerEvent) {
+  if (!dragging.value) return
+  pan.value = {
+    x: panOrigin.x + event.clientX - dragOrigin.x,
+    y: panOrigin.y + event.clientY - dragOrigin.y,
+  }
+}
+
+function endPan(event: PointerEvent) {
+  dragging.value = false
+  const target = event.currentTarget as HTMLElement
+  if (event.pointerId && target.hasPointerCapture?.(event.pointerId)) target.releasePointerCapture(event.pointerId)
+}
+
+</script>
+
+<template>
+  <section class="twin-map-wrap" aria-label="2D 数字孪生地图">
+    <div
+      class="map-canvas-stage"
+      :class="{ 'is-dragging': dragging }"
+      :style="{ backgroundPosition: gridPosition }"
+      @pointerdown="startPan"
+      @pointermove="movePan"
+      @pointerup="endPan"
+      @pointercancel="endPan"
+    >
+      <div class="map-route-legend" :class="{ muted: !selectedTaskId }"><span><i class="planned"></i>规划路径</span><span><i class="traveled"></i>已走路径</span></div>
+      <svg class="twin-map" :style="{ transform: mapTransform }" viewBox="0 0 760 520" role="img" aria-label="装配物流区 AMR 实时交通图">
+        <defs>
+          <filter id="selection-shadow" x="-100%" y="-100%" width="300%" height="300%"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#1677ff" flood-opacity=".32"/></filter>
+        </defs>
+        <g class="logic-route-network">
+          <path v-for="x in topology.columns" :key="`v-${x}`" :d="`M${x} ${topology.rows[0]}V${topology.rows.at(-1)}`"/>
+          <path v-for="path in topology.paths" :key="path" :d="path"/>
+        </g>
+
+        <g class="logic-network-nodes"><circle v-for="node in networkNodes" :key="node.id" :cx="node.x" :cy="node.y" r="3.5"/></g>
+
+        <g v-if="selectedRoute" class="selected-route-layer">
+          <path class="route-planned" :d="selectedRoute"/>
+          <path v-if="selectedTraveledRoute" class="route-traveled" :d="selectedTraveledRoute"/>
+        </g>
+
+        <g class="logic-resource-layer">
+          <g v-for="resource in visibleResources" :key="resource.id" :class="['logic-resource', `resource-${resource.type}`, resource.state, { 'service-highlight': selectedServiceResources.has(resource.id), muted: selectedAmrId && !selectedServiceResources.has(resource.id) }]" :transform="`translate(${resource.position.x} ${resource.position.y})`">
+            <path d="M0 0V-8"/><rect x="-23" y="-27" width="46" height="18" rx="4"/><text y="-15">{{ resource.label }}</text>
+          </g>
+        </g>
+
+        <g class="amr-layer">
+          <g v-for="amr in amrs" :key="amr.id" :transform="`translate(${amr.position.x} ${amr.position.y}) rotate(${amr.heading})`" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}`" @click="emit('selectAmr', amr.id)" @keydown.enter="emit('selectAmr', amr.id)">
+            <circle class="selection-ring" r="22"/><rect x="-15" y="-15" width="30" height="30" rx="6"/><path class="amr-heading" d="M0-12L5-5H-5Z"/><text class="amr-id" y="8">{{ amr.id.slice(-2) }}</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+  </section>
+</template>
