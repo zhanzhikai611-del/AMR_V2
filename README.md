@@ -21,6 +21,14 @@ npm run dev
 
 浏览器访问 `http://127.0.0.1:5173`。
 
+## GitHub Pages
+
+推送到 `codex/amr-v2-initial` 分支后，GitHub Actions 会自动构建并发布：
+
+`https://zhanzhikai611-del.github.io/AMR_V2/`
+
+Pages 构建使用 `/AMR_V2/` 作为资源基础路径，本地开发仍使用 `/`，因此本地访问地址不变。
+
 ## 检查
 
 ```bash

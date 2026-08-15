@@ -11,7 +11,7 @@ import MapLibraryView from '../views/MapLibraryView.vue'
 import MapEditorView from '../views/MapEditorView.vue'
 
 export default createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
