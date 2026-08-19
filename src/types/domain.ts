@@ -107,7 +107,6 @@ export interface TrafficSegment {
 export interface TwinSnapshot {
   updatedAt: string
   scope: string
-  fleetUtilization: number
   tasks: Task[]
   amrs: Amr[]
   resources: MapResource[]
@@ -147,6 +146,30 @@ export interface MapDefinition {
   editVersion: string
   updatedAt: string
   current: boolean
+  project?: string
+  resourceSummary?: string
+  objectSummary?: string
+  owner?: string
+  scopeId?: string
+  scopeLabel?: string
+  mapVersion?: string
+  uploadVehicle?: string
+}
+
+export type MapEditorTool = 'select' | 'point' | 'resource' | 'route' | 'zone' | 'delete'
+export type MapViewMode = 'scan' | 'logic' | 'overlay'
+export interface MapPoint { id: string; x: number; y: number; type: '路网节点' | '等待点' }
+export interface MapRoute { id: string; startId: string; endId: string; direction: string; speed: number }
+export interface MapPlacedResource { id: string; resourceType: 'CNC' | 'HOME' | 'GATE' | 'BUF' | 'CHG'; pointId: string; x: number; y: number; approach: string }
+export interface MapControlZone { id: string; x: number; y: number; width: number; height: number; type: string }
+export interface MapEditorDraft {
+  mapId: string
+  version: string
+  resolution: string
+  points: MapPoint[]
+  routes: MapRoute[]
+  resources: MapPlacedResource[]
+  zones: MapControlZone[]
 }
 
 export interface ResourceCatalog {
@@ -188,5 +211,6 @@ export interface BehaviorTreeDefinition {
   kind: 'behavior' | 'subtree'
   summary: string
   references: string
+  boundAmrIds?: string[]
   nodes: Array<{ id: string; name: string; kind: 'sequence' | 'action' | 'condition'; x: number; y: number; parentId?: string }>
 }

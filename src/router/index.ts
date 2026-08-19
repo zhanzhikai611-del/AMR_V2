@@ -3,12 +3,16 @@ import AppLayout from '../layouts/AppLayout.vue'
 import DigitalTwinView from '../views/DigitalTwinView.vue'
 import TaskRecordsView from '../views/TaskRecordsView.vue'
 import BehaviorTreesView from '../views/BehaviorTreesView.vue'
-import SectionPlaceholderView from '../views/SectionPlaceholderView.vue'
 import ResourceManagementView from '../views/ResourceManagementView.vue'
 import ResourceDetailView from '../views/ResourceDetailView.vue'
 import BehaviorEditorView from '../views/BehaviorEditorView.vue'
 import MapLibraryView from '../views/MapLibraryView.vue'
 import MapEditorView from '../views/MapEditorView.vue'
+import UsersSettingsView from '../views/settings/UsersSettingsView.vue'
+import RolesSettingsView from '../views/settings/RolesSettingsView.vue'
+import ConfigurationsSettingsView from '../views/settings/ConfigurationsSettingsView.vue'
+import DictionariesSettingsView from '../views/settings/DictionariesSettingsView.vue'
+import LogsSettingsView from '../views/settings/LogsSettingsView.vue'
 
 export default createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -31,7 +35,12 @@ export default createRouter({
         { path: 'maps/:id/edit', component: MapEditorView, meta: { menuId: 'maps' } },
         { path: 'resources/maps', redirect: '/maps' },
         { path: 'resources/maps/:id/edit', redirect: (route) => `/maps/${route.params.id}/edit` },
-        { path: 'settings/:section', component: SectionPlaceholderView, props: (route) => ({ title: ({ users: '用户管理', roles: '角色权限', configurations: '配置管理', dictionaries: '数据字典', 'operation-logs': '操作日志', 'system-logs': '系统日志' } as Record<string, string>)[route.params.section as string] ?? '系统设置', description: '系统设置页面已建立路由，具体字段将在后续阶段完善。', eyebrow: '系统设置' }), meta: { groupId: 'settings' } },
+        { path:'settings/users',component:UsersSettingsView,meta:{groupId:'settings',menuId:'users'} },
+        { path:'settings/roles',component:RolesSettingsView,meta:{groupId:'settings',menuId:'roles'} },
+        { path:'settings/configurations',component:ConfigurationsSettingsView,meta:{groupId:'settings',menuId:'configurations'} },
+        { path:'settings/dictionaries',component:DictionariesSettingsView,meta:{groupId:'settings',menuId:'dictionaries'} },
+        { path:'settings/operation-logs',component:LogsSettingsView,props:{kind:'operation'},meta:{groupId:'settings',menuId:'operation-logs'} },
+        { path:'settings/system-logs',component:LogsSettingsView,props:{kind:'system'},meta:{groupId:'settings',menuId:'system-logs'} },
       ],
     },
   ],

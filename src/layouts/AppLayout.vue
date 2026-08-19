@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import { useLayoutStore } from '../stores/layout'
-import { useMonitorContextStore } from '../stores/monitor-context'
 
 const layout = useLayoutStore()
 const route = useRoute()
-const monitor = useMonitorContextStore()
-const scopeOpen = ref(false)
 
 const navigation = [
   { id: 'twin', label: '实时监控', icon: 'twin', route: '/' },
@@ -32,17 +29,17 @@ const navigation = [
 ]
 
 const activeGroup = computed(() => route.meta.groupId as string | undefined)
+const isWorkbench = computed(() => route.path.startsWith('/maps/') && route.path.endsWith('/edit'))
 
 onMounted(() => {
   if (activeGroup.value === 'resources' || activeGroup.value === 'settings') {
     layout.expandedGroup = activeGroup.value
   }
-  if (!monitor.snapshot) void monitor.loadSnapshot()
 })
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'navigation-collapsed': layout.navigationCollapsed }">
+  <div class="app-shell" :class="{ 'navigation-collapsed': layout.navigationCollapsed, 'workbench-mode': isWorkbench }">
     <aside class="app-navigation" aria-label="主导航">
       <div class="brand-lockup">
         <span class="brand-symbol"><i></i><i></i><i></i></span>
@@ -82,23 +79,6 @@ onMounted(() => {
       </nav>
 
       <div class="navigation-footer">
-        <div class="scope-entry-wrap">
-          <button
-            type="button"
-            class="scope-entry"
-            :class="{ active: scopeOpen }"
-            :title="layout.navigationCollapsed ? `运行范围：${monitor.snapshot?.scope ?? '加载中'}` : undefined"
-            @click="scopeOpen = !scopeOpen"
-          >
-            <AppIcon name="layers" />
-            <span><small>运行范围</small><strong>{{ monitor.snapshot?.scope ?? '加载中' }}</strong></span>
-            <AppIcon class="scope-entry__chevron" name="chevron" :size="14" />
-          </button>
-          <div v-if="scopeOpen" class="scope-popover">
-            <small>当前运行范围</small>
-            <button type="button" class="selected"><i></i><span><strong>{{ monitor.snapshot?.scope ?? '加载中' }}</strong><small>当前地图 · {{ monitor.snapshot?.amrs.length ?? 0 }} 台 AMR</small></span><b>✓</b></button>
-          </div>
-        </div>
         <button type="button" class="operator-entry" title="当前用户：研发管理员">
           <span class="operator-entry__avatar">研</span>
           <span class="operator-entry__copy"><strong>研发管理员</strong><small>账号与退出</small></span>

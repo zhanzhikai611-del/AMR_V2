@@ -13,6 +13,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ selectAmr: [id: string] }>()
+const defaultMapScale = 1.16
 const pan = ref({ x: 0, y: 0 })
 const dragging = ref(false)
 let dragOrigin = { x: 0, y: 0 }
@@ -28,10 +29,10 @@ const visibleResources = computed(() => props.resources.filter((resource) => res
 
 const mapTransform = computed(() => {
   let inspectorShift = 0
-  if (!props.selectedAmrId || !props.inspectorOpen) return `translate(${pan.value.x}px, ${pan.value.y}px)`
+  if (!props.selectedAmrId || !props.inspectorOpen) return `translate(${pan.value.x}px, ${pan.value.y}px) scale(${defaultMapScale})`
   const position = selectedAmr.value?.position
   if (position && position.x >= 430) inspectorShift = -18
-  return `translate(${pan.value.x}px, ${pan.value.y}px) translateX(${inspectorShift}%)`
+  return `translate(${pan.value.x}px, ${pan.value.y}px) translateX(${inspectorShift}%) scale(${defaultMapScale})`
 })
 
 const gridPosition = computed(() => `${pan.value.x}px ${pan.value.y}px`)

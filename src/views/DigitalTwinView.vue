@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import DigitalTwinMap from '../features/digital-twin/DigitalTwinMap.vue'
-import FleetOverviewCard from '../features/digital-twin/FleetOverviewCard.vue'
+import FleetStatusRail from '../features/digital-twin/FleetStatusRail.vue'
 import ObjectInspector from '../features/digital-twin/ObjectInspector.vue'
 import { useMonitorContextStore } from '../stores/monitor-context'
 
@@ -25,8 +25,8 @@ onMounted(() => { if (!monitor.snapshot) void monitor.loadSnapshot() })
     <div v-if="monitor.loading" class="page-state"><span class="loading-mark"></span><strong>正在读取运行态势</strong></div>
     <div v-else-if="monitor.error" class="page-state error"><strong>{{ monitor.error }}</strong><button type="button" @click="monitor.loadSnapshot">重新加载</button></div>
     <template v-else-if="monitor.snapshot">
+      <FleetStatusRail :snapshot="monitor.snapshot" />
       <div class="twin-stage" :class="{ inspecting: monitor.selectedAmrId || monitor.selectedTaskId, 'inspector-collapsed': inspectorCollapsed }">
-        <FleetOverviewCard :snapshot="monitor.snapshot" />
         <DigitalTwinMap
           :amrs="monitor.snapshot.amrs"
           :resources="monitor.snapshot.resources"

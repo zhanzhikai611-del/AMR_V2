@@ -16,3 +16,11 @@ export async function getBehaviorTree(id: string): Promise<BehaviorTreeDefinitio
   }
   return (await http.get<{ data: BehaviorTreeDefinition }>(`/behavior-trees/${id}`)).data.data
 }
+
+export async function updateBehaviorTreeBindings(id: string, amrIds: string[]): Promise<string[]> {
+  if (useMock) {
+    await new Promise((resolve) => window.setTimeout(resolve, 120))
+    return structuredClone(amrIds)
+  }
+  return (await http.put<{ data: { amrIds: string[] } }>(`/behavior-trees/${id}/amr-bindings`, { amrIds })).data.data.amrIds
+}
