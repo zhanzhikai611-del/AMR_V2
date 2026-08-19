@@ -23,7 +23,7 @@ const selectedObject = computed(() => {
 function pointById(id:string) { return draft.value?.points.find(point=>point.id===id) }
 function chooseTool(next:MapEditorTool) { if(next==='delete'){ deleteSelected(); return }; tool.value=next; selected.value=null; pending.value={}; notice.value='' }
 function selectObject(kind:NonNullable<Selection>['kind'], id:string) { if(tool.value==='select') selected.value={kind,id} }
-function canvasPoint(event:MouseEvent) { const svg=event.currentTarget as SVGSVGElement; const box=svg.getBoundingClientRect(); return {x:Math.round((event.clientX-box.left)*1010/box.width),y:Math.round((event.clientY-box.top)*600/box.height)} }
+function canvasPoint(event:MouseEvent) { const svg=event.currentTarget as SVGSVGElement; const box=svg.getBoundingClientRect(); return {x:Math.round((event.clientX-box.left)*760/box.width),y:Math.round((event.clientY-box.top)*520/box.height)} }
 function onCanvasClick(event:MouseEvent) {
   if (!draft.value || (event.target as Element).closest('[data-object]')) return
   const p=canvasPoint(event); cursor.value=p
@@ -52,13 +52,14 @@ onMounted(async()=>{ const [data,catalog]=await Promise.all([getMapDraft(mapId),
       <main class="map-editor-canvas">
         <header><span>当前工具 <strong>{{ toolLabel }}</strong></span><nav><button v-for="mode in ['scan','logic','overlay'] as MapViewMode[]" :key="mode" :class="{active:viewMode===mode}" @click="viewMode=mode">{{ {scan:'底图',logic:'逻辑图',overlay:'叠加'}[mode] }}</button></nav><div><button @click="zoom=Math.max(60,zoom-10)">−</button><span>{{ zoom }}%</span><button @click="zoom=Math.min(160,zoom+10)">＋</button><button @click="zoom=100">适应</button></div></header>
         <div class="editor-stage">
-          <svg v-if="draft" viewBox="0 0 1010 600" :style="{transform:`scale(${zoom/100})`}" @click="onCanvasClick" @mousemove="cursor=canvasPoint($event)">
-            <defs><pattern id="editorGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#cfdbe2"/></pattern></defs><rect width="1010" height="600" fill="url(#editorGrid)"/>
-            <image v-if="viewMode!=='logic'" :href="pointcloudMap" x="40" y="30" width="930" height="525" preserveAspectRatio="none" class="editor-slam-map"/>
+          <svg v-if="draft" viewBox="0 0 760 520" :style="{transform:`scale(${zoom/100})`}" @click="onCanvasClick" @mousemove="cursor=canvasPoint($event)">
+            <defs><pattern id="editorGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#cfdbe2"/></pattern></defs><rect width="760" height="520" fill="url(#editorGrid)"/>
+            <image v-if="viewMode!=='logic'" :href="pointcloudMap" x="20" y="52" width="720" height="405" preserveAspectRatio="none" class="editor-slam-map"/>
             <g v-if="viewMode!=='scan'" class="editor-zones"><rect v-for="zone in draft.zones" :key="zone.id" data-object :x="zone.x" :y="zone.y" :width="zone.width" :height="zone.height" :class="{selected:selected?.id===zone.id}" @click.stop="selectObject('zone',zone.id)"/></g>
+            <g v-if="viewMode!=='scan'" class="editor-base-paths"><path v-for="path in draft.topologyPaths" :key="path" :d="path"/></g>
             <g v-if="viewMode!=='scan'" class="editor-map-lines"><line v-for="line in draft.routes" :key="line.id" data-object :x1="pointById(line.startId)?.x" :y1="pointById(line.startId)?.y" :x2="pointById(line.endId)?.x" :y2="pointById(line.endId)?.y" :class="{selected:selected?.id===line.id}" @click.stop="selectObject('route',line.id)"/></g>
             <g v-if="viewMode!=='scan'" class="editor-map-points"><circle v-for="point in draft.points" :key="point.id" data-object :cx="point.x" :cy="point.y" r="6" :class="{selected:selected?.id===point.id,routeTarget:tool==='route'}" @click.stop="tool==='route'?routePoint(point.id):selectObject('point',point.id)"/><text v-for="point in draft.points" :key="`${point.id}-label`" :x="point.x+8" :y="point.y-8">{{ point.id }}</text></g>
-            <g v-if="viewMode!=='scan'" class="editor-resources"><g v-for="resource in draft.resources" :key="resource.id" data-object :transform="`translate(${resource.x} ${resource.y})`" :class="[{selected:selected?.id===resource.id},resource.resourceType.toLowerCase()]" @click.stop="selectObject('resource',resource.id)"><rect x="-34" y="-15" width="68" height="30" rx="5"/><text y="5">{{ resource.id }}</text></g></g>
+            <g v-if="viewMode!=='scan'" class="editor-resources"><g v-for="resource in draft.resources" :key="resource.id" data-object :transform="`translate(${resource.x} ${resource.y})`" :class="[{selected:selected?.id===resource.id},resource.resourceType.toLowerCase()]" @click.stop="selectObject('resource',resource.id)"><path d="M0 0V-8"/><rect x="-23" y="-27" width="46" height="18" rx="4"/><text y="-15">{{ resource.id }}</text></g></g>
             <circle v-if="pending.first" :cx="pending.first.x" :cy="pending.first.y" r="7" class="pending-point"/>
           </svg>
           <div class="map-canvas-legend"><span><i class="scan"></i>SLAM 底图</span><span><i class="point"></i>导航点位</span><span><i class="route"></i>导航路线</span><span><i class="zone"></i>管制区域</span></div>

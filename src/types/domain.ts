@@ -170,6 +170,7 @@ export interface MapEditorDraft {
   routes: MapRoute[]
   resources: MapPlacedResource[]
   zones: MapControlZone[]
+  topologyPaths?: string[]
 }
 
 export interface ResourceCatalog {
