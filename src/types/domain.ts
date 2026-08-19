@@ -107,6 +107,7 @@ export interface TrafficSegment {
 export interface TwinSnapshot {
   updatedAt: string
   scope: string
+  fleetUtilization: number
   tasks: Task[]
   amrs: Amr[]
   resources: MapResource[]
@@ -168,6 +169,12 @@ export interface TaskRecord {
   behaviorName: string
   behaviorVersion: string
   summary: string
+}
+
+export interface DispatchSettings {
+  strategy: '规则优先' | '距离优先' | '负载均衡' | 'APS 推荐'
+  apsEnabled: boolean
+  updatedAt: string
 }
 
 export interface BehaviorTreeDefinition {

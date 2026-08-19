@@ -3,6 +3,7 @@ import type { TwinSnapshot } from '../../src/types/domain'
 export const twinSnapshot: TwinSnapshot = {
   updatedAt: '2026-08-15 10:48:32',
   scope: '2F · 装配物流区',
+  fleetUtilization: 81.5,
   blockedSegments: 0,
   unconfirmedAlarms: 2,
   topology: {

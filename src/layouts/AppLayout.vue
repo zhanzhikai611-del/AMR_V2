@@ -1,22 +1,25 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import { useLayoutStore } from '../stores/layout'
+import { useMonitorContextStore } from '../stores/monitor-context'
 
 const layout = useLayoutStore()
 const route = useRoute()
+const monitor = useMonitorContextStore()
+const scopeOpen = ref(false)
 
 const navigation = [
-  { id: 'twin', label: 'Dashboard', icon: 'twin', route: '/' },
-  { id: 'records', label: '任务记录', icon: 'records', route: '/task-records' },
-  { id: 'behavior', label: '行为树', icon: 'behavior', route: '/behaviors' },
+  { id: 'twin', label: '实时监控', icon: 'twin', route: '/' },
+  { id: 'records', label: '任务管理', icon: 'records', route: '/task-records' },
+  { id: 'behavior', label: '行为树管理', icon: 'behavior', route: '/behaviors' },
+  { id: 'maps', label: '地图管理', icon: 'layers', route: '/maps' },
   { id: 'resources', label: '资源管理', icon: 'resources', children: [
     { id: 'amrs', label: 'AMR 列表', route: '/resources/amrs' },
     { id: 'amr-models', label: 'AMR 型号', route: '/resources/amr-models' },
     { id: 'devices', label: '设备列表', route: '/resources/devices' },
     { id: 'device-types', label: '设备类型', route: '/resources/device-types' },
-    { id: 'maps', label: '地图管理', route: '/resources/maps' },
   ] },
   { id: 'settings', label: '系统设置', icon: 'settings', children: [
     { id: 'users', label: '用户管理', route: '/settings/users' },
@@ -34,6 +37,7 @@ onMounted(() => {
   if (activeGroup.value === 'resources' || activeGroup.value === 'settings') {
     layout.expandedGroup = activeGroup.value
   }
+  if (!monitor.snapshot) void monitor.loadSnapshot()
 })
 </script>
 
@@ -78,6 +82,23 @@ onMounted(() => {
       </nav>
 
       <div class="navigation-footer">
+        <div class="scope-entry-wrap">
+          <button
+            type="button"
+            class="scope-entry"
+            :class="{ active: scopeOpen }"
+            :title="layout.navigationCollapsed ? `运行范围：${monitor.snapshot?.scope ?? '加载中'}` : undefined"
+            @click="scopeOpen = !scopeOpen"
+          >
+            <AppIcon name="layers" />
+            <span><small>运行范围</small><strong>{{ monitor.snapshot?.scope ?? '加载中' }}</strong></span>
+            <AppIcon class="scope-entry__chevron" name="chevron" :size="14" />
+          </button>
+          <div v-if="scopeOpen" class="scope-popover">
+            <small>当前运行范围</small>
+            <button type="button" class="selected"><i></i><span><strong>{{ monitor.snapshot?.scope ?? '加载中' }}</strong><small>当前地图 · {{ monitor.snapshot?.amrs.length ?? 0 }} 台 AMR</small></span><b>✓</b></button>
+          </div>
+        </div>
         <button type="button" class="operator-entry" title="当前用户：研发管理员">
           <span class="operator-entry__avatar">研</span>
           <span class="operator-entry__copy"><strong>研发管理员</strong><small>账号与退出</small></span>
