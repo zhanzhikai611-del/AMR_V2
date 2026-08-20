@@ -158,7 +158,30 @@ export interface MapDefinition {
 
 export type MapEditorTool = 'select' | 'point' | 'resource' | 'route' | 'zone' | 'delete'
 export type MapViewMode = 'scan' | 'logic' | 'overlay'
-export interface MapPoint { id: string; x: number; y: number; type: '路网节点' | '等待点' }
+export interface MapPoint {
+  id: string
+  name: string
+  alias: string
+  description: string
+  uid: string
+  ownerGraphName: string
+  x: number
+  y: number
+  yaw: number
+  type: '路网节点' | '等待点' | '普通站点'
+  poseType: 'NORMAL' | 'WAITING' | 'DOCK'
+  selectable: boolean
+  relocatable: boolean
+  disabled: boolean
+  narrow: boolean
+  disjoint: boolean
+  charged: boolean
+  dockable: boolean
+  parkable: boolean
+  deviceId: string
+  relationType: '无关联' | '上料位' | '下料位' | '上下料位' | '等待位'
+  serviceActions: Array<'LOAD' | 'UNLOAD'>
+}
 export interface MapRoute { id: string; startId: string; endId: string; direction: string; speed: number }
 export interface MapPlacedResource { id: string; resourceType: 'CNC' | 'HOME' | 'GATE' | 'BUF' | 'CHG'; pointId: string; x: number; y: number; approach: string }
 export interface MapControlZone { id: string; x: number; y: number; width: number; height: number; type: string }
@@ -196,7 +219,7 @@ export interface TaskRecord {
 }
 
 export interface DispatchSettings {
-  strategy: '规则优先' | '距离优先' | '负载均衡' | 'APS 推荐'
+  strategy: 'FIFO 先进先出' | '最短距离' | '最短时间' | '提前叫料' | '负载均衡'
   apsEnabled: boolean
   updatedAt: string
 }

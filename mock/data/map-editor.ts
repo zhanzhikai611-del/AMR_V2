@@ -2,7 +2,10 @@ import type { MapEditorDraft, MapPlacedResource } from '../../src/types/domain'
 import { twinSnapshot } from './operations'
 
 const { columns, rows, paths } = twinSnapshot.topology
-const points = columns.flatMap((x, column) => rows.map((y, row) => ({ id:`P-${String(column * rows.length + row + 1).padStart(2,'0')}`,x,y,type:'路网节点' as const })))
+const points = columns.flatMap((x, column) => rows.map((y, row) => {
+  const id = `P-${String(column * rows.length + row + 1).padStart(2,'0')}`
+  return { id,name:id,alias:id,description:'',uid:String(2824607600 + column * rows.length + row),ownerGraphName:'map1',x,y,yaw:0,type:'路网节点' as const,poseType:'NORMAL' as const,selectable:true,relocatable:true,disabled:false,narrow:false,disjoint:false,charged:false,dockable:false,parkable:false,deviceId:'',relationType:'无关联' as const,serviceActions:[] }
+}))
 const pointId = (column:number,row:number) => points[column * rows.length + row].id
 const route = (id:string,c1:number,r1:number,c2:number,r2:number) => ({ id,startId:pointId(c1,r1),endId:pointId(c2,r2),direction:'双向通行',speed:1.2 })
 const resourceType = (type:string):MapPlacedResource['resourceType'] => type === 'home' ? 'HOME' : 'CNC'
