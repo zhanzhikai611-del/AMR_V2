@@ -12,6 +12,11 @@ const tabs = [
   { id: 'behavior', label: '行为监控' },
   { id: 'vehicle', label: '车辆信息' },
 ] as const
+
+function formatPosition(amr: Amr | null) {
+  if (!amr) return '—'
+  return `(${amr.position.x.toFixed(2)}, ${amr.position.y.toFixed(2)})`
+}
 </script>
 
 <template>
@@ -34,7 +39,7 @@ const tabs = [
         <div><dt>任务类型</dt><dd>{{ task?.type ?? '—' }}</dd></div>
         <div><dt>请求设备</dt><dd>{{ task?.requestDeviceId ?? '—' }}</dd></div>
         <div><dt>当前阶段</dt><dd>{{ task?.phase ?? '—' }}</dd></div>
-        <div><dt>当前位置</dt><dd>{{ amr?.positionLabel ?? '—' }}</dd></div>
+        <div><dt>当前位置</dt><dd class="type-data">{{ formatPosition(amr) }}</dd></div>
         <div><dt>电量</dt><dd class="type-data">{{ amr?.battery ?? '—' }}%</dd></div>
         <div><dt>当前速度</dt><dd class="type-data">{{ amr?.speed ?? '—' }} m/s</dd></div>
       </dl>
