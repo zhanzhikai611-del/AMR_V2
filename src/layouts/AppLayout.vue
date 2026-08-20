@@ -9,7 +9,7 @@ const route = useRoute()
 
 const navigation = [
   { id: 'twin', label: '实时监控', icon: 'twin', route: '/' },
-  { id: 'records', label: '任务管理', icon: 'records', route: '/task-records' },
+  { id: 'records', label: '派单中心', icon: 'records', route: '/task-records' },
   { id: 'behavior', label: '行为树管理', icon: 'behavior', route: '/behaviors' },
   { id: 'maps', label: '地图管理', icon: 'layers', route: '/maps' },
   { id: 'resources', label: '资源管理', icon: 'resources', children: [
