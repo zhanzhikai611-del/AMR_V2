@@ -114,7 +114,7 @@ onMounted(async () => {
     <template v-if="activeTab === 'live'">
       <section class="dispatch-summary" aria-label="实时任务摘要">
         <article class="fault"><span>异常</span><strong>{{ abnormalCount }}</strong></article>
-        <article class="waiting"><span>等待任务</span><strong>{{ waitingCount }}</strong></article>
+        <article class="waiting"><span>待调度</span><strong>{{ waitingCount }}</strong></article>
         <article class="running"><span>执行中</span><strong>{{ runningCount }}</strong></article>
         <article><span>当前任务</span><strong>{{ activeTasks.length }}</strong></article>
       </section>
