@@ -136,8 +136,8 @@ export const twinSnapshot: TwinSnapshot = {
         { id: 'e1', time: '10:45:08', label: 'CNC-06 上抛半成品转运请求', type: 'task' },
         { id: 'e2', time: '10:45:22', label: 'AMR-06 接受任务', type: 'task' },
       ],
-      plannedPath: 'M426 356V290H610V158',
-      traveledPath: 'M426 356V290H610',
+      plannedPath: 'M426 356V422H610V158',
+      traveledPath: 'M426 356V422H610V290',
     },
   ],
   amrs: [

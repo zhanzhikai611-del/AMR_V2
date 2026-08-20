@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import DigitalTwinMap from '../features/digital-twin/DigitalTwinMap.vue'
 import FleetStatusRail from '../features/digital-twin/FleetStatusRail.vue'
 import ObjectInspector from '../features/digital-twin/ObjectInspector.vue'
 import { useMonitorContextStore } from '../stores/monitor-context'
+import { useTwinSimulation } from '../features/digital-twin/useTwinSimulation'
 
 const monitor = useMonitorContextStore()
 const inspectorCollapsed = ref(false)
+const sourceAmrs = computed(() => monitor.snapshot?.amrs ?? [])
+const sourceTasks = computed(() => monitor.snapshot?.tasks ?? [])
+const { displayAmrs, routeProgress } = useTwinSimulation(sourceAmrs, sourceTasks)
+const selectedDisplayAmr = computed(() => displayAmrs.value.find(amr => amr.id === monitor.selectedAmrId) ?? null)
 
 function selectAmr(id: string) {
   monitor.selectAmr(id)
@@ -28,20 +33,21 @@ onMounted(() => { if (!monitor.snapshot) void monitor.loadSnapshot() })
       <FleetStatusRail :snapshot="monitor.snapshot" />
       <div class="twin-stage" :class="{ inspecting: monitor.selectedAmrId || monitor.selectedTaskId, 'inspector-collapsed': inspectorCollapsed }">
         <DigitalTwinMap
-          :amrs="monitor.snapshot.amrs"
+          :amrs="displayAmrs"
           :resources="monitor.snapshot.resources"
           :tasks="monitor.snapshot.tasks"
           :topology="monitor.snapshot.topology"
           :selected-amr-id="monitor.selectedAmrId"
           :selected-task-id="monitor.selectedTaskId"
           :inspector-open="Boolean((monitor.selectedAmrId || monitor.selectedTaskId) && !inspectorCollapsed)"
+          :route-progress="routeProgress"
           @select-amr="selectAmr"
         />
         <Transition name="inspector">
           <ObjectInspector
             v-if="(monitor.selectedAmrId || monitor.selectedTaskId) && !inspectorCollapsed"
             :task="monitor.selectedTask"
-            :amr="monitor.selectedAmr"
+            :amr="selectedDisplayAmr"
             @collapse="inspectorCollapsed = true"
             @close="closeInspector"
           />

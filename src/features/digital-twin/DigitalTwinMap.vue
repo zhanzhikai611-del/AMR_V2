@@ -10,6 +10,7 @@ const props = defineProps<{
   selectedAmrId: string | null
   selectedTaskId: string | null
   inspectorOpen: boolean
+  routeProgress: Record<string, number>
 }>()
 
 const emit = defineEmits<{ selectAmr: [id: string] }>()
@@ -20,10 +21,10 @@ let dragOrigin = { x: 0, y: 0 }
 let panOrigin = { x: 0, y: 0 }
 
 const networkNodes = computed(() => props.topology.columns.flatMap((x, column) => props.topology.rows.map((y, row) => ({ x, y, id: `P-${String(column * props.topology.rows.length + row + 1).padStart(2, '0')}` }))))
-const selectedTask = computed(() => props.tasks.find((task) => task.id === props.selectedTaskId))
 const selectedAmr = computed(() => props.amrs.find((amr) => amr.id === props.selectedAmrId))
-const selectedRoute = computed(() => selectedTask.value?.plannedPath)
-const selectedTraveledRoute = computed(() => selectedTask.value?.traveledPath)
+const visibleRouteTasks = computed(() => props.selectedTaskId
+  ? props.tasks.filter(task => task.id === props.selectedTaskId && task.amrId && task.plannedPath)
+  : [])
 const selectedServiceResources = computed(() => new Set([...(selectedAmr.value?.serviceDevices ?? []), ...(selectedAmr.value?.serviceStations ?? [])]))
 const visibleResources = computed(() => props.resources.filter((resource) => resource.type === 'machine' || resource.type === 'home'))
 
@@ -87,9 +88,12 @@ function endPan(event: PointerEvent) {
 
         <g class="logic-network-nodes"><circle v-for="node in networkNodes" :key="node.id" :cx="node.x" :cy="node.y" r="3.5"/></g>
 
-        <g v-if="selectedRoute" class="selected-route-layer">
-          <path class="route-planned" :d="selectedRoute"/>
-          <path v-if="selectedTraveledRoute" class="route-traveled" :d="selectedTraveledRoute"/>
+        <g class="selected-route-layer simulation-route-layer">
+          <g v-for="task in visibleRouteTasks" :key="task.id" class="selected">
+            <path class="route-planned" :d="task.plannedPath"/>
+            <path v-if="task.status === '运行中'" class="route-traveled" :d="task.plannedPath" pathLength="1" :style="{ strokeDasharray: `${routeProgress[task.id] ?? 0} 1` }"/>
+            <path v-else-if="task.traveledPath" class="route-traveled route-traveled-static" :d="task.traveledPath"/>
+          </g>
         </g>
 
         <g class="logic-resource-layer">
@@ -100,7 +104,7 @@ function endPan(event: PointerEvent) {
 
         <g class="amr-layer">
           <g v-for="amr in amrs" :key="amr.id" :transform="`translate(${amr.position.x} ${amr.position.y}) rotate(${amr.heading})`" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}`" @click="emit('selectAmr', amr.id)" @keydown.enter="emit('selectAmr', amr.id)">
-            <circle class="selection-ring" r="22"/><rect x="-15" y="-15" width="30" height="30" rx="6"/><path class="amr-heading" d="M0-12L5-5H-5Z"/><text class="amr-id" y="8">{{ amr.id.slice(-2) }}</text>
+            <circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-one" r="22"/><circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-two" r="22"/><circle class="selection-ring" r="22"/><rect x="-15" y="-15" width="30" height="30" rx="6"/><path class="amr-heading" d="M0-12L5-5H-5Z"/><text class="amr-id" y="8">{{ amr.id.slice(-2) }}</text>
           </g>
         </g>
       </svg>
