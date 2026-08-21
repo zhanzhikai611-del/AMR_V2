@@ -76,7 +76,7 @@ function endPan(event: PointerEvent) {
       @pointerup="endPan"
       @pointercancel="endPan"
     >
-      <div class="map-route-legend" :class="{ muted: !selectedTaskId }"><span><i class="planned"></i>规划路径</span><span><i class="traveled"></i>已走路径</span></div>
+      <div class="map-route-legend"><span :class="{ muted: !selectedTaskId }"><i class="planned"></i>规划路径</span><span :class="{ muted: !selectedTaskId }"><i class="traveled"></i>已走路径</span></div>
       <svg class="twin-map" :style="{ transform: mapTransform }" viewBox="0 0 760 520" role="img" aria-label="装配物流区 AMR 实时交通图">
         <defs>
           <filter id="selection-shadow" x="-100%" y="-100%" width="300%" height="300%"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#1677ff" flood-opacity=".32"/></filter>
