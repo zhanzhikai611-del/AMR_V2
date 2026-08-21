@@ -115,21 +115,15 @@ function endPan(event: PointerEvent) {
         <g class="logic-resource-layer">
           <g v-for="resource in visibleResources" :key="resource.id" :class="['logic-resource', `resource-${resource.type}`, resource.state, { 'service-highlight': selectedServiceResources.has(resource.id), muted: selectedAmrId && !selectedServiceResources.has(resource.id) }]" :transform="`translate(${resource.position.x} ${resource.position.y})`">
             <path d="M0 0V-8"/><rect x="-23" y="-27" width="46" height="18" rx="4"/>
-            <rect
+            <circle
               v-for="(serviceAmr, index) in serviceAmrsForResource(resource.id)"
               :key="`${resource.id}-${serviceAmr.id}`"
-              class="resource-service-segment"
-              x="-24.5"
-              y="-28.5"
-              width="49"
-              height="21"
-              rx="5.5"
-              pathLength="1"
+              class="resource-service-dot"
+              :cx="-18 + index * 7"
+              cy="-29"
+              r="2.7"
               :style="{
                 '--service-color': serviceColor(serviceAmr.id),
-                strokeDasharray: `${1 / serviceAmrsForResource(resource.id).length} ${1 - 1 / serviceAmrsForResource(resource.id).length}`,
-                strokeDashoffset: `${-index / serviceAmrsForResource(resource.id).length}`,
-                animationDelay: `${index * -1.8}s`,
               }"
             />
             <text y="-15">{{ resource.label }}</text>
@@ -141,7 +135,6 @@ function endPan(event: PointerEvent) {
             <rect class="amr-hit-target" x="-22" y="-20" width="44" height="40" rx="10"/>
             <circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-one" r="18"/><circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-two" r="18"/>
             <circle class="selection-ring" r="17"/>
-            <circle class="amr-service-ring" r="14"/>
             <circle class="amr-body" r="12"/>
             <g class="amr-direction" :transform="`rotate(${amr.heading})`"><path d="M0-18L3.5-12.5L0-13.8L-3.5-12.5Z"/></g>
             <text class="amr-id" x="0" y="3.5">{{ amr.id.slice(-2) }}</text>
