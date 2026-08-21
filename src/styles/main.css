@@ -189,9 +189,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .map-resource.recycle path { fill: var(--success-soft); stroke: var(--success); stroke-width: 1.3; }
 .map-resource text { fill: #40555e; font: 500 10px/14px var(--font-latin); letter-spacing: .2px; text-anchor: middle; pointer-events: none; }
 .map-amr { cursor: pointer; transition: opacity 160ms ease; outline: none; }
-.map-amr > rect { fill: var(--running); stroke: #fff; stroke-width: 2; }.map-amr > path { fill: #fff; }.map-amr > text { fill: #fff; font: 700 10px/12px var(--font-latin); text-anchor: middle; pointer-events: none; }
-.map-amr.idle > rect { fill: var(--idle); }.map-amr.waiting > rect { fill: var(--waiting); }.map-amr.charging > rect { fill: var(--charging); }.map-amr.fault > rect { fill: var(--fault); }
-.selection-ring { fill: none; stroke: var(--running); stroke-width: 2; opacity: 0; }.map-amr.selected .selection-ring { opacity: 1; filter: url(#selection-shadow); }.map-amr.muted { opacity: .28; }
+.map-amr .amr-hit-target { fill: transparent; stroke: none; }
+.map-amr .amr-body { fill: var(--running); stroke: #fff; stroke-width: 1.5; }
+.map-amr .amr-direction path { fill: #fff; pointer-events: none; }
+.map-amr .amr-divider { stroke: rgba(255,255,255,.42); stroke-width: 1; pointer-events: none; }
+.map-amr .amr-id { fill: #fff; font: 700 9px/11px var(--font-latin); letter-spacing: .04em; text-anchor: middle; pointer-events: none; }
+.map-amr.idle .amr-body { fill: var(--idle); }.map-amr.waiting .amr-body { fill: var(--waiting); }.map-amr.charging .amr-body { fill: var(--charging); }.map-amr.fault .amr-body { fill: var(--fault); }
+.selection-ring { fill: none; stroke: var(--running); stroke-width: 1.7; opacity: 0; }.map-amr.selected .selection-ring { opacity: 1; filter: url(#selection-shadow); }.map-amr.muted { opacity: .28; }
 .map-scale path { fill: none; stroke: #667b84; stroke-width: 1.4; }.map-scale text, .map-coordinate { fill: #73878f; font: var(--type-data); letter-spacing: .4px; }
 .map-legend { position: absolute; right: 15px; bottom: 48px; display: flex; gap: 12px; padding: 7px 9px; color: var(--ink-500); background: rgba(255,255,255,.88); border: 1px solid var(--line); border-radius: 3px; font: var(--type-caption); backdrop-filter: blur(8px); }
 .map-legend span { display: flex; align-items: center; gap: 5px; }.map-legend i { width: 7px; height: 7px; border-radius: 50%; }.map-legend .running { background: var(--running); }.map-legend .idle { background: var(--idle); }.map-legend .waiting { background: var(--waiting); }.map-legend .fault { background: var(--fault); }
@@ -228,7 +232,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .logic-resource.resource-home path { stroke: #6845a6; }.logic-resource.resource-home rect { fill: #6845a6; stroke: #c5b4eb; }.logic-resource.resource-buffer path { stroke: #087e83; }.logic-resource.resource-buffer rect { fill: #087e83; stroke: #9cdee0; }.logic-resource.resource-charge path { stroke: #b87808; }.logic-resource.resource-charge rect { fill: #b87808; stroke: #f2cf8c; }.logic-resource.resource-door path { stroke: #596d7a; }.logic-resource.resource-door rect { fill: #596d7a; stroke: #c1cdd4; }.logic-resource.resource-recycle rect { fill: #607486; stroke: #c9d4dd; }
 .logic-resource { transition: opacity 150ms ease, filter 150ms ease; }.logic-resource.muted { opacity: .22; }.logic-resource.service-highlight rect { stroke: #fff; stroke-width: 2; filter: drop-shadow(0 0 5px rgba(22,119,255,.75)); }.logic-resource.service-highlight path { stroke-width: 2.5; }
 .selected-route-layer .route-planned { stroke: var(--running); stroke-width: 4; stroke-dasharray: 9 7; opacity: .6; }.selected-route-layer .route-traveled { stroke: #6c8190; stroke-width: 4; opacity: .85; }
-.map-canvas-stage .map-amr > rect { fill: var(--running); filter: drop-shadow(0 3px 5px rgba(17,62,96,.25)); }.map-canvas-stage .map-amr > path { fill: #fff; }.map-canvas-stage .map-amr.idle > rect { fill: var(--idle); }.map-canvas-stage .map-amr.waiting > rect { fill: var(--waiting); }.map-canvas-stage .map-amr.fault > rect { fill: var(--fault); }.map-canvas-stage .map-amr.charging > rect { fill: var(--indigo); }.map-canvas-stage .selection-ring { r: 22px; }
+.map-canvas-stage .map-amr .amr-body { fill: var(--running); filter: drop-shadow(0 2px 3px rgba(17,62,96,.24)); }.map-canvas-stage .map-amr.idle .amr-body { fill: var(--idle); }.map-canvas-stage .map-amr.waiting .amr-body { fill: var(--waiting); }.map-canvas-stage .map-amr.fault .amr-body { fill: var(--fault); }.map-canvas-stage .map-amr.charging .amr-body { fill: var(--indigo); }
 .twin-map-wrap > .map-coordinate-bar { position: static; z-index: 6; height: 34px; background: #fff; backdrop-filter: none; }
 
 .object-inspector { position: absolute; z-index: 20; inset: 0 0 0 auto; width: min(450px, 38vw); display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); background: rgba(255,255,255,.97); border-left: 1px solid var(--line-strong); box-shadow: var(--shadow-panel); backdrop-filter: blur(14px); }
