@@ -16,12 +16,12 @@ const props = defineProps<{
 const emit = defineEmits<{ selectAmr: [id: string] }>()
 const defaultMapScale = 1.16
 const amrServiceColors: Record<string, string> = {
-  'AMR-01': '#3b82c4',
-  'AMR-02': '#7567c8',
-  'AMR-03': '#2a9dad',
-  'AMR-04': '#4b9b73',
-  'AMR-05': '#5e75b9',
-  'AMR-06': '#4d7896',
+  'AMR-01': '#1677ff',
+  'AMR-02': '#7c4dff',
+  'AMR-03': '#00a6c7',
+  'AMR-04': '#16a36a',
+  'AMR-05': '#d94f8a',
+  'AMR-06': '#d98200',
 }
 const pan = ref({ x: 0, y: 0 })
 const dragging = ref(false)
@@ -119,9 +119,9 @@ function endPan(event: PointerEvent) {
               v-for="(serviceAmr, index) in serviceAmrsForResource(resource.id)"
               :key="`${resource.id}-${serviceAmr.id}`"
               class="resource-service-dot"
-              :cx="-18 + index * 7"
+              :cx="-18 + index * 8"
               cy="-29"
-              r="2.7"
+              r="3"
               :style="{
                 '--service-color': serviceColor(serviceAmr.id),
               }"
