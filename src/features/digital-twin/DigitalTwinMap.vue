@@ -21,7 +21,7 @@ const amrServiceColors: Record<string, string> = {
   'AMR-03': '#2a9dad',
   'AMR-04': '#4b9b73',
   'AMR-05': '#5e75b9',
-  'AMR-06': '#26958a',
+  'AMR-06': '#4d7896',
 }
 const pan = ref({ x: 0, y: 0 })
 const dragging = ref(false)
