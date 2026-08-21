@@ -191,7 +191,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .map-amr { cursor: pointer; transition: opacity 160ms ease; outline: none; }
 .map-amr .amr-hit-target { fill: transparent; stroke: none; }
 .map-amr .amr-body { fill: var(--running); stroke: #fff; stroke-width: 1.5; }
-.map-amr .amr-direction path { fill: var(--service-color); stroke: #fff; stroke-width: .7; pointer-events: none; }
+.map-amr .amr-direction path { fill: var(--service-color); stroke: #fff; stroke-width: 1; stroke-linejoin: round; pointer-events: none; }
 .map-amr .amr-id { fill: #fff; font: 700 9px/11px var(--font-latin); letter-spacing: .04em; text-anchor: middle; pointer-events: none; }
 .map-amr { color: var(--running); }.map-amr.idle { color: var(--idle); }.map-amr.waiting { color: var(--waiting); }.map-amr.charging { color: var(--charging); }.map-amr.fault { color: var(--fault); }
 .map-amr.idle .amr-body { fill: var(--idle); }.map-amr.waiting .amr-body { fill: var(--waiting); }.map-amr.charging .amr-body { fill: var(--charging); }.map-amr.fault .amr-body { fill: var(--fault); }

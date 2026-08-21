@@ -136,7 +136,7 @@ function endPan(event: PointerEvent) {
             <circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-one" r="18"/><circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-two" r="18"/>
             <circle class="selection-ring" r="17"/>
             <circle class="amr-body" r="12"/>
-            <g class="amr-direction" :transform="`rotate(${amr.heading})`"><path d="M0-18L3.5-12.5L0-13.8L-3.5-12.5Z"/></g>
+            <g class="amr-direction" :transform="`rotate(${amr.heading})`"><path d="M0-20L5-12L0-14L-5-12Z"/></g>
             <text class="amr-id" x="0" y="3.5">{{ amr.id.slice(-2) }}</text>
           </g>
         </g>
