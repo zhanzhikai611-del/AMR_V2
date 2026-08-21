@@ -106,11 +106,10 @@ function endPan(event: PointerEvent) {
           <g v-for="amr in amrs" :key="amr.id" :transform="`translate(${amr.position.x} ${amr.position.y})`" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}`" @click="emit('selectAmr', amr.id)" @keydown.enter="emit('selectAmr', amr.id)">
             <rect class="amr-hit-target" x="-22" y="-20" width="44" height="40" rx="10"/>
             <circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-one" r="18"/><circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-two" r="18"/>
-            <rect class="selection-ring" x="-14" y="-20" width="28" height="40" rx="9"/>
-            <rect class="amr-body" x="-11" y="-18" width="22" height="36" rx="7"/>
-            <g class="amr-direction" :transform="`translate(0 -9) rotate(${amr.heading})`"><path d="M0-4.5L3.5 2L0 .7L-3.5 2Z"/></g>
-            <line class="amr-divider" x1="-6" y1="-2" x2="6" y2="-2"/>
-            <text class="amr-id" x="0" y="11">{{ amr.id.slice(-2) }}</text>
+            <circle class="selection-ring" r="15"/>
+            <circle class="amr-body" r="12"/>
+            <g class="amr-direction" :transform="`rotate(${amr.heading})`"><path d="M0-18L3.5-12.5L0-13.8L-3.5-12.5Z"/></g>
+            <text class="amr-id" x="0" y="3.5">{{ amr.id.slice(-2) }}</text>
           </g>
         </g>
       </svg>
