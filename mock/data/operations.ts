@@ -2,7 +2,7 @@ import type { MapResource, TwinSnapshot } from '../../src/types/domain'
 
 const cncColumns = [150, 242, 334, 426, 518, 610]
 const cncRows = [92, 158, 224, 290, 356, 422]
-const cncResources: MapResource[] = Array.from({ length: 36 }, (_, index) => {
+const cncResources: MapResource[] = Array.from({ length: 36 }, (_, index): MapResource => {
   const column = Math.floor(index / 6)
   const row = index % 6
   const number = index + 1
@@ -19,7 +19,12 @@ const cncResources: MapResource[] = Array.from({ length: 36 }, (_, index) => {
     position: { x: cncColumns[column], y: cncRows[row] },
     state: number === 6 || number === 14 ? 'waiting' : number === 26 ? 'fault' : 'normal',
   }
-})
+}).filter(resource => resource.id !== 'CNC-12' && resource.id !== 'CNC-30')
+
+const serviceDeviceIds = (start: number, end: number) => Array.from(
+  { length: end - start + 1 },
+  (_, index) => `CNC-${String(start + index).padStart(2, '0')}`,
+).filter(id => id !== 'CNC-12' && id !== 'CNC-30')
 
 export const twinSnapshot: TwinSnapshot = {
   updatedAt: '2026-08-15 10:48:32',
@@ -81,8 +86,8 @@ export const twinSnapshot: TwinSnapshot = {
         { id: 'e3', time: '10:46:46', label: '申请交通资源 D-02', type: 'traffic' },
         { id: 'e4', time: '10:46:47', label: 'D-02 被占用，进入等待', type: 'alarm', tone: 'warning' },
       ],
-      plannedPath: 'M242 356V224H334V158',
-      traveledPath: 'M242 356V290',
+      plannedPath: 'M426 422V290L334 224V158',
+      traveledPath: 'M426 422V290L380 257',
     },
     {
       id: 'TSK-260815-020',
@@ -107,8 +112,8 @@ export const twinSnapshot: TwinSnapshot = {
         { id: 'e2', time: '10:43:28', label: 'AMR-02 接受任务', type: 'task' },
         { id: 'e3', time: '10:44:11', label: '物料箱装载完成', type: 'behavior' },
       ],
-      plannedPath: 'M426 356V290H242V224H150',
-      traveledPath: 'M426 356V290H242',
+      plannedPath: 'M242 422H150V224',
+      traveledPath: 'M242 422H196',
     },
     {
       id: 'TSK-260815-019',
@@ -128,8 +133,8 @@ export const twinSnapshot: TwinSnapshot = {
         { id: 'n3', name: '申请 D-02', status: 'failure', duration: '3m 08s', detail: '资源锁释放超时，已重试 3 次' },
         { id: 'n4', name: '回收空箱', status: 'pending', duration: '—' },
       ],
-      plannedPath: 'M150 224H518V158',
-      traveledPath: 'M150 224H334',
+      plannedPath: 'M564 224H518V158',
+      traveledPath: 'M564 224H540',
       events: [
         { id: 'e1', time: '10:36:26', label: 'CNC-26 上抛空箱回收请求', type: 'task' },
         { id: 'e2', time: '10:44:58', label: 'D-02 资源锁释放超时', type: 'alarm', tone: 'danger' },
@@ -140,7 +145,7 @@ export const twinSnapshot: TwinSnapshot = {
       id: 'TSK-260815-018',
       type: '半成品转运',
       amrId: 'AMR-06',
-      requestDeviceId: 'CNC-30',
+      requestDeviceId: 'CNC-29',
       phase: '驶向取货点',
       status: '运行中',
       priority: '普通',
@@ -150,31 +155,31 @@ export const twinSnapshot: TwinSnapshot = {
       behaviorVersion: 'v2.1',
       behaviorSteps: [
         { id: 'n1', name: '创建任务实例', status: 'success', duration: '0.2s' },
-        { id: 'n2', name: '驶向 BUF-01', status: 'running', duration: '2m 42s' },
+        { id: 'n2', name: '驶向 CNC-29', status: 'running', duration: '2m 42s' },
         { id: 'n3', name: '取货确认', status: 'pending', duration: '—' },
       ],
       events: [
-        { id: 'e1', time: '10:45:08', label: 'CNC-30 上抛半成品转运请求', type: 'task' },
+        { id: 'e1', time: '10:45:08', label: 'CNC-29 上抛半成品转运请求', type: 'task' },
         { id: 'e2', time: '10:45:22', label: 'AMR-06 接受任务', type: 'task' },
       ],
-      plannedPath: 'M426 356V422H518',
-      traveledPath: 'M426 356V422',
+      plannedPath: 'M518 422V356',
+      traveledPath: 'M518 422V404',
     },
   ],
   amrs: [
-    { id: 'AMR-01', name: '一号线搬运车 01', ip: '10.197.137.31', model: 'LP-200', chassis: '差速驱动', initialPoint: 'HOME-01', status: '空闲', tone: 'idle', battery: 86, speed: 0, positionLabel: '南侧主通道', position: { x: 150, y: 422 }, taskId: null, heading: 0, serviceDevices: Array.from({ length: 12 }, (_, i) => `CNC-${String(i + 1).padStart(2, '0')}`), serviceStations: ['HOME-01'], supportedActions: ['导航', '顶升', '对接'], ratedLoad: '200 kg', connectedAt: '10:31:18' },
-    { id: 'AMR-02', name: '一号线搬运车 02', ip: '10.197.137.32', model: 'LP-200', chassis: '差速驱动', initialPoint: 'HOME-02', status: '执行中', tone: 'running', battery: 74, speed: 0.8, positionLabel: '斜向联络道', position: { x: 426, y: 290 }, taskId: 'TSK-260815-020', heading: 0, serviceDevices: Array.from({ length: 12 }, (_, i) => `CNC-${String(i + 1).padStart(2, '0')}`), serviceStations: ['HOME-02'], supportedActions: ['导航', '顶升', '对接'], ratedLoad: '200 kg', connectedAt: '10:31:21' },
-    { id: 'AMR-03', name: '一号线搬运车 03', ip: '10.197.137.33', model: 'OMNI-300', chassis: '全向驱动', initialPoint: 'HOME-01', status: '等待', tone: 'waiting', battery: 62, speed: 0, positionLabel: '中部联络道', position: { x: 242, y: 290 }, taskId: 'TSK-260815-021', heading: 90, serviceDevices: Array.from({ length: 12 }, (_, i) => `CNC-${String(i + 13).padStart(2, '0')}`), serviceStations: ['HOME-01'], supportedActions: ['导航', '全向移动', '顶升', '精确对接'], ratedLoad: '300 kg', connectedAt: '10:31:25' },
-    { id: 'AMR-04', name: '二号线搬运车 01', ip: '10.197.137.34', model: 'LP-200', chassis: '差速驱动', initialPoint: 'HOME-02', status: '充电', tone: 'charging', battery: 41, speed: 0, positionLabel: '南侧主通道', position: { x: 334, y: 422 }, taskId: null, heading: 180, serviceDevices: Array.from({ length: 12 }, (_, i) => `CNC-${String(i + 13).padStart(2, '0')}`), serviceStations: ['HOME-02'], supportedActions: ['导航', '顶升', '自动回充'], ratedLoad: '200 kg', connectedAt: '10:31:28' },
-    { id: 'AMR-05', name: '缓冲区转运车 01', ip: '10.197.137.35', model: 'SW-500', chassis: '舵轮', initialPoint: 'HOME-01', status: '故障', tone: 'fault', battery: 55, speed: 0, positionLabel: '南部联络道', position: { x: 150, y: 224 }, taskId: 'TSK-260815-019', heading: 90, serviceDevices: Array.from({ length: 12 }, (_, i) => `CNC-${String(i + 25).padStart(2, '0')}`), serviceStations: ['HOME-01'], supportedActions: ['导航', '牵引', '对接'], ratedLoad: '500 kg', connectedAt: '10:31:32' },
-    { id: 'AMR-06', name: '备用搬运车 01', ip: '10.197.137.36', model: 'LP-200', chassis: '差速驱动', initialPoint: 'HOME-02', status: '执行中', tone: 'running', battery: 79, speed: 0.6, positionLabel: '南部联络道', position: { x: 610, y: 290 }, taskId: 'TSK-260815-018', heading: 0, serviceDevices: Array.from({ length: 12 }, (_, i) => `CNC-${String(i + 25).padStart(2, '0')}`), serviceStations: ['HOME-02'], supportedActions: ['导航', '顶升', '对接'], ratedLoad: '200 kg', connectedAt: '10:31:35' },
+    { id: 'AMR-01', name: '一号线搬运车 01', ip: '10.197.137.31', model: 'LP-200', chassis: '差速驱动', initialPoint: 'HOME-01', status: '空闲', tone: 'idle', battery: 86, speed: 0, positionLabel: '第一服务列南侧', position: { x: 196, y: 422 }, taskId: null, heading: 0, serviceDevices: serviceDeviceIds(1, 12), serviceStations: ['HOME-01'], supportedActions: ['导航', '顶升', '对接'], ratedLoad: '200 kg', connectedAt: '10:31:18' },
+    { id: 'AMR-02', name: '一号线搬运车 02', ip: '10.197.137.32', model: 'LP-200', chassis: '差速驱动', initialPoint: 'HOME-01', status: '执行中', tone: 'running', battery: 74, speed: 0.8, positionLabel: '第一服务列主通道', position: { x: 242, y: 422 }, taskId: 'TSK-260815-020', heading: 0, serviceDevices: serviceDeviceIds(1, 12), serviceStations: ['HOME-01'], supportedActions: ['导航', '顶升', '对接'], ratedLoad: '200 kg', connectedAt: '10:31:21' },
+    { id: 'AMR-03', name: '一号线搬运车 03', ip: '10.197.137.33', model: 'OMNI-300', chassis: '全向驱动', initialPoint: 'HOME-01', status: '等待', tone: 'waiting', battery: 62, speed: 0, positionLabel: '第二服务列斜向通道', position: { x: 380, y: 257 }, taskId: 'TSK-260815-021', heading: 135, serviceDevices: serviceDeviceIds(13, 24), serviceStations: [], supportedActions: ['导航', '全向移动', '顶升', '精确对接'], ratedLoad: '300 kg', connectedAt: '10:31:25' },
+    { id: 'AMR-04', name: '二号线搬运车 01', ip: '10.197.137.34', model: 'LP-200', chassis: '差速驱动', initialPoint: 'HOME-02', status: '充电', tone: 'charging', battery: 41, speed: 0, positionLabel: '第二服务列南侧', position: { x: 380, y: 422 }, taskId: null, heading: 180, serviceDevices: serviceDeviceIds(13, 24), serviceStations: [], supportedActions: ['导航', '顶升', '自动回充'], ratedLoad: '200 kg', connectedAt: '10:31:28' },
+    { id: 'AMR-05', name: '缓冲区转运车 01', ip: '10.197.137.35', model: 'SW-500', chassis: '舵轮', initialPoint: 'HOME-02', status: '故障', tone: 'fault', battery: 55, speed: 0, positionLabel: '第三服务列主通道', position: { x: 540, y: 224 }, taskId: 'TSK-260815-019', heading: 90, serviceDevices: serviceDeviceIds(25, 36), serviceStations: ['HOME-02'], supportedActions: ['导航', '牵引', '对接'], ratedLoad: '500 kg', connectedAt: '10:31:32' },
+    { id: 'AMR-06', name: '备用搬运车 01', ip: '10.197.137.36', model: 'LP-200', chassis: '差速驱动', initialPoint: 'HOME-02', status: '执行中', tone: 'running', battery: 79, speed: 0.6, positionLabel: '第三服务列南侧', position: { x: 518, y: 422 }, taskId: 'TSK-260815-018', heading: 0, serviceDevices: serviceDeviceIds(25, 36), serviceStations: ['HOME-02'], supportedActions: ['导航', '顶升', '对接'], ratedLoad: '200 kg', connectedAt: '10:31:35' },
   ],
   resources: [
     ...cncResources,
     { id: 'BUF-01', type: 'buffer', label: 'BUF-01', position: { x: 205, y: 438 } },
     { id: 'BUF-02', type: 'buffer', label: 'BUF-02', position: { x: 718, y: 360 } },
-    { id: 'HOME-01', type: 'home', label: 'HOME-01', name: '一号线待命站', group: 'HOME 站点', enabled: true, connected: true, boundPoint: 'P-12', position: { x: 242, y: 470 } },
-    { id: 'HOME-02', type: 'home', label: 'HOME-02', name: '二号线待命站', group: 'HOME 站点', enabled: true, connected: true, boundPoint: 'P-24', position: { x: 426, y: 470 } },
+    { id: 'HOME-01', type: 'home', label: 'HOME-01', name: '第一组待命站', group: 'HOME 站点', enabled: true, connected: true, boundPoint: 'P-12', position: { x: 242, y: 422 } },
+    { id: 'HOME-02', type: 'home', label: 'HOME-02', name: '第三组待命站', group: 'HOME 站点', enabled: true, connected: true, boundPoint: 'P-30', position: { x: 518, y: 422 } },
     { id: 'REC-01', type: 'recycle', label: 'REC-01', position: { x: 718, y: 430 } },
     { id: 'CHG-01', type: 'charge', label: 'CHG-01', position: { x: 334, y: 470 } },
     { id: 'D-02', type: 'door', label: 'D-02', position: { x: 650, y: 188 }, state: 'fault' },
