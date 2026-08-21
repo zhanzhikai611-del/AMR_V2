@@ -15,6 +15,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{ selectAmr: [id: string] }>()
 const defaultMapScale = 1.16
+const amrServiceColors: Record<string, string> = {
+  'AMR-01': '#3b82c4',
+  'AMR-02': '#7567c8',
+  'AMR-03': '#2a9dad',
+  'AMR-04': '#4b9b73',
+  'AMR-05': '#5e75b9',
+  'AMR-06': '#26958a',
+}
 const pan = ref({ x: 0, y: 0 })
 const dragging = ref(false)
 let dragOrigin = { x: 0, y: 0 }
@@ -27,6 +35,14 @@ const visibleRouteTasks = computed(() => props.selectedTaskId
   : [])
 const selectedServiceResources = computed(() => new Set([...(selectedAmr.value?.serviceDevices ?? []), ...(selectedAmr.value?.serviceStations ?? [])]))
 const visibleResources = computed(() => props.resources.filter((resource) => resource.type === 'machine' || resource.type === 'home'))
+
+function serviceAmrsForResource(resourceId: string) {
+  return props.amrs.filter((amr) => amr.serviceDevices.includes(resourceId) || amr.serviceStations.includes(resourceId))
+}
+
+function serviceColor(amrId: string) {
+  return amrServiceColors[amrId] ?? '#607486'
+}
 
 const mapTransform = computed(() => {
   let inspectorShift = 0
@@ -98,15 +114,34 @@ function endPan(event: PointerEvent) {
 
         <g class="logic-resource-layer">
           <g v-for="resource in visibleResources" :key="resource.id" :class="['logic-resource', `resource-${resource.type}`, resource.state, { 'service-highlight': selectedServiceResources.has(resource.id), muted: selectedAmrId && !selectedServiceResources.has(resource.id) }]" :transform="`translate(${resource.position.x} ${resource.position.y})`">
-            <path d="M0 0V-8"/><rect x="-23" y="-27" width="46" height="18" rx="4"/><text y="-15">{{ resource.label }}</text>
+            <path d="M0 0V-8"/><rect x="-23" y="-27" width="46" height="18" rx="4"/>
+            <rect
+              v-for="(serviceAmr, index) in serviceAmrsForResource(resource.id)"
+              :key="`${resource.id}-${serviceAmr.id}`"
+              class="resource-service-segment"
+              x="-24.5"
+              y="-28.5"
+              width="49"
+              height="21"
+              rx="5.5"
+              pathLength="1"
+              :style="{
+                '--service-color': serviceColor(serviceAmr.id),
+                strokeDasharray: `${1 / serviceAmrsForResource(resource.id).length} ${1 - 1 / serviceAmrsForResource(resource.id).length}`,
+                strokeDashoffset: `${-index / serviceAmrsForResource(resource.id).length}`,
+                animationDelay: `${index * -1.8}s`,
+              }"
+            />
+            <text y="-15">{{ resource.label }}</text>
           </g>
         </g>
 
         <g class="amr-layer">
-          <g v-for="amr in amrs" :key="amr.id" :transform="`translate(${amr.position.x} ${amr.position.y})`" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}`" @click="emit('selectAmr', amr.id)" @keydown.enter="emit('selectAmr', amr.id)">
+          <g v-for="amr in amrs" :key="amr.id" :transform="`translate(${amr.position.x} ${amr.position.y})`" :style="{ '--service-color': serviceColor(amr.id) }" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}`" @click="emit('selectAmr', amr.id)" @keydown.enter="emit('selectAmr', amr.id)">
             <rect class="amr-hit-target" x="-22" y="-20" width="44" height="40" rx="10"/>
             <circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-one" r="18"/><circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-two" r="18"/>
-            <circle class="selection-ring" r="15"/>
+            <circle class="selection-ring" r="17"/>
+            <circle class="amr-service-ring" r="14"/>
             <circle class="amr-body" r="12"/>
             <g class="amr-direction" :transform="`rotate(${amr.heading})`"><path d="M0-18L3.5-12.5L0-13.8L-3.5-12.5Z"/></g>
             <text class="amr-id" x="0" y="3.5">{{ amr.id.slice(-2) }}</text>
