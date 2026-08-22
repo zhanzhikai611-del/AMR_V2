@@ -15,14 +15,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{ selectAmr: [id: string] }>()
 const defaultMapScale = 1.16
-const amrServiceColors: Record<string, string> = {
-  'AMR-01': '#1677ff',
-  'AMR-02': '#7c4dff',
-  'AMR-03': '#00a6c7',
-  'AMR-04': '#16a36a',
-  'AMR-05': '#d94f8a',
-  'AMR-06': '#d98200',
-}
 const pan = ref({ x: 0, y: 0 })
 const dragging = ref(false)
 let dragOrigin = { x: 0, y: 0 }
@@ -38,10 +30,6 @@ const visibleResources = computed(() => props.resources.filter((resource) => res
 
 function serviceAmrsForResource(resourceId: string) {
   return props.amrs.filter((amr) => amr.serviceDevices.includes(resourceId) || amr.serviceStations.includes(resourceId))
-}
-
-function serviceColor(amrId: string) {
-  return amrServiceColors[amrId] ?? '#607486'
 }
 
 const mapTransform = computed(() => {
@@ -115,23 +103,21 @@ function endPan(event: PointerEvent) {
         <g class="logic-resource-layer">
           <g v-for="resource in visibleResources" :key="resource.id" :class="['logic-resource', `resource-${resource.type}`, resource.state, { 'service-highlight': selectedServiceResources.has(resource.id), muted: selectedAmrId && !selectedServiceResources.has(resource.id) }]" :transform="`translate(${resource.position.x} ${resource.position.y})`">
             <path d="M0 0V-8"/><rect x="-23" y="-27" width="46" height="18" rx="4"/>
-            <circle
+            <g
               v-for="(serviceAmr, index) in serviceAmrsForResource(resource.id)"
               :key="`${resource.id}-${serviceAmr.id}`"
-              class="resource-service-dot"
-              :cx="-18 + index * 8"
-              cy="-29"
-              r="3"
-              :style="{
-                '--service-color': serviceColor(serviceAmr.id),
-              }"
-            />
+              :class="['resource-service-badge', { active: selectedAmrId === serviceAmr.id, 'badge-muted': selectedAmrId && selectedAmrId !== serviceAmr.id }]"
+              :transform="`translate(${-16 + index * 14} -31)`"
+            >
+              <rect x="-6.5" y="-6.5" width="13" height="13" rx="2"/>
+              <text y="2.4">{{ Number(serviceAmr.id.slice(-2)) }}</text>
+            </g>
             <text y="-15">{{ resource.label }}</text>
           </g>
         </g>
 
         <g class="amr-layer">
-          <g v-for="amr in amrs" :key="amr.id" :transform="`translate(${amr.position.x} ${amr.position.y})`" :style="{ '--service-color': serviceColor(amr.id) }" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}`" @click="emit('selectAmr', amr.id)" @keydown.enter="emit('selectAmr', amr.id)">
+          <g v-for="amr in amrs" :key="amr.id" :transform="`translate(${amr.position.x} ${amr.position.y})`" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}`" @click="emit('selectAmr', amr.id)" @keydown.enter="emit('selectAmr', amr.id)">
             <rect class="amr-hit-target" x="-22" y="-20" width="44" height="40" rx="10"/>
             <circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-one" r="18"/><circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-two" r="18"/>
             <circle class="selection-ring" r="17"/>
