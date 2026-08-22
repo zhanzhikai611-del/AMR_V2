@@ -46,6 +46,8 @@ export interface Amr {
   model: string
   chassis: string
   initialPoint: string
+  connectionStatus?: 'online' | 'offline'
+  runnable?: boolean
   status: '执行中' | '空闲' | '等待' | '充电' | '故障'
   tone: Tone
   battery: number

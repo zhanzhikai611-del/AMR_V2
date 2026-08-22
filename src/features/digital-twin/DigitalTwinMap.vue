@@ -25,13 +25,14 @@ const selectedAmr = computed(() => props.amrs.find((amr) => amr.id === props.sel
 const visibleRouteTasks = computed(() => props.selectedTaskId
   ? props.tasks.filter(task => task.id === props.selectedTaskId && task.amrId && task.plannedPath)
   : [])
-const selectedServiceResources = computed(() => selectedAmr.value?.dispatchStatus === 'paused'
+const isRunnable = (amr: Amr) => amr.connectionStatus !== 'offline' && amr.dispatchStatus !== 'paused' && amr.runnable !== false
+const selectedServiceResources = computed(() => !selectedAmr.value || !isRunnable(selectedAmr.value)
   ? new Set<string>()
   : new Set([...(selectedAmr.value?.serviceDevices ?? []), ...(selectedAmr.value?.serviceStations ?? [])]))
 const visibleResources = computed(() => props.resources.filter((resource) => resource.type === 'machine' || resource.type === 'home'))
 
 function serviceAmrsForResource(resourceId: string) {
-  return props.amrs.filter((amr) => amr.dispatchStatus !== 'paused' && (amr.serviceDevices.includes(resourceId) || amr.serviceStations.includes(resourceId)))
+  return props.amrs.filter((amr) => isRunnable(amr) && (amr.serviceDevices.includes(resourceId) || amr.serviceStations.includes(resourceId)))
 }
 
 const mapTransform = computed(() => {

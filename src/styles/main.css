@@ -104,12 +104,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .alarm-button em { position: absolute; top: 2px; right: 1px; min-width: 16px; height: 16px; display: grid; place-items: center; padding: 0 4px; color: #fff; background: var(--fault); border: 2px solid #fff; border-radius: 9px; font: 700 9px/12px var(--font-latin); font-style: normal; }
 .operator-avatar { width: 32px; height: 32px; display: grid; place-items: center; margin-left: 6px; color: #fff; background: var(--running); border-radius: 4px; font: var(--type-compact); }
 
-.fleet-rail { min-width: 0; display: flex; align-items: stretch; gap: 2px; padding: 7px 14px; background: #f6f8f8; border-bottom: 1px solid var(--line); overflow-x: auto; }
-.fleet-rail > div:not(.fleet-rail__scope) { min-width: 88px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 0 10px; color: var(--ink-500); white-space: nowrap; }
-.fleet-rail > div span { font: 400 15px/21px var(--font-zh); }.fleet-rail > div strong { color: var(--structural-ink); font: 500 21px/25px var(--font-latin); font-variant-numeric: tabular-nums; }
-.fleet-rail__primary { min-width: 164px !important; justify-content: flex-start !important; }.fleet-rail__primary strong { font: 600 27px/31px var(--font-latin) !important; }.fleet-rail__primary small { color: var(--success); font: 400 12px/17px var(--font-zh); }
-.rail-divider { width: 1px; flex: 0 0 1px; margin: 5px 7px; background: var(--line); }
-.fleet-rail .danger-item strong { color: var(--fault); }
+.fleet-rail { min-width: 0; display: flex; align-items: stretch; gap: 12px; min-height: 64px; padding: 7px 14px; background: rgba(247,249,250,.96); border-bottom: 1px solid var(--line); overflow-x: auto; }
+.fleet-rail__availability { flex: 0 0 auto; display: grid; grid-template-columns: 124px 128px; align-items: stretch; background: #fff; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; box-shadow: 0 1px 2px rgba(23,43,58,.04); }
+.availability-metric { min-width: 0; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 11px; white-space: nowrap; }.availability-metric + .availability-metric { border-left: 1px solid var(--line); }.availability-metric span { color: var(--ink-500); font: 400 13px/18px var(--font-zh); }.availability-metric strong { color: var(--structural-ink); font: 600 22px/27px var(--font-latin); font-variant-numeric: tabular-nums; }.availability-metric p { display: flex; align-items: baseline; gap: 3px; margin: 0; }.availability-metric small { color: var(--ink-400); font: var(--type-data); }.availability-metric.online { box-shadow: inset 3px 0 var(--success); }.availability-metric.runnable { background: #f4f8ff; }.availability-metric.runnable strong { color: var(--running); }
+.rail-divider { width: 1px; flex: 0 0 1px; margin: 5px 0; background: var(--line); }
+.fleet-rail__operations { flex: 0 0 auto; display: flex; align-items: stretch; }.fleet-rail__operations > div { min-width: 76px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 0 9px; color: var(--ink-500); white-space: nowrap; }.fleet-rail__operations span { font: 400 14px/20px var(--font-zh); }.fleet-rail__operations strong { color: var(--structural-ink); font: 500 20px/25px var(--font-latin); font-variant-numeric: tabular-nums; }.fleet-rail__operations .danger-item strong { color: var(--fault); }
 .fleet-rail__scope { margin-left: auto; display: flex; align-items: center; gap: 13px; padding-left: 20px; border-left: 1px solid var(--line); white-space: nowrap; }.fleet-rail__scope > span { color: var(--ink-500); font: 400 14px/20px var(--font-zh); }.fleet-rail__scope button { min-width: 180px; height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; color: var(--ink-700); background: #fff; border: 1px solid var(--line); border-radius: 4px; font: 400 14px/20px var(--font-zh); cursor: pointer; }.fleet-rail__scope button:hover { border-color: var(--line-strong); }.fleet-rail__scope b { color: var(--ink-400); }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; }
 .status-dot.running { background: var(--running); }.status-dot.idle { background: var(--idle); }.status-dot.waiting { background: var(--waiting); }.status-dot.charging { background: var(--charging); }.status-dot.fault { background: var(--fault); }
@@ -338,7 +337,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, [tabindex]:focus-vis
 @media (max-width: 1420px) {
   .app-shell { --nav-width: 200px; }.app-shell.navigation-collapsed { --nav-width: 56px; }
   .twin-stage { grid-template-columns: minmax(0,1fr); }
-  .fleet-rail > div:not(.fleet-rail__scope) { min-width: 78px; padding-inline: 7px; }.fleet-rail__primary { min-width: 128px !important; }
+  .fleet-rail { gap: 8px; padding-inline: 10px; }.fleet-rail__availability { grid-template-columns: 112px 116px; }.availability-metric { gap: 6px; padding-inline: 8px; }.availability-metric span { font-size: 12px; }.fleet-rail__operations > div { min-width: 67px; padding-inline: 6px; }
   .object-inspector { width: 420px; }
   .behavior-grid { grid-template-columns: repeat(2, minmax(250px,1fr)); }
 }
