@@ -23,8 +23,8 @@ const counts = computed(() => ({
 <template>
   <section class="fleet-rail" aria-label="AMR 全局运行状态">
     <div class="fleet-rail__availability" aria-label="车队连接与调度能力">
-      <div class="availability-metric online" title="已建立连接的 AMR / 当前范围 AMR 总数"><span>上线车辆</span><p><strong>{{ counts.online }}</strong><small>/ {{ counts.total }}</small></p></div>
-      <div class="availability-metric runnable" title="已上线且当前未暂停接单，可计入运行状态统计"><span>可运行车辆</span><strong>{{ counts.runnable }}</strong></div>
+      <div class="availability-metric online" title="已建立连接的 AMR / 当前范围 AMR 总数"><span>上线</span><p><strong>{{ counts.online }}</strong><small>/ {{ counts.total }}</small></p></div>
+      <div class="availability-metric runnable" title="已上线且当前未暂停接单，可计入运行状态统计"><span>可运行</span><strong>{{ counts.runnable }}</strong></div>
     </div>
     <span class="rail-divider"></span>
     <div class="fleet-rail__operations" aria-label="可运行车辆状态分布">
