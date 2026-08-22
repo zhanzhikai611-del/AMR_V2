@@ -25,11 +25,13 @@ const selectedAmr = computed(() => props.amrs.find((amr) => amr.id === props.sel
 const visibleRouteTasks = computed(() => props.selectedTaskId
   ? props.tasks.filter(task => task.id === props.selectedTaskId && task.amrId && task.plannedPath)
   : [])
-const selectedServiceResources = computed(() => new Set([...(selectedAmr.value?.serviceDevices ?? []), ...(selectedAmr.value?.serviceStations ?? [])]))
+const selectedServiceResources = computed(() => selectedAmr.value?.dispatchStatus === 'paused'
+  ? new Set<string>()
+  : new Set([...(selectedAmr.value?.serviceDevices ?? []), ...(selectedAmr.value?.serviceStations ?? [])]))
 const visibleResources = computed(() => props.resources.filter((resource) => resource.type === 'machine' || resource.type === 'home'))
 
 function serviceAmrsForResource(resourceId: string) {
-  return props.amrs.filter((amr) => amr.serviceDevices.includes(resourceId) || amr.serviceStations.includes(resourceId))
+  return props.amrs.filter((amr) => amr.dispatchStatus !== 'paused' && (amr.serviceDevices.includes(resourceId) || amr.serviceStations.includes(resourceId)))
 }
 
 const mapTransform = computed(() => {
@@ -117,7 +119,7 @@ function endPan(event: PointerEvent) {
         </g>
 
         <g class="amr-layer">
-          <g v-for="amr in amrs" :key="amr.id" :transform="`translate(${amr.position.x} ${amr.position.y})`" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}`" @click="emit('selectAmr', amr.id)" @keydown.enter="emit('selectAmr', amr.id)">
+          <g v-for="amr in amrs" :key="amr.id" :transform="`translate(${amr.position.x} ${amr.position.y})`" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id, 'dispatch-paused': amr.dispatchStatus === 'paused' }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}${amr.dispatchStatus === 'paused' ? '，暂停接单' : ''}`" @click="emit('selectAmr', amr.id)" @keydown.enter="emit('selectAmr', amr.id)">
             <rect class="amr-hit-target" x="-22" y="-20" width="44" height="40" rx="10"/>
             <circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-one" r="18"/><circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-two" r="18"/>
             <circle class="selection-ring" r="17"/>

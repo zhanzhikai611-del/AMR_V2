@@ -55,10 +55,12 @@ export interface Amr {
   taskId: string | null
   heading: number
   serviceDevices: string[]
+  maxServiceDevices?: string[]
   serviceStations: string[]
   supportedActions: string[]
   ratedLoad: string
   connectedAt: string
+  dispatchStatus?: 'enabled' | 'paused'
 }
 
 export interface MapResource {
