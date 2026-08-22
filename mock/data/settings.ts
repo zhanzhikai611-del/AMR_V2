@@ -1,4 +1,4 @@
-import type { DictionaryItem, OperationLog, SystemConfiguration, SystemLog, SystemRole, SystemUser } from '../../src/types/settings'
+import type { DictionaryItem, OperationLog, SystemLog, SystemRole, SystemUser } from '../../src/types/settings'
 
 export const systemUsers:SystemUser[] = [
   {username:'ops.zhang',name:'张凯',role:'现场人员',status:'启用',lastLogin:'2026-08-19 14:20',createdAt:'2026-07-20'},
@@ -12,12 +12,6 @@ export const systemRoles:SystemRole[] = [
   {name:'现场人员',users:4,summary:'运行监控、任务处置、交通操作与 AMR 受控调试',boundary:'唯一拥有 AMR 控制权',tone:'blue'},
   {name:'研发人员',users:12,summary:'任务、地图、资源配置与技术日志排障',boundary:'禁止直接操控 AMR',tone:'cyan'},
   {name:'只读用户',users:3,summary:'查看获授权范围内的状态、列表、详情和记录',boundary:'无创建、编辑和控制权限',tone:'gray'},
-]
-export const systemConfigurations:SystemConfiguration[] = [
-  {group:'运行显示',items:[{key:'页面刷新频率',value:'2 秒',options:['1 秒','2 秒','5 秒']},{key:'数据延迟阈值',value:'5 秒'},{key:'坐标小数位',value:'2 位',options:['1 位','2 位','3 位']}]},
-  {group:'任务设置',items:[{key:'默认优先级',value:'普通',options:['低','普通','高']},{key:'任务编号前缀',value:'TSK'},{key:'完成记录保留',value:'30 天'}]},
-  {group:'地图与车辆',items:[{key:'地图坐标单位',value:'米'},{key:'车辆离线阈值',value:'10 秒'},{key:'轨迹保留时间',value:'24 小时'}]},
-  {group:'界面设置',items:[{key:'语言',value:'简体中文'},{key:'时间格式',value:'24 小时'},{key:'减少动态效果',value:'跟随系统'}]},
 ]
 export const dictionaryItems:DictionaryItem[] = [
   {category:'AMR_STATUS',code:'IDLE',name:'空闲',color:'#91A1AD',order:10,status:'启用'},{category:'AMR_STATUS',code:'RUNNING',name:'执行中',color:'#1677FF',order:20,status:'启用'},{category:'AMR_STATUS',code:'CHARGING',name:'充电中',color:'#00A6A6',order:30,status:'启用'},{category:'AMR_STATUS',code:'FAULT',name:'异常',color:'#D92D20',order:40,status:'启用'},{category:'TASK_STATUS',code:'PENDING',name:'待调度',color:'#F59E0B',order:10,status:'启用'},{category:'TASK_STATUS',code:'RUNNING',name:'运行中',color:'#1677FF',order:20,status:'启用'},{category:'DEVICE_STATUS',code:'WAIT_AMR',name:'等待 AMR',color:'#F59E0B',order:30,status:'启用'},

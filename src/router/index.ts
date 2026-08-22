@@ -10,7 +10,6 @@ import MapLibraryView from '../views/MapLibraryView.vue'
 import MapEditorView from '../views/MapEditorView.vue'
 import UsersSettingsView from '../views/settings/UsersSettingsView.vue'
 import RolesSettingsView from '../views/settings/RolesSettingsView.vue'
-import ConfigurationsSettingsView from '../views/settings/ConfigurationsSettingsView.vue'
 import DictionariesSettingsView from '../views/settings/DictionariesSettingsView.vue'
 import LogsSettingsView from '../views/settings/LogsSettingsView.vue'
 import AnalyticsView from '../views/AnalyticsView.vue'
@@ -39,7 +38,6 @@ export default createRouter({
         { path: 'resources/maps/:id/edit', redirect: (route) => `/maps/${route.params.id}/edit` },
         { path:'settings/users',component:UsersSettingsView,meta:{groupId:'settings',menuId:'users'} },
         { path:'settings/roles',component:RolesSettingsView,meta:{groupId:'settings',menuId:'roles'} },
-        { path:'settings/configurations',component:ConfigurationsSettingsView,meta:{groupId:'settings',menuId:'configurations'} },
         { path:'settings/dictionaries',component:DictionariesSettingsView,meta:{groupId:'settings',menuId:'dictionaries'} },
         { path:'settings/operation-logs',component:LogsSettingsView,props:{kind:'operation'},meta:{groupId:'settings',menuId:'operation-logs'} },
         { path:'settings/system-logs',component:LogsSettingsView,props:{kind:'system'},meta:{groupId:'settings',menuId:'system-logs'} },

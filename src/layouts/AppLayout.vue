@@ -22,7 +22,6 @@ const navigation = [
   { id: 'settings', label: '系统设置', icon: 'settings', children: [
     { id: 'users', label: '用户管理', route: '/settings/users' },
     { id: 'roles', label: '角色权限', route: '/settings/roles' },
-    { id: 'configurations', label: '配置管理', route: '/settings/configurations' },
     { id: 'dictionaries', label: '数据字典', route: '/settings/dictionaries' },
     { id: 'operation-logs', label: '操作日志', route: '/settings/operation-logs' },
     { id: 'system-logs', label: '系统日志', route: '/settings/system-logs' },

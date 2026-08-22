@@ -21,7 +21,7 @@ const alarmKeyword = ref('')
 const alarmType = ref('all')
 const alarmPage = ref(1)
 const taskPageSize = 10
-const alarmPageSize = 8
+const alarmPageSize = 10
 
 const rangeLabel = computed(() => range.value === 'today' ? '今日' : range.value === '7d' ? '近 7 天' : '近 30 天')
 const filteredTasks = computed(() => {
@@ -96,7 +96,6 @@ onMounted(loadAll)
         <button type="button" :class="{ active: activeTab === 'vehicle' }" @click="activeTab = 'vehicle'">单车分析</button>
       </div>
       <div class="analytics-context-tools">
-        <span class="analytics-scope-context">当前范围 <strong>{{ runtimeScope.current.label }}</strong></span>
         <label><span>统计周期</span><select v-model="range"><option value="today">今日</option><option value="7d">近 7 天</option><option value="30d">近 30 天</option></select></label>
       </div>
     </nav>
@@ -159,33 +158,49 @@ onMounted(loadAll)
         <article class="warning"><span>报警 / 异常</span><strong>{{ vehicleData.summary.alarmCount }}</strong><em>累计 {{ formatMinutes(vehicleData.summary.abnormalDurationMinutes) }}</em></article>
       </section>
 
-      <section class="analytics-panel analytics-record-panel">
-        <header><strong>任务执行记录</strong><span>{{ filteredTasks.length }} 条</span></header>
-        <div class="analytics-record-toolbar">
-          <label><span>⌕</span><input v-model="taskKeyword" type="search" placeholder="搜索任务编号、类型或请求设备"></label>
-          <select v-model="taskResult"><option value="all">全部结果</option><option value="已完成">已完成</option><option value="已取消">已取消</option></select>
-        </div>
-        <div class="resource-table-wrap">
-          <table class="resource-table"><thead><tr><th>任务</th><th>请求设备</th><th>开始时间</th><th>结束时间</th><th>耗时</th><th>结果</th></tr></thead><tbody><tr v-for="task in paginatedTasks" :key="task.id"><td><strong>{{ task.id }}</strong><small>{{ task.type }}</small></td><td class="type-data">{{ task.requestDeviceId }}</td><td class="type-data">{{ task.startedAt }}</td><td class="type-data">{{ task.endedAt }}</td><td class="type-data">{{ task.duration }}</td><td><span class="asset-status" :class="task.result === '已完成' ? 'success' : 'neutral'">{{ task.result }}</span></td></tr><tr v-if="!paginatedTasks.length"><td colspan="6" class="analytics-empty-row">没有符合条件的任务记录</td></tr></tbody></table>
-        </div>
-        <footer class="task-pagination"><span>共 {{ filteredTasks.length }} 条 · 每页 {{ taskPageSize }} 条</span><nav aria-label="任务执行记录分页"><button type="button" :disabled="taskPage === 1" @click="taskPage--">上一页</button><button v-for="page in taskPageCount" :key="page" type="button" :class="{ active: taskPage === page }" @click="taskPage = page">{{ page }}</button><button type="button" :disabled="taskPage === taskPageCount" @click="taskPage++">下一页</button></nav></footer>
-      </section>
-
-      <section class="analytics-panel analytics-record-panel alarm-record-panel">
-        <header><strong>报警及异常历史</strong><span>{{ filteredAlarms.length }} 条</span></header>
-        <div class="analytics-record-toolbar">
-          <label><span>⌕</span><input v-model="alarmKeyword" type="search" placeholder="搜索异常编号、类型或关联任务"></label>
-          <select v-model="alarmType"><option value="all">全部类型</option><option v-for="type in alarmTypes" :key="type" :value="type">{{ type }}</option></select>
-        </div>
-        <div class="resource-table-wrap">
-          <table class="resource-table"><thead><tr><th>异常类型</th><th>发生时间</th><th>恢复时间</th><th>持续时长</th><th>关联任务</th><th>结果</th></tr></thead><tbody><tr v-for="alarm in paginatedAlarms" :key="alarm.id"><td><strong>{{ alarm.type }}</strong><small class="type-data">{{ alarm.id }}</small></td><td class="type-data">{{ alarm.occurredAt }}</td><td class="type-data">{{ alarm.recoveredAt }}</td><td class="type-data">{{ alarm.duration }}</td><td class="type-data">{{ alarm.taskId ?? '—' }}</td><td><span class="asset-status success">{{ alarm.result }}</span></td></tr><tr v-if="!paginatedAlarms.length"><td colspan="6" class="analytics-empty-row">没有符合条件的异常记录</td></tr></tbody></table>
-        </div>
-        <footer class="task-pagination"><span>共 {{ filteredAlarms.length }} 条 · 每页 {{ alarmPageSize }} 条</span><nav aria-label="报警及异常历史分页"><button type="button" :disabled="alarmPage === 1" @click="alarmPage--">上一页</button><button v-for="page in alarmPageCount" :key="page" type="button" :class="{ active: alarmPage === page }" @click="alarmPage = page">{{ page }}</button><button type="button" :disabled="alarmPage === alarmPageCount" @click="alarmPage++">下一页</button></nav></footer>
-      </section>
-
       <div class="analytics-grid analytics-grid--trend">
         <section class="analytics-panel trend-panel"><header><strong>单车历史趋势</strong><div><span><i class="line"></i>稼动率</span><span><i class="bar"></i>任务量</span></div></header><AnalyticsTrendChart :points="vehicleData.trend" /></section>
         <section class="analytics-panel state-panel"><header><strong>运行时长构成</strong><span>{{ rangeLabel }}</span></header><StateDurationPanel :items="vehicleData.stateDurations" /></section>
+      </div>
+
+      <div class="analytics-grid analytics-grid--records">
+        <section class="analytics-panel analytics-record-panel">
+          <header><strong>任务执行记录</strong><span>{{ filteredTasks.length }} 条</span></header>
+          <div class="analytics-record-toolbar">
+            <label><span>⌕</span><input v-model="taskKeyword" type="search" placeholder="搜索任务编号、类型或请求设备"></label>
+            <select v-model="taskResult"><option value="all">全部结果</option><option value="已完成">已完成</option><option value="已取消">已取消</option></select>
+          </div>
+          <div class="analytics-task-head"><span>任务</span><span>请求设备 / 开始时间</span><span>耗时 / 结果</span></div>
+          <ol class="analytics-task-records">
+            <li v-for="task in paginatedTasks" :key="task.id">
+              <div><strong class="type-data">{{ task.id }}</strong><small>{{ task.type }}</small></div>
+              <div><span class="type-data">{{ task.requestDeviceId }}</span><small class="type-data">{{ task.startedAt }}</small></div>
+              <div><span class="type-data">{{ task.duration }}</span><span class="asset-status" :class="task.result === '已完成' ? 'success' : 'neutral'">{{ task.result }}</span></div>
+            </li>
+            <li v-if="!paginatedTasks.length" class="analytics-task-empty">没有符合条件的任务记录</li>
+          </ol>
+          <footer class="task-pagination"><span>共 {{ filteredTasks.length }} 条 · 每页 {{ taskPageSize }} 条</span><nav aria-label="任务执行记录分页"><button type="button" :disabled="taskPage === 1" @click="taskPage--">上一页</button><span class="analytics-page-indicator">{{ taskPage }} / {{ taskPageCount }}</span><button type="button" :disabled="taskPage === taskPageCount" @click="taskPage++">下一页</button></nav></footer>
+        </section>
+
+        <section class="analytics-panel analytics-record-panel alarm-record-panel">
+          <header><strong>报警记录</strong><span>{{ filteredAlarms.length }} 条</span></header>
+          <div class="analytics-record-toolbar">
+            <label><span>⌕</span><input v-model="alarmKeyword" type="search" placeholder="搜索报警编号、类型或关联任务"></label>
+            <select v-model="alarmType"><option value="all">全部类型</option><option v-for="type in alarmTypes" :key="type" :value="type">{{ type }}</option></select>
+          </div>
+          <div class="analytics-alarm-head"><span>报警</span><span>发生 / 恢复时间</span><span>关联任务</span><span>时长 / 结果</span></div>
+          <ol class="analytics-alarm-records">
+            <li v-for="alarm in paginatedAlarms" :key="alarm.id">
+              <i aria-hidden="true"></i>
+              <div class="alarm-record-identity"><strong>{{ alarm.type }}</strong><small class="type-data">{{ alarm.id }}</small></div>
+              <div class="alarm-record-time type-data"><span>{{ alarm.occurredAt }}</span><small>至 {{ alarm.recoveredAt }}</small></div>
+              <span class="alarm-record-task type-data">{{ alarm.taskId ?? '—' }}</span>
+              <div class="alarm-record-result"><span class="type-data">{{ alarm.duration }}</span><span class="asset-status success">{{ alarm.result }}</span></div>
+            </li>
+            <li v-if="!paginatedAlarms.length" class="analytics-alarm-empty">没有符合条件的报警记录</li>
+          </ol>
+          <footer class="task-pagination"><span>共 {{ filteredAlarms.length }} 条 · 每页 {{ alarmPageSize }} 条</span><nav aria-label="报警记录分页"><button type="button" :disabled="alarmPage === 1" @click="alarmPage--">上一页</button><span class="analytics-page-indicator">{{ alarmPage }} / {{ alarmPageCount }}</span><button type="button" :disabled="alarmPage === alarmPageCount" @click="alarmPage++">下一页</button></nav></footer>
+        </section>
       </div>
     </template>
   </section>

@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { getDispatchSettings, updateDispatchSettings } from '../api/modules/dispatch'
 import { getTwinSnapshot } from '../api/modules/operations'
-import { getTaskRecords } from '../api/modules/task-records'
+import { cancelTask, getTaskRecords } from '../api/modules/task-records'
 import type { DispatchSettings, Task, TaskRecord } from '../types/domain'
 
 type CenterTab = 'live' | 'records'
@@ -23,6 +23,9 @@ const selected = ref<SelectedTask | null>(null)
 const dispatch = ref<DispatchSettings>({ strategy: 'FIFO 先进先出', apsEnabled: false, updatedAt: '' })
 const dispatchOpen = ref(false)
 const dispatchSaved = ref(false)
+const cancelTarget = ref<Task | null>(null)
+const canceling = ref(false)
+const cancelError = ref('')
 
 const waitingCount = computed(() => activeTasks.value.filter((task) => task.status === '待调度' || task.status === '等待中').length)
 const runningCount = computed(() => activeTasks.value.filter((task) => task.status === '运行中').length)
@@ -84,6 +87,29 @@ async function saveDispatch() {
   dispatchOpen.value = false
 }
 
+function requestCancel(task: Task) {
+  cancelTarget.value = task
+  cancelError.value = ''
+}
+
+async function confirmCancel() {
+  if (!cancelTarget.value || canceling.value) return
+  canceling.value = true
+  cancelError.value = ''
+  try {
+    const canceledTaskId = cancelTarget.value.id
+    const record = await cancelTask(canceledTaskId)
+    activeTasks.value = activeTasks.value.filter((task) => task.id !== canceledTaskId)
+    if (!records.value.some((task) => task.id === record.id)) records.value.unshift(record)
+    if (selected.value?.task.id === canceledTaskId) selected.value = null
+    cancelTarget.value = null
+  } catch (reason) {
+    cancelError.value = reason instanceof Error ? reason.message : '取消任务失败'
+  } finally {
+    canceling.value = false
+  }
+}
+
 onMounted(async () => {
   const [history, snapshot, settings] = await Promise.all([getTaskRecords(), getTwinSnapshot(), getDispatchSettings()])
   records.value = history
@@ -129,7 +155,7 @@ onMounted(async () => {
 
         <div class="resource-table-wrap dispatch-table-wrap">
           <table class="resource-table dispatch-table">
-            <thead><tr><th>任务</th><th>请求设备</th><th>执行 AMR</th><th>当前阶段</th><th>等待 / 执行时长</th><th>状态</th></tr></thead>
+            <thead><tr><th>任务</th><th>请求设备</th><th>执行 AMR</th><th>当前阶段</th><th>等待 / 执行时长</th><th>状态</th><th>操作</th></tr></thead>
             <tbody>
               <tr v-for="task in paginatedLiveTasks" :key="task.id" tabindex="0" @click="selectLiveTask(task)" @keydown.enter="selectLiveTask(task)">
                 <td><strong>{{ task.id }}</strong><small>{{ task.type }}</small></td>
@@ -138,6 +164,7 @@ onMounted(async () => {
                 <td>{{ task.phase }}</td>
                 <td class="type-data">{{ task.duration }}</td>
                 <td><span class="asset-status" :class="statusClass(task.status)">{{ task.status }}</span></td>
+                <td><button class="task-cancel-button" type="button" :aria-label="`取消任务 ${task.id}`" @click.stop="requestCancel(task)">取消</button></td>
               </tr>
             </tbody>
           </table>
@@ -227,6 +254,18 @@ onMounted(async () => {
         </section>
         <footer><button type="button" @click="selected = null">关闭</button></footer>
       </aside>
+    </div>
+
+    <div v-if="cancelTarget" class="modal-backdrop" @click.self="cancelTarget = null">
+      <section class="dispatch-dialog cancel-task-dialog" role="dialog" aria-modal="true" aria-labelledby="cancel-task-dialog-title">
+        <header><div><span>TASK CONTROL</span><strong id="cancel-task-dialog-title">取消任务</strong></div><button type="button" aria-label="关闭取消任务确认" @click="cancelTarget = null">×</button></header>
+        <div class="cancel-task-dialog__body">
+          <strong>{{ cancelTarget.id }}</strong>
+          <dl><div><dt>任务类型</dt><dd>{{ cancelTarget.type }}</dd></div><div><dt>请求设备</dt><dd>{{ cancelTarget.requestDeviceId }}</dd></div><div><dt>执行 AMR</dt><dd>{{ cancelTarget.amrId ?? '待分配' }}</dd></div><div><dt>当前状态</dt><dd>{{ cancelTarget.status }}</dd></div></dl>
+          <p v-if="cancelError">{{ cancelError }}</p>
+        </div>
+        <footer><span>取消后任务将进入任务记录</span><div><button type="button" :disabled="canceling" @click="cancelTarget = null">返回</button><button class="danger" type="button" :disabled="canceling" @click="confirmCancel">{{ canceling ? '取消中' : '确认取消' }}</button></div></footer>
+      </section>
     </div>
 
     <div v-if="dispatchOpen" class="modal-backdrop" @click.self="dispatchOpen = false">
