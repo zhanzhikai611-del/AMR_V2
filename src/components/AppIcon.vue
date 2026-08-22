@@ -10,6 +10,9 @@ defineProps<{ name: string; size?: number }>()
     <template v-else-if="name === 'records'">
       <path d="M6 3h9l3 3v15H6V3Z"/><path d="M15 3v4h4M9 11h6M9 15h6"/>
     </template>
+    <template v-else-if="name === 'analytics'">
+      <path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/><path d="m4 7 6-4 6 6 5-5"/>
+    </template>
     <template v-else-if="name === 'behavior'">
       <circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="12" r="2"/><path d="M8 5h2a3 3 0 0 1 3 3v1a3 3 0 0 0 3 3M8 19h2a3 3 0 0 0 3-3v-1a3 3 0 0 1 3-3"/>
     </template>

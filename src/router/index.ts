@@ -13,6 +13,7 @@ import RolesSettingsView from '../views/settings/RolesSettingsView.vue'
 import ConfigurationsSettingsView from '../views/settings/ConfigurationsSettingsView.vue'
 import DictionariesSettingsView from '../views/settings/DictionariesSettingsView.vue'
 import LogsSettingsView from '../views/settings/LogsSettingsView.vue'
+import AnalyticsView from '../views/AnalyticsView.vue'
 
 export default createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -22,6 +23,7 @@ export default createRouter({
       component: AppLayout,
       children: [
         { path: '', name: 'digital-twin', component: DigitalTwinView, meta: { menuId: 'twin' } },
+        { path: 'analytics', name: 'analytics', component: AnalyticsView, meta: { menuId: 'analytics' } },
         { path: 'task-records', name: 'task-records', component: TaskRecordsView, meta: { menuId: 'records' } },
         { path: 'behaviors', name: 'behaviors', component: BehaviorTreesView, meta: { menuId: 'behavior' } },
         { path: 'behaviors/:id/edit', component: BehaviorEditorView, meta: { menuId: 'behavior' } },
