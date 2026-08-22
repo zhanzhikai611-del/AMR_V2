@@ -58,16 +58,20 @@ function confirmDispatchChange() {
     </nav>
 
     <div v-if="activeTab === 'task'" class="inspector-content task-execution-panel">
-      <section class="task-execution-head">
-        <div><span>当前任务</span><strong class="type-data">{{ task?.id ?? '暂无任务' }}</strong></div>
-        <em :class="amr?.dispatchStatus === 'paused' ? 'paused' : task?.status">{{ amr?.dispatchStatus === 'paused' ? '暂停接单' : task?.status ?? amr?.status }}</em>
+      <section class="task-overview-card">
+        <header>
+          <div><span>当前任务</span><strong class="type-data">{{ task?.id ?? '暂无任务' }}</strong></div>
+          <em :class="amr?.dispatchStatus === 'paused' ? 'paused' : task?.status">{{ amr?.dispatchStatus === 'paused' ? '暂停接单' : task?.status ?? amr?.status }}</em>
+        </header>
+        <div class="task-overview-card__facts">
+          <div><span>任务类型</span><strong>{{ task?.type ?? '—' }}</strong></div>
+          <div><span>请求设备</span><strong class="type-data">{{ task?.requestDeviceId ?? '—' }}</strong></div>
+        </div>
+        <footer>
+          <div><span>任务进度</span><strong class="type-data">{{ task?.progress ?? 0 }}<small>%</small></strong></div>
+          <i><b :style="{ width: `${task?.progress ?? 0}%` }"></b></i>
+        </footer>
       </section>
-      <div class="overview-hero"><span>任务进度</span><strong class="type-data">{{ task?.progress ?? 0 }}<small>%</small></strong><i><b :style="{ width: `${task?.progress ?? 0}%` }"></b></i></div>
-      <dl class="task-execution-facts">
-        <div><dt>任务类型</dt><dd>{{ task?.type ?? '—' }}</dd></div>
-        <div><dt>请求设备</dt><dd>{{ task?.requestDeviceId ?? '—' }}</dd></div>
-        <div><dt>当前阶段</dt><dd>{{ task?.phase ?? '—' }}</dd></div>
-      </dl>
       <div class="behavior-monitor-head combined"><div><span>行为监控</span><strong>{{ task?.behaviorName ?? '无运行实例' }}</strong></div></div>
       <ol class="behavior-trail">
         <li v-for="step in task?.behaviorSteps ?? []" :key="step.id" :class="step.status">
@@ -81,13 +85,12 @@ function confirmDispatchChange() {
     <div v-else class="inspector-content vehicle-panel">
       <section class="vehicle-identity">
         <div class="vehicle-mark"><span>{{ amr?.id.slice(-2) }}</span><i :class="amr?.tone"></i></div>
-        <div><p>{{ amr?.name }}</p><strong class="type-data">{{ amr?.model }} · {{ amr?.chassis }}</strong><small>最近连接 {{ amr?.connectedAt }}</small></div>
+        <div><p>{{ amr?.name }}</p><strong class="type-data">{{ amr?.model }} · {{ amr?.chassis }}</strong><span class="vehicle-rated-load">额定载荷 <b class="type-data">{{ amr?.ratedLoad ?? '—' }}</b></span><small>最近连接 {{ amr?.connectedAt }}</small></div>
       </section>
       <div class="vehicle-battery-hero" :class="{ low: (amr?.battery ?? 100) <= 30, critical: (amr?.battery ?? 100) <= 15 }"><span>当前电量</span><strong class="type-data">{{ amr?.battery ?? '—' }}<small>%</small></strong><i><b :style="{ width: `${amr?.battery ?? 0}%` }"></b></i></div>
       <dl class="vehicle-properties">
-        <div class="wide"><dt>当前位置</dt><dd class="type-data">{{ formatPosition(amr) }}</dd></div>
+        <div><dt>当前位置</dt><dd class="type-data">{{ formatPosition(amr) }}</dd></div>
         <div><dt>当前速度</dt><dd class="type-data">{{ amr?.speed ?? '—' }} m/s</dd></div>
-        <div><dt>额定载荷</dt><dd class="type-data">{{ amr?.ratedLoad ?? '—' }}</dd></div>
       </dl>
       <section class="service-scope">
         <header><div><strong>服务范围</strong></div><em>{{ (amr?.serviceDevices.length ?? 0) + (amr?.serviceStations.length ?? 0) }} 项</em></header>
