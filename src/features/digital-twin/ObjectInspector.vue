@@ -10,7 +10,7 @@ const emit = defineEmits<{
   updateServiceScope: [payload: { amrId: string; serviceDevices: string[] }]
   toggleDispatch: [amrId: string]
 }>()
-const activeTab = ref<'overview' | 'behavior' | 'vehicle'>('behavior')
+const activeTab = ref<'task' | 'vehicle'>('task')
 const serviceDraft = ref<string[]>([])
 const dispatchConfirmOpen = ref(false)
 const serviceDirty = computed(() => serviceDraft.value.join('|') !== (props.amr?.serviceDevices ?? []).join('|'))
@@ -20,8 +20,7 @@ watch(() => [props.amr?.id, ...(props.amr?.serviceDevices ?? [])], () => {
 }, { immediate: true })
 
 const tabs = [
-  { id: 'overview', label: '执行概况' },
-  { id: 'behavior', label: '行为监控' },
+  { id: 'task', label: '任务执行' },
   { id: 'vehicle', label: '车辆信息' },
 ] as const
 
@@ -54,29 +53,22 @@ function confirmDispatchChange() {
       <div><h2>{{ amr?.id ?? task?.id }}</h2></div>
       <div class="inspector-header-actions"><button type="button" aria-label="收起 AMR 详情" @click="emit('collapse')">›</button><button type="button" aria-label="关闭检查面板" @click="emit('close')"><AppIcon name="close" /></button></div>
     </header>
-    <div class="inspector-summary">
-      <div><span>当前任务</span><strong class="type-data">{{ task?.id ?? '暂无任务' }}</strong></div>
-      <em :class="amr?.dispatchStatus === 'paused' ? '等待中' : task?.status">{{ amr?.dispatchStatus === 'paused' ? '暂停接单' : task?.status ?? amr?.status }}</em>
-    </div>
     <nav class="inspector-tabs" aria-label="对象详情">
       <button v-for="tab in tabs" :key="tab.id" type="button" :class="{ active: activeTab === tab.id }" :disabled="tab.id === 'vehicle' && !amr" @click="activeTab = tab.id">{{ tab.label }}</button>
     </nav>
 
-    <div v-if="activeTab === 'overview'" class="inspector-content overview-panel">
+    <div v-if="activeTab === 'task'" class="inspector-content task-execution-panel">
+      <section class="task-execution-head">
+        <div><span>当前任务</span><strong class="type-data">{{ task?.id ?? '暂无任务' }}</strong></div>
+        <em :class="amr?.dispatchStatus === 'paused' ? 'paused' : task?.status">{{ amr?.dispatchStatus === 'paused' ? '暂停接单' : task?.status ?? amr?.status }}</em>
+      </section>
       <div class="overview-hero"><span>任务进度</span><strong class="type-data">{{ task?.progress ?? 0 }}<small>%</small></strong><i><b :style="{ width: `${task?.progress ?? 0}%` }"></b></i></div>
-      <dl>
+      <dl class="task-execution-facts">
         <div><dt>任务类型</dt><dd>{{ task?.type ?? '—' }}</dd></div>
         <div><dt>请求设备</dt><dd>{{ task?.requestDeviceId ?? '—' }}</dd></div>
         <div><dt>当前阶段</dt><dd>{{ task?.phase ?? '—' }}</dd></div>
-        <div><dt>当前位置</dt><dd class="type-data">{{ formatPosition(amr) }}</dd></div>
-        <div><dt>电量</dt><dd class="type-data">{{ amr?.battery ?? '—' }}%</dd></div>
-        <div><dt>当前速度</dt><dd class="type-data">{{ amr?.speed ?? '—' }} m/s</dd></div>
       </dl>
-    </div>
-
-    <div v-else-if="activeTab === 'behavior'" class="inspector-content behavior-panel">
-      <div class="behavior-monitor-head"><div><span>当前行为实例</span><strong>{{ task?.behaviorName ?? '无运行实例' }}</strong></div><em>{{ task?.status ?? '未运行' }}</em></div>
-      <div class="behavior-monitor-meta"><span><small>版本</small><strong>{{ task?.behaviorVersion ?? '—' }}</strong></span><span><small>任务进度</small><strong>{{ task?.progress ?? 0 }}%</strong></span><span><small>当前节点</small><strong>{{ task?.phase ?? '—' }}</strong></span></div>
+      <div class="behavior-monitor-head combined"><div><span>行为监控</span><strong>{{ task?.behaviorName ?? '无运行实例' }}</strong></div></div>
       <ol class="behavior-trail">
         <li v-for="step in task?.behaviorSteps ?? []" :key="step.id" :class="step.status">
           <i><span></span></i>
@@ -91,11 +83,11 @@ function confirmDispatchChange() {
         <div class="vehicle-mark"><span>{{ amr?.id.slice(-2) }}</span><i :class="amr?.tone"></i></div>
         <div><p>{{ amr?.name }}</p><strong class="type-data">{{ amr?.model }} · {{ amr?.chassis }}</strong><small>最近连接 {{ amr?.connectedAt }}</small></div>
       </section>
+      <div class="vehicle-battery-hero" :class="{ low: (amr?.battery ?? 100) <= 30, critical: (amr?.battery ?? 100) <= 15 }"><span>当前电量</span><strong class="type-data">{{ amr?.battery ?? '—' }}<small>%</small></strong><i><b :style="{ width: `${amr?.battery ?? 0}%` }"></b></i></div>
       <dl class="vehicle-properties">
-        <div><dt>IP 地址</dt><dd class="type-data">{{ amr?.ip ?? '—' }}</dd></div>
-        <div><dt>初始点位</dt><dd class="type-data">{{ amr?.initialPoint ?? '—' }}</dd></div>
+        <div class="wide"><dt>当前位置</dt><dd class="type-data">{{ formatPosition(amr) }}</dd></div>
+        <div><dt>当前速度</dt><dd class="type-data">{{ amr?.speed ?? '—' }} m/s</dd></div>
         <div><dt>额定载荷</dt><dd class="type-data">{{ amr?.ratedLoad ?? '—' }}</dd></div>
-        <div><dt>当前电量</dt><dd class="type-data">{{ amr?.battery ?? '—' }}%</dd></div>
       </dl>
       <section class="service-scope">
         <header><div><strong>服务范围</strong></div><em>{{ (amr?.serviceDevices.length ?? 0) + (amr?.serviceStations.length ?? 0) }} 项</em></header>
@@ -110,7 +102,7 @@ function confirmDispatchChange() {
         <section class="dispatch-confirm-dialog" role="dialog" aria-modal="true" :aria-label="amr?.dispatchStatus === 'paused' ? '确认恢复接单' : '确认暂停接单'">
           <header><strong>{{ amr?.dispatchStatus === 'paused' ? '恢复接单' : '暂停接单' }}</strong><button type="button" aria-label="关闭" @click="dispatchConfirmOpen = false">×</button></header>
           <div><p>{{ amr?.dispatchStatus === 'paused' ? `${amr?.id} 将重新参与任务调度。` : `${amr?.id} 将停止接收新任务，当前连接和位置上报不受影响。` }}</p></div>
-          <footer><button type="button" @click="dispatchConfirmOpen = false">取消</button><button class="primary" type="button" @click="confirmDispatchChange">确认{{ amr?.dispatchStatus === 'paused' ? '恢复' : '暂停' }}</button></footer>
+          <footer><button type="button" @click="dispatchConfirmOpen = false">取消</button><button class="primary" :class="{ danger: amr?.dispatchStatus !== 'paused' }" type="button" @click="confirmDispatchChange">确认{{ amr?.dispatchStatus === 'paused' ? '恢复' : '暂停' }}</button></footer>
         </section>
       </div>
     </Teleport>
