@@ -61,18 +61,19 @@ function confirmDispatchChange() {
       <section class="task-overview-card">
         <header>
           <div><span>当前任务</span><strong class="type-data">{{ task?.id ?? '暂无任务' }}</strong></div>
-          <em :class="amr?.dispatchStatus === 'paused' ? 'paused' : task?.status">{{ amr?.dispatchStatus === 'paused' ? '暂停接单' : task?.status ?? amr?.status }}</em>
+          <em :class="task?.status">{{ task?.status ?? amr?.status }}</em>
         </header>
         <div class="task-overview-card__facts">
           <div><span>任务类型</span><strong>{{ task?.type ?? '—' }}</strong></div>
           <div><span>请求设备</span><strong class="type-data">{{ task?.requestDeviceId ?? '—' }}</strong></div>
+          <div class="behavior-tree-fact"><span>行为树</span><strong>{{ task?.behaviorName ?? '无运行实例' }}</strong></div>
         </div>
         <footer>
           <div><span>任务进度</span><strong class="type-data">{{ task?.progress ?? 0 }}<small>%</small></strong></div>
           <i><b :style="{ width: `${task?.progress ?? 0}%` }"></b></i>
         </footer>
       </section>
-      <div class="behavior-monitor-head combined"><div><span>行为监控</span><strong>{{ task?.behaviorName ?? '无运行实例' }}</strong></div></div>
+      <div class="behavior-sequence-title"><strong>执行过程</strong><span>{{ task?.behaviorSteps?.length ?? 0 }} 个节点</span></div>
       <ol class="behavior-trail">
         <li v-for="step in task?.behaviorSteps ?? []" :key="step.id" :class="step.status">
           <i><span></span></i>
