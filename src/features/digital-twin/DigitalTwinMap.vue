@@ -46,7 +46,7 @@ const mapTransform = computed(() => {
 const gridPosition = computed(() => `${pan.value.x}px ${pan.value.y}px`)
 
 function startPan(event: PointerEvent) {
-  if ((event.target as Element).closest('.map-amr, .map-route-legend')) return
+  if ((event.target as Element).closest('.map-amr, .map-route-legend, .resource-service-badge')) return
   dragging.value = true
   dragOrigin = { x: event.clientX, y: event.clientY }
   panOrigin = { ...pan.value }
@@ -106,15 +106,25 @@ function endPan(event: PointerEvent) {
         <g class="logic-resource-layer">
           <g v-for="resource in visibleResources" :key="resource.id" :class="['logic-resource', `resource-${resource.type}`, resource.state, { 'service-highlight': selectedServiceResources.has(resource.id), muted: selectedAmrId && !selectedServiceResources.has(resource.id) }]" :transform="`translate(${resource.position.x} ${resource.position.y})`">
             <path d="M0 0V-8"/><rect x="-23" y="-27" width="46" height="18" rx="4"/>
-            <g
+            <foreignObject
               v-for="(serviceAmr, index) in serviceAmrsForResource(resource.id)"
               :key="`${resource.id}-${serviceAmr.id}`"
               :class="['resource-service-badge', { active: selectedAmrId === serviceAmr.id, 'badge-muted': selectedAmrId && selectedAmrId !== serviceAmr.id }]"
-              :transform="`translate(${-16 + index * 14} -31)`"
+              :x="-22.5 + index * 14"
+              y="-37.5"
+              width="13"
+              height="13"
             >
-              <rect x="-6.5" y="-6.5" width="13" height="13" rx="2"/>
-              <text y="2.4">{{ Number(serviceAmr.id.slice(-2)) }}</text>
-            </g>
+              <button
+                xmlns="http://www.w3.org/1999/xhtml"
+                type="button"
+                :aria-label="`选择 ${serviceAmr.id}，点亮其服务资源`"
+                @pointerdown.stop
+                @click.stop="emit('selectAmr', serviceAmr.id)"
+                @keydown.enter.stop.prevent="emit('selectAmr', serviceAmr.id)"
+                @keydown.space.stop.prevent="emit('selectAmr', serviceAmr.id)"
+              >{{ Number(serviceAmr.id.slice(-2)) }}</button>
+            </foreignObject>
             <text y="-15">{{ resource.label }}</text>
           </g>
         </g>

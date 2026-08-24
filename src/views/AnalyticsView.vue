@@ -23,7 +23,6 @@ const alarmPage = ref(1)
 const taskPageSize = 10
 const alarmPageSize = 10
 
-const rangeLabel = computed(() => range.value === 'today' ? '今日' : range.value === '7d' ? '近 7 天' : '近 30 天')
 const filteredTasks = computed(() => {
   const keyword = taskKeyword.value.trim().toLowerCase()
   return (vehicleData.value?.tasks ?? []).filter((task) => {
@@ -105,11 +104,11 @@ onMounted(loadAll)
 
     <template v-else-if="activeTab === 'global' && globalData">
       <section class="analytics-metrics" aria-label="全局分析指标">
-        <article class="primary"><span>全局 AMR 稼动率</span><strong>{{ globalData.summary.utilizationRate }}<small>%</small></strong><em>{{ rangeLabel }}</em></article>
-        <article><span>任务量</span><strong>{{ globalData.summary.taskCount }}</strong><em>完成 {{ globalData.summary.completedCount }}</em></article>
-        <article><span>任务完成率</span><strong>{{ globalData.summary.completionRate }}<small>%</small></strong><em>{{ rangeLabel }}</em></article>
-        <article class="warning"><span>报警 / 异常</span><strong>{{ globalData.summary.alarmCount }}</strong><em>累计 {{ formatMinutes(globalData.summary.abnormalDurationMinutes) }}</em></article>
-        <article><span>统计车辆</span><strong>{{ globalData.vehicles.length }}</strong><em>当前运行范围</em></article>
+        <article class="primary"><span>全局 AMR 稼动率</span><strong>{{ globalData.summary.utilizationRate }}<small>%</small></strong></article>
+        <article><span>任务量</span><strong>{{ globalData.summary.taskCount }}</strong></article>
+        <article><span>任务完成率</span><strong>{{ globalData.summary.completionRate }}<small>%</small></strong></article>
+        <article class="warning"><span>报警 / 异常</span><strong>{{ globalData.summary.alarmCount }}</strong></article>
+        <article><span>统计车辆</span><strong>{{ globalData.vehicles.length }}</strong></article>
       </section>
 
       <div class="analytics-grid analytics-grid--trend">
@@ -118,14 +117,14 @@ onMounted(loadAll)
           <AnalyticsTrendChart :points="globalData.trend" />
         </section>
         <section class="analytics-panel state-panel">
-          <header><strong>状态时长占比</strong><span>{{ rangeLabel }}</span></header>
+          <header><strong>状态时长占比</strong></header>
           <StateDurationPanel :items="globalData.stateDurations" />
         </section>
       </div>
 
       <div class="analytics-grid analytics-grid--ranking">
         <section class="analytics-panel vehicle-ranking-panel">
-          <header><strong>车辆利用情况</strong><span>按稼动率排序</span></header>
+          <header><strong>车辆利用情况</strong></header>
           <div class="vehicle-utilization-list">
             <button v-for="vehicle in globalData.vehicles" :key="vehicle.amrId" type="button" @click="openVehicle(vehicle.amrId)">
               <span class="vehicle-rank-id type-data">{{ vehicle.amrId }}</span>
@@ -137,7 +136,7 @@ onMounted(loadAll)
           </div>
         </section>
         <section class="analytics-panel alarm-summary-panel">
-          <header><strong>报警与异常统计</strong><span>{{ rangeLabel }}</span></header>
+          <header><strong>报警与异常统计</strong></header>
           <ol>
             <li v-for="(alarm, index) in globalData.alarmTypes" :key="alarm.type"><b>{{ String(index + 1).padStart(2, '0') }}</b><span>{{ alarm.type }}</span><strong>{{ alarm.count }}</strong><small>{{ formatMinutes(alarm.affectedMinutes) }}</small></li>
           </ol>
@@ -152,15 +151,15 @@ onMounted(loadAll)
       </section>
 
       <section class="analytics-metrics vehicle-metrics" aria-label="单车分析指标">
-        <article class="primary"><span>单车稼动率</span><strong>{{ vehicleData.summary.utilizationRate }}<small>%</small></strong><em>{{ rangeLabel }}</em></article>
-        <article><span>任务量</span><strong>{{ vehicleData.summary.taskCount }}</strong><em>完成 {{ vehicleData.summary.completedCount }}</em></article>
-        <article><span>任务完成率</span><strong>{{ vehicleData.summary.completionRate }}<small>%</small></strong><em>{{ rangeLabel }}</em></article>
-        <article class="warning"><span>报警 / 异常</span><strong>{{ vehicleData.summary.alarmCount }}</strong><em>累计 {{ formatMinutes(vehicleData.summary.abnormalDurationMinutes) }}</em></article>
+        <article class="primary"><span>单车稼动率</span><strong>{{ vehicleData.summary.utilizationRate }}<small>%</small></strong></article>
+        <article><span>任务量</span><strong>{{ vehicleData.summary.taskCount }}</strong></article>
+        <article><span>任务完成率</span><strong>{{ vehicleData.summary.completionRate }}<small>%</small></strong></article>
+        <article class="warning"><span>报警 / 异常</span><strong>{{ vehicleData.summary.alarmCount }}</strong></article>
       </section>
 
       <div class="analytics-grid analytics-grid--trend">
         <section class="analytics-panel trend-panel"><header><strong>单车历史趋势</strong><div><span><i class="line"></i>稼动率</span><span><i class="bar"></i>任务量</span></div></header><AnalyticsTrendChart :points="vehicleData.trend" /></section>
-        <section class="analytics-panel state-panel"><header><strong>运行时长构成</strong><span>{{ rangeLabel }}</span></header><StateDurationPanel :items="vehicleData.stateDurations" /></section>
+        <section class="analytics-panel state-panel"><header><strong>运行时长构成</strong></header><StateDurationPanel :items="vehicleData.stateDurations" /></section>
       </div>
 
       <div class="analytics-grid analytics-grid--records">
