@@ -24,7 +24,7 @@ export function useTwinSimulation(amrsSource:MaybeRefOrGetter<Amr[]>,tasksSource
     animationFrame=requestAnimationFrame(frame)
   }
   const progressFor=(amr:Amr,task:Task)=>{
-    if(reduceMotion.value||amr.status!=='执行中'||task.status!=='运行中'||!task.plannedPath)return 0
+    if(reduceMotion.value||amr.status!=='运行'||task.status!=='运行中'||!task.plannedPath)return 0
     const offset=Number(amr.id.slice(-2))*1700
     const cycle=((elapsed.value+offset)%CYCLE_MS)/CYCLE_MS
     return Math.min(cycle/MOVE_RATIO,1)
@@ -38,7 +38,7 @@ export function useTwinSimulation(amrsSource:MaybeRefOrGetter<Amr[]>,tasksSource
     const tasks=toValue(tasksSource)
     return toValue(amrsSource).map(amr=>{
       const task=tasks.find(item=>item.id===amr.taskId)
-      if(!task||amr.status!=='执行中'||task.status!=='运行中'||!task.plannedPath||reduceMotion.value)return amr
+      if(!task||amr.status!=='运行'||task.status!=='运行中'||!task.plannedPath||reduceMotion.value)return amr
       const progress=routeProgress.value[task.id]??0;const path=geometry(task.plannedPath);const length=path.getTotalLength();const current=path.getPointAtLength(length*progress);const next=path.getPointAtLength(Math.min(length,length*progress+1));const heading=Math.atan2(next.y-current.y,next.x-current.x)*180/Math.PI+90
       return {...amr,position:{x:current.x,y:current.y},heading}
     })

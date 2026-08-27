@@ -25,14 +25,20 @@ const selectedAmr = computed(() => props.amrs.find((amr) => amr.id === props.sel
 const visibleRouteTasks = computed(() => props.selectedTaskId
   ? props.tasks.filter(task => task.id === props.selectedTaskId && task.amrId && task.plannedPath)
   : [])
-const isRunnable = (amr: Amr) => amr.connectionStatus !== 'offline' && amr.dispatchStatus !== 'paused' && amr.runnable !== false
-const selectedServiceResources = computed(() => !selectedAmr.value || !isRunnable(selectedAmr.value)
+const isServiceActive = (amr: Amr) => amr.status !== '离线' && amr.status !== '停用'
+const selectedServiceResources = computed(() => !selectedAmr.value || !isServiceActive(selectedAmr.value)
   ? new Set<string>()
-  : new Set([...(selectedAmr.value?.serviceDevices ?? []), ...(selectedAmr.value?.serviceStations ?? [])]))
-const visibleResources = computed(() => props.resources.filter((resource) => resource.type === 'machine' || resource.type === 'home'))
+  : new Set(selectedAmr.value?.serviceDevices ?? []))
+const visibleResources = computed(() => props.resources.filter((resource) => resource.type === 'machine'))
+
+function resourceDirection(resourceId: string) {
+  const number = Number(resourceId.slice(-2))
+  if (!Number.isFinite(number)) return 'right'
+  return Math.floor((number - 1) / 6) % 2 === 0 ? 'right' : 'left'
+}
 
 function serviceAmrsForResource(resourceId: string) {
-  return props.amrs.filter((amr) => isRunnable(amr) && (amr.serviceDevices.includes(resourceId) || amr.serviceStations.includes(resourceId)))
+  return props.amrs.filter((amr) => isServiceActive(amr) && amr.serviceDevices.includes(resourceId))
 }
 
 const mapTransform = computed(() => {
@@ -105,7 +111,7 @@ function endPan(event: PointerEvent) {
 
         <g class="logic-resource-layer">
           <g v-for="resource in visibleResources" :key="resource.id" :class="['logic-resource', `resource-${resource.type}`, resource.state, { 'service-highlight': selectedServiceResources.has(resource.id), muted: selectedAmrId && !selectedServiceResources.has(resource.id) }]" :transform="`translate(${resource.position.x} ${resource.position.y})`">
-            <path d="M0 0V-8"/><rect x="-23" y="-27" width="46" height="18" rx="4"/>
+            <path d="M0 0V-8"/><rect x="-28" y="-27" width="56" height="18" rx="4"/>
             <foreignObject
               v-for="(serviceAmr, index) in serviceAmrsForResource(resource.id)"
               :key="`${resource.id}-${serviceAmr.id}`"
@@ -125,12 +131,14 @@ function endPan(event: PointerEvent) {
                 @keydown.space.stop.prevent="emit('selectAmr', serviceAmr.id)"
               >{{ Number(serviceAmr.id.slice(-2)) }}</button>
             </foreignObject>
+            <path v-if="resourceDirection(resource.id) === 'left'" class="resource-direction" d="M3-3L-3 0L3 3Z" transform="translate(-33 -18)"/>
+            <path v-else class="resource-direction" d="M-3-3L3 0L-3 3Z" transform="translate(33 -18)"/>
             <text y="-15">{{ resource.label }}</text>
           </g>
         </g>
 
         <g class="amr-layer">
-          <g v-for="amr in amrs" :key="amr.id" :transform="`translate(${amr.position.x} ${amr.position.y})`" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id, 'dispatch-paused': amr.dispatchStatus === 'paused' }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}${amr.dispatchStatus === 'paused' ? '，暂停接单' : ''}`" @click="emit('selectAmr', amr.id)" @keydown.enter="emit('selectAmr', amr.id)">
+          <g v-for="amr in amrs" :key="amr.id" :transform="`translate(${amr.position.x} ${amr.position.y})`" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id, 'dispatch-paused': amr.status === '停用' }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}`" @click="emit('selectAmr', amr.id)" @keydown.enter="emit('selectAmr', amr.id)">
             <rect class="amr-hit-target" x="-22" y="-20" width="44" height="40" rx="10"/>
             <circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-one" r="18"/><circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-two" r="18"/>
             <circle class="selection-ring" r="17"/>

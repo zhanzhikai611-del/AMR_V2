@@ -1,5 +1,5 @@
 export type AnalyticsRange = 'today' | '7d' | '30d'
-export type AnalyticsState = 'running' | 'idle' | 'waiting' | 'charging' | 'abnormal'
+export type AnalyticsState = 'running' | 'idle' | 'charging' | 'abnormal' | 'disabled' | 'offline'
 
 export interface AnalyticsQuery {
   scopeId: string
@@ -35,9 +35,10 @@ export interface VehicleUtilization {
   taskCount: number
   runningMinutes: number
   idleMinutes: number
-  waitingMinutes: number
   chargingMinutes: number
   abnormalMinutes: number
+  disabledMinutes: number
+  offlineMinutes: number
 }
 
 export interface AlarmTypeSummary {

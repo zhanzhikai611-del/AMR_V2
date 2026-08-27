@@ -10,7 +10,7 @@ export const useMonitorContextStore = defineStore('monitor-context', {
     selectedTaskId: null as string | null,
     selectedAmrId: null as string | null,
     selectedEventId: null as string | null,
-    taskFilter: 'all' as 'all' | 'running' | 'waiting' | 'abnormal',
+    taskFilter: 'all' as 'all' | 'running' | 'abnormal',
   }),
   getters: {
     selectedTask(state): Task | null {
@@ -22,7 +22,6 @@ export const useMonitorContextStore = defineStore('monitor-context', {
     filteredTasks(state): Task[] {
       const tasks = state.snapshot?.tasks ?? []
       if (state.taskFilter === 'running') return tasks.filter((task) => task.status === '运行中')
-      if (state.taskFilter === 'waiting') return tasks.filter((task) => task.status === '等待中' || task.status === '待调度')
       if (state.taskFilter === 'abnormal') return tasks.filter((task) => task.status === '异常')
       return tasks
     },

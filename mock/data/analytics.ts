@@ -20,8 +20,8 @@ const amrs = [
   { id: 'AMR-06', name: '备用搬运车 01', model: 'LP-200', rate: 76.9 },
 ]
 
-const stateOrder: AnalyticsState[] = ['running', 'idle', 'waiting', 'charging', 'abnormal']
-const globalStateRatios = [62, 18, 8, 9, 3]
+const stateOrder: AnalyticsState[] = ['running', 'idle', 'charging', 'abnormal', 'disabled', 'offline']
+const globalStateRatios = [62, 26, 9, 3, 0, 0]
 
 function dateLabel(offset: number) {
   const date = new Date(2026, 7, 22)
@@ -73,17 +73,17 @@ function vehicleRows(days: number): VehicleUtilization[] {
     const runningMinutes = Math.round(total * amr.rate / 100)
     const abnormalMinutes = index === 4 ? days * 28 : days * (index % 3) * 4
     const chargingMinutes = Math.round(total * (0.08 + index * 0.008))
-    const waitingMinutes = Math.round(total * (0.06 + (index % 2) * 0.02))
     return {
       amrId: amr.id,
       name: amr.name,
       utilizationRate: amr.rate,
       taskCount: Math.round(days * (5.4 + index * 0.45)),
       runningMinutes,
-      idleMinutes: Math.max(0, total - runningMinutes - chargingMinutes - waitingMinutes - abnormalMinutes),
-      waitingMinutes,
+      idleMinutes: Math.max(0, total - runningMinutes - chargingMinutes - abnormalMinutes),
       chargingMinutes,
       abnormalMinutes,
+      disabledMinutes: 0,
+      offlineMinutes: 0,
     }
   }).sort((a, b) => b.utilizationRate - a.utilizationRate)
 }
@@ -164,7 +164,7 @@ export function createAmrAnalytics(amrId: string, query: AnalyticsQuery): AmrAna
     taskCount: Math.max(1, Math.round(point.taskCount / 6 + adjustment / 4)),
     completedCount: Math.max(1, Math.round(point.completedCount / 6 + adjustment / 5)),
   }))
-  const ratios = [Math.round(profile.rate), 100 - Math.round(profile.rate) - 17, 6, 9, 2]
+  const ratios = [Math.round(profile.rate), 100 - Math.round(profile.rate) - 17, 9, 2, 6, 0]
   const historyDays = rangeDays(query.range)
   const alarms = alarmHistory.filter((_, index) => Math.floor(index / 2) < historyDays)
   const summary = summaryFrom(trend, alarms.length, alarms.length * 18)

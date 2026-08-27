@@ -1,7 +1,7 @@
 import type { TaskRecord } from '../../src/types/domain'
 
 export const taskRecords: TaskRecord[] = [
-  { id: 'TSK-260822-017', type: '成品转运', requestDeviceId: 'CNC-01', amrId: 'AMR-01', result: '已完成', requestedAt: '2026-08-22 09:18:22', finishedAt: '2026-08-22 09:27:14', duration: '08:52', behaviorName: 'CNC 成品转运', behaviorVersion: 'v2.4', summary: '设备请求已完成，车辆返回 HOME-01' },
+  { id: 'TSK-260822-017', type: '成品转运', requestDeviceId: 'CNC-01', amrId: 'AMR-01', result: '已完成', requestedAt: '2026-08-22 09:18:22', finishedAt: '2026-08-22 09:27:14', duration: '08:52', behaviorName: 'CNC 成品转运', behaviorVersion: 'v2.4', summary: '设备请求已完成，车辆返回 CNC-12' },
   { id: 'TSK-260822-016', type: '线边补料', requestDeviceId: 'CNC-03', amrId: 'AMR-02', result: '已完成', requestedAt: '2026-08-22 08:56:07', finishedAt: '2026-08-22 09:03:39', duration: '07:32', behaviorName: '线边补料标准流程', behaviorVersion: 'v1.8', summary: '补料交接完成' },
   { id: 'TSK-260821-048', type: '空箱回收', requestDeviceId: 'CNC-07', amrId: 'AMR-05', result: '已取消', requestedAt: '2026-08-21 17:42:18', finishedAt: '2026-08-21 17:53:26', duration: '11:08', behaviorName: '空箱回收流程', behaviorVersion: 'v1.3', summary: '异常处理后取消任务' },
   { id: 'TSK-260821-047', type: '半成品转运', requestDeviceId: 'CNC-06', amrId: 'AMR-06', result: '已完成', requestedAt: '2026-08-21 16:21:44', finishedAt: '2026-08-21 16:29:51', duration: '08:07', behaviorName: '半成品转运流程', behaviorVersion: 'v2.1', summary: '任务完成并释放全部资源' },

@@ -23,18 +23,6 @@ function closeInspector() {
   monitor.clearSelection()
 }
 
-function updateServiceScope(payload: { amrId: string; serviceDevices: string[] }) {
-  const amr = monitor.snapshot?.amrs.find((item) => item.id === payload.amrId)
-  if (amr) {
-    if (!amr.maxServiceDevices) amr.maxServiceDevices = [...amr.serviceDevices]
-    amr.serviceDevices = [...payload.serviceDevices]
-  }
-}
-
-function toggleDispatch(amrId: string) {
-  const amr = monitor.snapshot?.amrs.find((item) => item.id === amrId)
-  if (amr) amr.dispatchStatus = amr.dispatchStatus === 'paused' ? 'enabled' : 'paused'
-}
 onMounted(() => { if (!monitor.snapshot) void monitor.loadSnapshot() })
 </script>
 
@@ -63,8 +51,6 @@ onMounted(() => { if (!monitor.snapshot) void monitor.loadSnapshot() })
             :amr="selectedDisplayAmr"
             @collapse="inspectorCollapsed = true"
             @close="closeInspector"
-            @update-service-scope="updateServiceScope"
-            @toggle-dispatch="toggleDispatch"
           />
         </Transition>
         <button v-if="(monitor.selectedAmrId || monitor.selectedTaskId) && inspectorCollapsed" class="object-inspector-reopen" type="button" @click="inspectorCollapsed = false"><span>{{ monitor.selectedAmr?.id ?? monitor.selectedTask?.id }}</span><b>展开详情</b><i>‹</i></button>

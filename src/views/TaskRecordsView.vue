@@ -27,15 +27,12 @@ const cancelTarget = ref<Task | null>(null)
 const canceling = ref(false)
 const cancelError = ref('')
 
-const waitingCount = computed(() => activeTasks.value.filter((task) => task.status === '待调度' || task.status === '等待中').length)
 const runningCount = computed(() => activeTasks.value.filter((task) => task.status === '运行中').length)
 const abnormalCount = computed(() => activeTasks.value.filter((task) => task.status === '异常').length)
 
 const filteredLiveTasks = computed(() => activeTasks.value.filter((task) => {
   const matchesQuery = `${task.id}${task.type}${task.requestDeviceId}${task.amrId ?? ''}${task.phase}`.toLowerCase().includes(liveQuery.value.toLowerCase())
-  const matchesStatus = liveStatus.value === '全部状态'
-    || (liveStatus.value === '等待任务' && (task.status === '待调度' || task.status === '等待中'))
-    || task.status === liveStatus.value
+  const matchesStatus = liveStatus.value === '全部状态' || task.status === liveStatus.value
   return matchesQuery && matchesStatus
 }))
 
@@ -64,7 +61,6 @@ watch(livePageCount, (count) => { if (liveCurrentPage.value > count) liveCurrent
 function statusClass(status: Task['status'] | TaskRecord['result']) {
   if (status === '已完成') return 'success'
   if (status === '已取消') return 'neutral'
-  if (status === '待调度' || status === '等待中') return 'waiting'
   if (status === '异常') return 'fault'
   return 'running'
 }
@@ -140,7 +136,6 @@ onMounted(async () => {
     <template v-if="activeTab === 'live'">
       <section class="dispatch-summary" aria-label="实时任务摘要">
         <article class="fault"><span>异常</span><strong>{{ abnormalCount }}</strong></article>
-        <article class="waiting"><span>待调度</span><strong>{{ waitingCount }}</strong></article>
         <article class="running"><span>执行中</span><strong>{{ runningCount }}</strong></article>
         <article><span>当前任务</span><strong>{{ activeTasks.length }}</strong></article>
       </section>
@@ -149,13 +144,13 @@ onMounted(async () => {
         <div class="dispatch-toolbar">
           <label><span>⌕</span><input v-model="liveQuery" placeholder="搜索任务、设备、AMR 或当前阶段"></label>
           <select v-model="liveStatus" aria-label="筛选实时任务状态">
-            <option>全部状态</option><option>等待任务</option><option>待调度</option><option>运行中</option><option>等待中</option><option>异常</option>
+            <option>全部状态</option><option>运行中</option><option>异常</option>
           </select>
         </div>
 
         <div class="resource-table-wrap dispatch-table-wrap">
           <table class="resource-table dispatch-table">
-            <thead><tr><th>任务</th><th>请求设备</th><th>执行 AMR</th><th>当前阶段</th><th>等待 / 执行时长</th><th>状态</th><th>操作</th></tr></thead>
+            <thead><tr><th>任务</th><th>请求设备</th><th>执行 AMR</th><th>当前阶段</th><th>执行时长</th><th>状态</th><th>操作</th></tr></thead>
             <tbody>
               <tr v-for="task in paginatedLiveTasks" :key="task.id" tabindex="0" @click="selectLiveTask(task)" @keydown.enter="selectLiveTask(task)">
                 <td><strong>{{ task.id }}</strong><small>{{ task.type }}</small></td>
@@ -232,7 +227,7 @@ onMounted(async () => {
             <template v-if="selected.kind === 'live'">
               <div><dt>当前状态</dt><dd><span class="asset-status" :class="statusClass(selected.task.status)">{{ selected.task.status }}</span></dd></div>
               <div><dt>当前阶段</dt><dd>{{ selected.task.phase }}</dd></div>
-              <div><dt>等待 / 执行时长</dt><dd class="type-data">{{ selected.task.duration }}</dd></div>
+              <div><dt>执行时长</dt><dd class="type-data">{{ selected.task.duration }}</dd></div>
             </template>
             <template v-else>
               <div><dt>任务结果</dt><dd><span class="asset-status" :class="statusClass(selected.task.result)">{{ selected.task.result }}</span></dd></div>

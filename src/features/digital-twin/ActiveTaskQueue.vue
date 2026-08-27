@@ -4,19 +4,18 @@ import type { Task } from '../../types/domain'
 defineProps<{
   tasks: Task[]
   selectedTaskId: string | null
-  filter: 'all' | 'running' | 'waiting' | 'abnormal'
+  filter: 'all' | 'running' | 'abnormal'
 }>()
 
 const emit = defineEmits<{
   select: [id: string]
-  filter: [value: 'all' | 'running' | 'waiting' | 'abnormal']
+  filter: [value: 'all' | 'running' | 'abnormal']
   collapse: []
 }>()
 
 const filters = [
   { id: 'all', label: '全部' },
   { id: 'running', label: '执行中' },
-  { id: 'waiting', label: '等待' },
   { id: 'abnormal', label: '异常' },
 ] as const
 

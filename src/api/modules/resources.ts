@@ -12,7 +12,7 @@ export async function getResourceCatalog(): Promise<ResourceCatalog> {
     await new Promise((resolve) => window.setTimeout(resolve, 120))
     return structuredClone({
       amrs: twinSnapshot.amrs,
-      devices: twinSnapshot.resources.filter((item) => item.type === 'machine' || item.type === 'home'),
+      devices: twinSnapshot.resources.filter((item) => item.type === 'machine'),
       models: amrModels,
       deviceTypes,
       maps: mapDefinitions,

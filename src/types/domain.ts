@@ -1,4 +1,4 @@
-export type Tone = 'running' | 'idle' | 'waiting' | 'charging' | 'fault' | 'success'
+export type Tone = 'running' | 'idle' | 'charging' | 'fault' | 'disabled' | 'offline' | 'success'
 
 export interface Point {
   x: number
@@ -8,7 +8,7 @@ export interface Point {
 export interface BehaviorStep {
   id: string
   name: string
-  status: 'pending' | 'running' | 'success' | 'failure' | 'waiting' | 'skipped'
+  status: 'pending' | 'running' | 'success' | 'failure' | 'skipped'
   duration: string
   detail?: string
 }
@@ -27,7 +27,7 @@ export interface Task {
   amrId: string | null
   requestDeviceId: string
   phase: string
-  status: '待调度' | '运行中' | '等待中' | '异常'
+  status: '运行中' | '异常'
   priority: '普通' | '高'
   duration: string
   progress: number
@@ -48,7 +48,7 @@ export interface Amr {
   initialPoint: string
   connectionStatus?: 'online' | 'offline'
   runnable?: boolean
-  status: '执行中' | '空闲' | '等待' | '充电' | '故障'
+  status: '运行' | '空闲' | '异常' | '离线' | '充电' | '停用'
   tone: Tone
   battery: number
   speed: number
@@ -67,10 +67,10 @@ export interface Amr {
 
 export interface MapResource {
   id: string
-  type: 'machine' | 'buffer' | 'charge' | 'door' | 'home' | 'recycle'
+  type: 'machine' | 'buffer' | 'charge' | 'door' | 'recycle'
   label: string
   position: Point
-  state?: 'normal' | 'waiting' | 'fault'
+  state?: 'normal' | 'fault'
   name?: string
   group?: string
   enabled?: boolean
@@ -93,9 +93,8 @@ export interface TrafficZone {
   width: number
   height: number
   capacity: number
-  status: 'available' | 'occupied' | 'waiting' | 'blocked'
+  status: 'available' | 'occupied' | 'blocked'
   occupantId?: string
-  waitingCount?: number
 }
 
 export interface TrafficSegment {
@@ -105,7 +104,6 @@ export interface TrafficSegment {
   direction: 'one-way' | 'two-way'
   speedLimit: number
   occupantId?: string
-  waitingCount?: number
 }
 
 export interface TwinSnapshot {
@@ -172,8 +170,8 @@ export interface MapPoint {
   x: number
   y: number
   yaw: number
-  type: '路网节点' | '等待点' | '普通站点'
-  poseType: 'NORMAL' | 'WAITING' | 'DOCK'
+  type: '路网节点' | '普通站点'
+  poseType: 'NORMAL' | 'DOCK'
   selectable: boolean
   relocatable: boolean
   disabled: boolean
@@ -183,11 +181,11 @@ export interface MapPoint {
   dockable: boolean
   parkable: boolean
   deviceId: string
-  relationType: '无关联' | '上料位' | '下料位' | '上下料位' | '等待位'
+  relationType: '无关联' | '上料位' | '下料位' | '上下料位'
   serviceActions: Array<'LOAD' | 'UNLOAD'>
 }
 export interface MapRoute { id: string; startId: string; endId: string; direction: string; speed: number }
-export interface MapPlacedResource { id: string; resourceType: 'CNC' | 'HOME' | 'GATE' | 'BUF' | 'CHG'; pointId: string; x: number; y: number; approach: string }
+export interface MapPlacedResource { id: string; resourceType: 'CNC' | 'GATE' | 'BUF' | 'CHG'; pointId: string; x: number; y: number; approach: string }
 export interface MapControlZone { id: string; x: number; y: number; width: number; height: number; type: string }
 export interface MapEditorDraft {
   mapId: string

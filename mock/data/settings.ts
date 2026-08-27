@@ -14,7 +14,7 @@ export const systemRoles:SystemRole[] = [
   {name:'只读用户',users:3,summary:'查看获授权范围内的状态、列表、详情和记录',boundary:'无创建、编辑和控制权限',tone:'gray'},
 ]
 export const dictionaryItems:DictionaryItem[] = [
-  {category:'AMR_STATUS',code:'IDLE',name:'空闲',color:'#91A1AD',order:10,status:'启用'},{category:'AMR_STATUS',code:'RUNNING',name:'执行中',color:'#1677FF',order:20,status:'启用'},{category:'AMR_STATUS',code:'CHARGING',name:'充电中',color:'#00A6A6',order:30,status:'启用'},{category:'AMR_STATUS',code:'FAULT',name:'异常',color:'#D92D20',order:40,status:'启用'},{category:'TASK_STATUS',code:'PENDING',name:'待调度',color:'#F59E0B',order:10,status:'启用'},{category:'TASK_STATUS',code:'RUNNING',name:'运行中',color:'#1677FF',order:20,status:'启用'},{category:'DEVICE_STATUS',code:'WAIT_AMR',name:'等待 AMR',color:'#F59E0B',order:30,status:'启用'},
+  {category:'AMR_STATUS',code:'RUNNING',name:'运行',color:'#1677FF',order:10,status:'启用'},{category:'AMR_STATUS',code:'IDLE',name:'空闲',color:'#20A66A',order:20,status:'启用'},{category:'AMR_STATUS',code:'ABNORMAL',name:'异常',color:'#D92D20',order:30,status:'启用'},{category:'AMR_STATUS',code:'OFFLINE',name:'离线',color:'#526473',order:40,status:'启用'},{category:'AMR_STATUS',code:'CHARGING',name:'充电',color:'#00A6A6',order:50,status:'启用'},{category:'AMR_STATUS',code:'DISABLED',name:'停用',color:'#8192A1',order:60,status:'启用'},{category:'TASK_STATUS',code:'RUNNING',name:'运行中',color:'#1677FF',order:10,status:'启用'},{category:'TASK_STATUS',code:'ABNORMAL',name:'异常',color:'#D92D20',order:20,status:'启用'},
 ]
 export const operationLogs:OperationLog[] = [
   {time:'14:52:16',user:'dev.dispatch',module:'任务管理',action:'调整派单策略',object:'规则优先',result:'成功',description:'APS 辅助排程保持关闭'},

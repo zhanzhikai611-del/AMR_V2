@@ -73,7 +73,7 @@ onMounted(async () => {
             <td><strong>{{ tree.name }}</strong></td>
             <td>{{ tree.summary }}</td>
             <td class="type-data">{{ tree.version }}</td>
-            <td><span class="asset-status" :class="tree.status === '已发布' ? 'success' : 'waiting'">{{ tree.status }}</span></td>
+            <td><span class="asset-status" :class="tree.status === '已发布' ? 'success' : 'draft'">{{ tree.status }}</span></td>
             <td class="type-data">{{ tree.updatedAt }}</td>
             <td><div class="row-actions"><button v-if="tree.kind === 'behavior'" class="table-action binding-action" @click="openBinding(tree)">绑定</button><button class="table-action" @click="router.push(`/behaviors/${tree.id}/edit?kind=${tree.kind}`)">编辑</button><button class="danger-link">删除</button></div></td>
           </tr>

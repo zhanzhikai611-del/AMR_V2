@@ -3,7 +3,7 @@ import type { StateDuration } from '../../types/analytics'
 
 defineProps<{ items: StateDuration[] }>()
 
-const labels = { running: '运行', idle: '空闲', waiting: '等待', charging: '充电', abnormal: '异常' }
+const labels = { running: '运行', idle: '空闲', charging: '充电', abnormal: '异常', disabled: '停用', offline: '离线' }
 
 function formatMinutes(minutes: number) {
   const hours = Math.floor(minutes / 60)
