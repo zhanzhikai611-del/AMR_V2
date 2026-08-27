@@ -131,8 +131,8 @@ function endPan(event: PointerEvent) {
                 @keydown.space.stop.prevent="emit('selectAmr', serviceAmr.id)"
               >{{ Number(serviceAmr.id.slice(-2)) }}</button>
             </foreignObject>
-            <path v-if="resourceDirection(resource.id) === 'left'" class="resource-direction" d="M3-3L-3 0L3 3Z" transform="translate(-33 -18)"/>
-            <path v-else class="resource-direction" d="M-3-3L3 0L-3 3Z" transform="translate(33 -18)"/>
+            <path v-if="resourceDirection(resource.id) === 'left'" class="resource-direction" d="M0-3L3 3L-3 3Z" transform="translate(-33 -18)"/>
+            <path v-else class="resource-direction" d="M0-3L3 3L-3 3Z" transform="translate(33 -18)"/>
             <text y="-15">{{ resource.label }}</text>
           </g>
         </g>
