@@ -3,19 +3,29 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getMapDraft, publishMapDraft, saveMapDraft, validateMapDraft } from '../api/modules/maps'
 import { getResourceCatalog } from '../api/modules/resources'
-import type { MapDefinition, MapEditorDraft, MapEditorTool, MapPoint, MapViewMode } from '../types/domain'
+import type { MapDefinition, MapEditorDraft, MapEditorTool, MapPoint } from '../types/domain'
 import pointcloudMap from '../assets/cnc-pointcloud-map.png'
 
 type Selection = { kind:'point'|'route'|'resource'|'zone'; id:string } | null
+const MAP_WIDTH = 760
+const MAP_HEIGHT = 520
 const route = useRoute(); const router = useRouter(); const mapId = String(route.params.id)
-const draft = ref<MapEditorDraft>(); const mapInfo = ref<MapDefinition>(); const tool = ref<MapEditorTool>('select'); const viewMode = ref<MapViewMode>('overlay')
+const draft = ref<MapEditorDraft>(); const mapInfo = ref<MapDefinition>(); const tool = ref<MapEditorTool>('select')
 const zoom = ref(100); const selected = ref<Selection>(null); const dirty = ref(false); const saving = ref(false); const notice = ref(''); const cursor = ref({x:0,y:0})
+const cameraCenter = ref({x:MAP_WIDTH/2,y:MAP_HEIGHT/2}); const panning = ref(false); const searchQuery = ref('')
+let panStart = {clientX:0,clientY:0,centerX:0,centerY:0}; let panMoved = false
 const propertyCollapsed = ref(false)
 const cncDeviceIds = ref<string[]>([])
 const pending = ref<{first?: {x:number;y:number}; startId?:string; endId?:string}>({})
 const direction = ref('双向通行'); const speed = ref(1.2); const pointType = ref<'路网节点'>('路网节点'); const resourceId = ref('CNC-07'); const approach = ref('0° · 向东'); const zoneType = ref('互斥区 · 同时允许 1 台 AMR')
 const tools: Array<{id:MapEditorTool;icon:string;label:string}> = [{id:'select',icon:'↖',label:'选择'},{id:'point',icon:'●',label:'新建路网点'},{id:'resource',icon:'▣',label:'放置资源'},{id:'route',icon:'╱',label:'创建路线'},{id:'zone',icon:'□',label:'绘制管制区'},{id:'delete',icon:'⌫',label:'删除所选'}]
 const toolLabel = computed(() => tools.find(item=>item.id===tool.value)?.label ?? '')
+const viewBox = computed(() => {
+  const width=MAP_WIDTH/(zoom.value/100); const height=MAP_HEIGHT/(zoom.value/100)
+  return `${cameraCenter.value.x-width/2} ${cameraCenter.value.y-height/2} ${width} ${height}`
+})
+const labelsVisible = computed(() => zoom.value >= 170)
+const symbolScale = computed(() => Math.min(1.15, 100/zoom.value))
 const selectedObject = computed(() => {
   if (!draft.value || !selected.value) return null
   const pools = { point:draft.value.points, route:draft.value.routes, resource:draft.value.resources, zone:draft.value.zones }
@@ -34,11 +44,52 @@ function toggleServiceAction(action:'LOAD'|'UNLOAD'){
   markDirty()
 }
 function pointById(id:string) { return draft.value?.points.find(point=>point.id===id) }
+function pointYawDegrees(point:MapPoint){ return point.yaw*180/Math.PI }
 function chooseTool(next:MapEditorTool) { if(next==='delete'){ deleteSelected(); return }; tool.value=next; selected.value=null; pending.value={}; notice.value='' }
 function selectObject(kind:NonNullable<Selection>['kind'], id:string) { if(tool.value==='select') selected.value={kind,id} }
-function canvasPoint(event:MouseEvent) { const svg=event.currentTarget as SVGSVGElement; const box=svg.getBoundingClientRect(); return {x:Math.round((event.clientX-box.left)*760/box.width),y:Math.round((event.clientY-box.top)*520/box.height)} }
+function canvasPoint(event:MouseEvent | PointerEvent | WheelEvent) {
+  const svg=(event.currentTarget as Element).closest('svg') as SVGSVGElement
+  const matrix=svg.getScreenCTM()
+  if(!matrix) return {x:0,y:0}
+  const point=new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse())
+  return {x:Math.round(point.x*10)/10,y:Math.round(point.y*10)/10}
+}
+function setZoom(next:number){ zoom.value=Math.min(400,Math.max(60,next)) }
+function fitMap(){ zoom.value=100; cameraCenter.value={x:MAP_WIDTH/2,y:MAP_HEIGHT/2} }
+function onWheel(event:WheelEvent){
+  const svg=event.currentTarget as SVGSVGElement; const box=svg.getBoundingClientRect(); const before=canvasPoint(event)
+  const ratioX=(event.clientX-box.left)/box.width; const ratioY=(event.clientY-box.top)/box.height
+  const next=Math.min(400,Math.max(60,zoom.value*(event.deltaY<0?1.16:0.86)))
+  const nextWidth=MAP_WIDTH/(next/100); const nextHeight=MAP_HEIGHT/(next/100)
+  cameraCenter.value={x:before.x+(0.5-ratioX)*nextWidth,y:before.y+(0.5-ratioY)*nextHeight}; zoom.value=Math.round(next)
+}
+function startPan(event:PointerEvent){
+  if(event.button!==0 || tool.value!=='select' || (event.target as Element).closest('[data-object]')) return
+  panning.value=true; panMoved=false; panStart={clientX:event.clientX,clientY:event.clientY,centerX:cameraCenter.value.x,centerY:cameraCenter.value.y}
+  ;(event.currentTarget as SVGSVGElement).setPointerCapture?.(event.pointerId)
+}
+function moveCanvas(event:PointerEvent){
+  cursor.value=canvasPoint(event)
+  if(!panning.value)return
+  const box=(event.currentTarget as SVGSVGElement).getBoundingClientRect(); const width=MAP_WIDTH/(zoom.value/100); const height=MAP_HEIGHT/(zoom.value/100)
+  const dx=event.clientX-panStart.clientX; const dy=event.clientY-panStart.clientY
+  if(Math.abs(dx)+Math.abs(dy)>3)panMoved=true
+  cameraCenter.value={x:panStart.centerX-dx*width/box.width,y:panStart.centerY-dy*height/box.height}
+}
+function endPan(event:PointerEvent){ panning.value=false; (event.currentTarget as SVGSVGElement).releasePointerCapture?.(event.pointerId) }
+function locateObject(){
+  if(!draft.value)return
+  const keyword=searchQuery.value.trim().toLowerCase(); if(!keyword)return
+  const point=draft.value.points.find(item=>[item.id,item.name,item.alias,item.deviceId].some(value=>value?.toLowerCase().includes(keyword)))
+  const resource=draft.value.resources.find(item=>item.id.toLowerCase().includes(keyword))
+  const routeItem=draft.value.routes.find(item=>item.id.toLowerCase().includes(keyword))
+  const target=point??resource
+  if(target){ selected.value={kind:point?'point':'resource',id:target.id}; cameraCenter.value={x:target.x,y:target.y}; setZoom(Math.max(zoom.value,180)); notice.value=`已定位 ${target.id}`; return }
+  if(routeItem){ const a=pointById(routeItem.startId); const b=pointById(routeItem.endId); selected.value={kind:'route',id:routeItem.id}; if(a&&b)cameraCenter.value={x:(a.x+b.x)/2,y:(a.y+b.y)/2}; setZoom(Math.max(zoom.value,160)); notice.value=`已定位 ${routeItem.id}`; return }
+  notice.value=`未找到“${searchQuery.value.trim()}”`
+}
 function onCanvasClick(event:MouseEvent) {
-  if (!draft.value || (event.target as Element).closest('[data-object]')) return
+  if (!draft.value || panMoved || (event.target as Element).closest('[data-object]')) return
   const p=canvasPoint(event); cursor.value=p
   if(tool.value==='point'){ const id=`P-${String(draft.value.points.length+1).padStart(2,'0')}`; draft.value.points.push({id,name:id,alias:id,description:'',uid:String(Date.now()),ownerGraphName:mapId,x:p.x,y:p.y,yaw:0,type:pointType.value,poseType:'NORMAL',selectable:true,relocatable:true,disabled:false,narrow:false,disjoint:false,charged:false,dockable:false,parkable:false,deviceId:'',relationType:'无关联',serviceActions:[]}); dirty.value=true }
   if(tool.value==='resource'){ draft.value.resources.push({id:resourceId.value,resourceType:'CNC',pointId:'未绑定',x:p.x,y:p.y,approach:approach.value}); dirty.value=true; tool.value='select' }
@@ -63,16 +114,16 @@ onMounted(async()=>{ const [data,catalog]=await Promise.all([getMapDraft(mapId),
     <div class="map-editor-shell" :class="{ 'property-collapsed': propertyCollapsed }">
       <aside class="map-toolrail"><template v-for="(item,index) in tools" :key="item.id"><i v-if="index===1 || index===5"></i><button :class="{active:tool===item.id,danger:item.id==='delete'}" :title="item.label" @click="chooseTool(item.id)"><b>{{ item.icon }}</b><span>{{ item.label }}</span></button></template></aside>
       <main class="map-editor-canvas">
-        <header><span>当前工具 <strong>{{ toolLabel }}</strong></span><nav><button v-for="mode in ['scan','logic','overlay'] as MapViewMode[]" :key="mode" :class="{active:viewMode===mode}" @click="viewMode=mode">{{ {scan:'底图',logic:'逻辑图',overlay:'叠加'}[mode] }}</button></nav><div><button @click="zoom=Math.max(60,zoom-10)">−</button><span>{{ zoom }}%</span><button @click="zoom=Math.min(160,zoom+10)">＋</button><button @click="zoom=100">适应</button></div></header>
+        <header><span>当前工具 <strong>{{ toolLabel }}</strong></span><label class="map-editor-search"><span>⌕</span><input v-model="searchQuery" placeholder="点位 / 路线 / CNC" @keydown.enter="locateObject"><button @click="locateObject">定位</button></label><div><button @click="setZoom(zoom-15)">−</button><span>{{ zoom }}%</span><button @click="setZoom(zoom+15)">＋</button><button @click="fitMap">适应</button></div></header>
         <div class="editor-stage">
-          <svg v-if="draft" viewBox="0 0 760 520" :style="{transform:`scale(${zoom/100})`}" @click="onCanvasClick" @mousemove="cursor=canvasPoint($event)">
+          <svg v-if="draft" :viewBox="viewBox" :class="{'is-panning':panning}" @click="onCanvasClick" @wheel.prevent="onWheel" @pointerdown="startPan" @pointermove="moveCanvas" @pointerup="endPan" @pointercancel="endPan">
             <defs><pattern id="editorGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#cfdbe2"/></pattern></defs><rect width="760" height="520" fill="url(#editorGrid)"/>
-            <image v-if="viewMode!=='logic'" :href="pointcloudMap" x="20" y="52" width="720" height="405" preserveAspectRatio="none" class="editor-slam-map"/>
-            <g v-if="viewMode!=='scan'" class="editor-zones"><rect v-for="zone in draft.zones" :key="zone.id" data-object :x="zone.x" :y="zone.y" :width="zone.width" :height="zone.height" :class="{selected:selected?.id===zone.id}" @click.stop="selectObject('zone',zone.id)"/></g>
-            <g v-if="viewMode!=='scan'" class="editor-base-paths"><path v-for="path in draft.topologyPaths" :key="path" :d="path"/></g>
-            <g v-if="viewMode!=='scan'" class="editor-map-lines"><line v-for="line in draft.routes" :key="line.id" data-object :x1="pointById(line.startId)?.x" :y1="pointById(line.startId)?.y" :x2="pointById(line.endId)?.x" :y2="pointById(line.endId)?.y" :class="{selected:selected?.id===line.id}" @click.stop="selectObject('route',line.id)"/></g>
-            <g v-if="viewMode!=='scan'" class="editor-map-points"><circle v-for="point in draft.points" :key="point.id" data-object :cx="point.x" :cy="point.y" r="6" :class="{selected:selected?.id===point.id,routeTarget:tool==='route'}" @click.stop="tool==='route'?routePoint(point.id):selectObject('point',point.id)"/><text v-for="point in draft.points" :key="`${point.id}-label`" :x="point.x+8" :y="point.y-8">{{ point.id }}</text></g>
-            <g v-if="viewMode!=='scan'" class="editor-resources"><g v-for="resource in draft.resources" :key="resource.id" data-object :transform="`translate(${resource.x} ${resource.y})`" :class="[{selected:selected?.id===resource.id},resource.resourceType.toLowerCase()]" @click.stop="selectObject('resource',resource.id)"><path d="M0 0V-8"/><rect x="-23" y="-27" width="46" height="18" rx="4"/><text y="-15">{{ resource.id }}</text></g></g>
+            <image :href="pointcloudMap" x="20" y="52" width="720" height="405" preserveAspectRatio="none" class="editor-slam-map"/>
+            <g class="editor-zones"><rect v-for="zone in draft.zones" :key="zone.id" data-object :x="zone.x" :y="zone.y" :width="zone.width" :height="zone.height" :class="{selected:selected?.id===zone.id}" @click.stop="selectObject('zone',zone.id)"/></g>
+            <g class="editor-base-paths"><path v-for="path in draft.topologyPaths" :key="path" :d="path"/></g>
+            <g class="editor-map-lines"><line v-for="line in draft.routes" :key="line.id" data-object :x1="pointById(line.startId)?.x" :y1="pointById(line.startId)?.y" :x2="pointById(line.endId)?.x" :y2="pointById(line.endId)?.y" :class="{selected:selected?.id===line.id}" @click.stop="selectObject('route',line.id)"/></g>
+            <g class="editor-map-points"><g v-for="point in draft.points" :key="point.id" data-object :transform="`translate(${point.x} ${point.y}) scale(${symbolScale})`" :class="[{selected:selected?.id===point.id,routeTarget:tool==='route'},point.type==='普通站点'?'service-point':'network-point']" @click.stop="tool==='route'?routePoint(point.id):selectObject('point',point.id)"><circle class="point-hit" r="9"/><circle v-if="point.type==='路网节点' && (tool==='route' || selected?.id===point.id)" class="network-point-mark" r="2.2"/><path v-else-if="point.type==='普通站点'" class="point-mark" d="M0-3.5L3.2 2.8L-3.2 2.8Z" :transform="`rotate(${pointYawDegrees(point)})`"/><text v-if="labelsVisible || selected?.id===point.id" x="6" y="-6">{{ point.id }}</text></g></g>
+            <g class="editor-resources"><g v-for="resource in draft.resources" :key="resource.id" data-object :transform="`translate(${resource.x} ${resource.y}) scale(${symbolScale})`" :class="[{selected:selected?.id===resource.id},resource.resourceType.toLowerCase()]" @click.stop="selectObject('resource',resource.id)"><circle class="resource-mark" r="3.6"/><path d="M0 0V-8"/><rect x="-23" y="-27" width="46" height="18" rx="4"/><text y="-15">{{ resource.id }}</text></g></g>
             <circle v-if="pending.first" :cx="pending.first.x" :cy="pending.first.y" r="7" class="pending-point"/>
           </svg>
           <div class="map-canvas-legend"><span><i class="scan"></i>SLAM 底图</span><span><i class="point"></i>导航点位</span><span><i class="route"></i>导航路线</span><span><i class="zone"></i>管制区域</span></div>
