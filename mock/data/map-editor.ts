@@ -4,7 +4,7 @@ const points: MapStation[] = []
 const routes: MapRoute[] = []
 let routeIndex = 1
 
-function addPoint(id: string, x: number, y: number, service = false, yaw = 0): string {
+function addPoint(id: string, x: number, y: number, service = false, yaw = 0, associationType: string = 'none'): string {
   points.push({
     id,
     name: id,
@@ -18,17 +18,17 @@ function addPoint(id: string, x: number, y: number, service = false, yaw = 0): s
     selectable: true,
     relocatable: true,
     disabled: false,
-    charged: false,
-    dockable: false,
-    parkable: false,
+    charged: associationType === 'charge',
+    dockable: associationType === 'dock',
+    parkable: associationType === 'parking',
     preMeshPoseName: '',
     options: {
       narrow: { boolValue: false, kind: 'boolValue' },
       disjoint: { boolValue: false, kind: 'boolValue' },
-      poseType: { stringValue: 'NORMAL', kind: 'stringValue' },
-      parkable: { boolValue: false, kind: 'boolValue' },
+      poseType: { stringValue: associationType === 'dock' ? 'DOCK' : 'NORMAL', kind: 'stringValue' },
+      parkable: { boolValue: associationType === 'parking', kind: 'boolValue' },
     },
-    associationType: 'none',
+    associationType: associationType as any,
     deviceId: '',
   })
   return id
@@ -82,6 +82,7 @@ aisleCenters.forEach((centerX, aisleIndex) => {
         y,
         service,
         0,
+        service ? 'dock' : 'none',
       )
     })
     ids.slice(1).forEach((id, index) => connect(ids[index], id))
@@ -100,15 +101,15 @@ aisleCenters.forEach((centerX, aisleIndex) => {
   }
 })
 
-function addHorizontalLine(prefix: string, y: number, xs: number[], showArrows = true) {
-  const ids = xs.map((x, index) => addPoint(`${prefix}-${index + 1}`, x, y, showArrows && index > 0 && index < xs.length - 1, 90 * Math.PI / 180))
+function addHorizontalLine(prefix: string, y: number, xs: number[], showArrows = true, parkingIndices: number[] = []) {
+  const ids = xs.map((x, index) => addPoint(`${prefix}-${index + 1}`, x, y, showArrows && index > 0 && index < xs.length - 1, 90 * Math.PI / 180, parkingIndices.includes(index) ? 'parking' : 'none'))
   ids.slice(1).forEach((id, index) => connect(ids[index], id))
   return ids
 }
 
 // 没有成排设备停靠点的横向通道保持单线，并在交汇处保留方向箭头。
 const horizontalXs = [140, ...aisleCenters.flatMap((x) => [x - laneOffset, x + laneOffset])]
-const centerLine = addHorizontalLine('H-C', 274, horizontalXs)
+const centerLine = addHorizontalLine('H-C', 274, horizontalXs, true, [3, 7, 11, 15])
 const bottomLine = addHorizontalLine('H-B', 435, [140, ...aisleCenters.flatMap((x) => [x - laneOffset, x + laneOffset])])
 
 aisleLaneIds.forEach((lanes, aisleIndex) => {

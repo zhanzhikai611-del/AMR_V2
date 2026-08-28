@@ -206,7 +206,7 @@ export interface MapRoute {
   maxLinearVel?: number
 }
 export interface MapPlacedResource { id: string; resourceType: 'CNC' | 'GATE' | 'BUF' | 'CHG'; pointId: string; x: number; y: number; approach: string }
-export interface MapControlZone { id: string; x: number; y: number; width: number; height: number; type: string }
+export interface MapControlZone { id: string; x: number; y: number; width: number; height: number; type: string; speedLimit?: number }
 export interface MapEditorDraft {
   mapId: string
   version: string
