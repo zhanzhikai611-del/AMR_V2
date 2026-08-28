@@ -45,14 +45,14 @@ function setCurrentMap(){ if(!runtimeTarget.value)return; maps.value.forEach(map
         <div class="map-card-preview" :class="{ 'is-empty': map.status === '空白' }">
           <img v-if="map.status !== '空白'" :src="pointcloudMap" alt="地图点云缩略图">
           <svg v-if="map.status !== '空白'" viewBox="0 0 360 210" aria-hidden="true" class="map-card-network"><path d="M74 54V176M116 54V176M158 54V176M200 54V176M242 54V176M284 54V176M58 112H300M58 176H300"/><path d="M74 84l42 38M116 84L74 122M158 84l42 38M200 84l-42 38M242 84l42 38M284 84l-42 38"/></svg>
-          <span>{{ map.mapVersion }} / {{ map.uploadVehicle }}</span>
+          <span :class="`map-card-status is-${map.status}`">{{ map.status }}</span>
           <b class="map-card-open">打开地图编辑器 ↗</b>
         </div>
         <div class="map-card-body">
           <div class="map-card-title">
             <span><h2>{{ map.mapVersion }} · {{ map.name }}</h2><small>{{ map.id }} · {{ map.owner }} · {{ map.updatedAt }}</small></span>
-            <span v-if="map.current" class="map-current-label"><i></i>当前运行地图</span>
-            <button v-else class="map-runtime-action" :disabled="map.status!=='已发布'" :title="map.status!=='已发布'?'地图发布后才能设为当前运行地图':''" @click.stop="requestSetCurrent(map)">{{ map.status==='已发布'?'设为当前运行地图':'发布后可设为当前' }}</button>
+            <span v-if="map.current" class="map-current-label"><i></i>当前地图</span>
+            <button v-else class="map-runtime-action" :disabled="map.status!=='已发布'" :title="map.status!=='已发布'?'地图发布后才能设为当前运行地图':''" @click.stop="requestSetCurrent(map)">{{ map.status==='已发布'?'设置为当前地图':'未发布' }}</button>
           </div>
           <dl>
             <div><dt>上传来源</dt><dd>{{ map.source }}</dd></div><div><dt>逻辑对象</dt><dd>{{ map.objectSummary }}</dd></div>

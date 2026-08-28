@@ -241,7 +241,15 @@ export interface TaskRecord {
 }
 
 export interface DispatchSettings {
-  strategy: 'FIFO 先进先出' | '最短距离' | '最短时间' | '提前叫料' | '负载均衡'
+  strategy: '先进先出' | '最短距离' | '最短时间' | '提前叫料' | '负载均衡'
+  apsEnabled: boolean
+  updatedAt: string
+}
+
+export interface DispatchRule {
+  id: string
+  taskType: string
+  strategy: DispatchSettings['strategy']
   apsEnabled: boolean
   updatedAt: string
 }
