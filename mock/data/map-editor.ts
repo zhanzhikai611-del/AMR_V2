@@ -1,6 +1,6 @@
-import type { MapEditorDraft, MapPoint, MapRoute } from '../../src/types/domain'
+import type { MapEditorDraft, MapRoute, MapStation } from '../../src/types/domain'
 
-const points: MapPoint[] = []
+const points: MapStation[] = []
 const routes: MapRoute[] = []
 let routeIndex = 1
 
@@ -15,30 +15,43 @@ function addPoint(id: string, x: number, y: number, service = false, yaw = 0): s
     x,
     y,
     yaw,
-    type: service ? '普通站点' : '路网节点',
-    poseType: 'NORMAL',
     selectable: true,
     relocatable: true,
     disabled: false,
-    narrow: false,
-    disjoint: false,
     charged: false,
-    dockable: service,
+    dockable: false,
     parkable: false,
+    preMeshPoseName: '',
+    options: {
+      narrow: { boolValue: false, kind: 'boolValue' },
+      disjoint: { boolValue: false, kind: 'boolValue' },
+      poseType: { stringValue: 'NORMAL', kind: 'stringValue' },
+      parkable: { boolValue: false, kind: 'boolValue' },
+    },
+    associationType: 'none',
     deviceId: '',
-    relationType: service ? '上下料位' : '无关联',
-    serviceActions: service ? ['LOAD', 'UNLOAD'] : [],
   })
   return id
 }
 
 function connect(startId: string, endId: string, speed = 1.2) {
+  const id = `R-${String(routeIndex++).padStart(3, '0')}`
   routes.push({
-    id: `R-${String(routeIndex++).padStart(3, '0')}`,
+    id,
+    name: id,
+    alias: id,
+    description: '',
+    ownerGraphName: 'MAP-A',
     startId,
     endId,
-    direction: '双向通行',
-    speed,
+    sourceName: startId,
+    targetName: endId,
+    type: 'STRAIGHT_LINE',
+    positions: [],
+    bidirectional: true,
+    backwards: false,
+    disabled: false,
+    maxLinearVel: speed,
   })
 }
 
@@ -76,7 +89,7 @@ aisleCenters.forEach((centerX, aisleIndex) => {
   })
   aisleLaneIds.push(lanes)
 
-  // X 形路线必须由左右两侧相邻的三角停靠点交叉相连，不使用隐藏路网节点作为端点。
+  // X 形路线由左右两侧相邻站点交叉相连，每个端点都是可导航站点。
   if (lanes.length === 2) {
     ;[[96, 145], [145, 193], [193, 226], [319, 360], [360, 400], [400, 425]].forEach(([fromY, toY]) => {
       const fromIndex = verticalRows.indexOf(fromY)

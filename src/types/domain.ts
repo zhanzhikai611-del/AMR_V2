@@ -158,9 +158,10 @@ export interface MapDefinition {
   uploadVehicle?: string
 }
 
-export type MapEditorTool = 'select' | 'point' | 'resource' | 'route' | 'zone' | 'delete'
+export type MapEditorTool = 'select' | 'point' | 'route' | 'zone'
 export type MapViewMode = 'scan' | 'logic' | 'overlay'
-export interface MapPoint {
+export type StationAssociationType = 'none' | 'dock' | 'charge' | 'parking'
+export interface MapStation {
   id: string
   name: string
   alias: string
@@ -170,28 +171,47 @@ export interface MapPoint {
   x: number
   y: number
   yaw: number
-  type: '路网节点' | '普通站点'
-  poseType: 'NORMAL' | 'DOCK'
   selectable: boolean
   relocatable: boolean
   disabled: boolean
-  narrow: boolean
-  disjoint: boolean
   charged: boolean
   dockable: boolean
   parkable: boolean
+  preMeshPoseName: string
+  options: {
+    narrow: { boolValue: boolean; kind: 'boolValue' }
+    disjoint: { boolValue: boolean; kind: 'boolValue' }
+    poseType: { stringValue: 'NORMAL' | 'DOCK'; kind: 'stringValue' }
+    parkable: { boolValue: boolean; kind: 'boolValue' }
+  }
+  associationType: StationAssociationType
   deviceId: string
-  relationType: '无关联' | '上料位' | '下料位' | '上下料位'
-  serviceActions: Array<'LOAD' | 'UNLOAD'>
 }
-export interface MapRoute { id: string; startId: string; endId: string; direction: string; speed: number }
+export type MapPoint = MapStation
+export interface MapRoute {
+  id: string
+  name: string
+  alias: string
+  description: string
+  ownerGraphName: string
+  startId: string
+  endId: string
+  sourceName: string
+  targetName: string
+  type: 'STRAIGHT_LINE'
+  positions: Array<{ x:number; y:number; yaw:number }>
+  bidirectional: boolean
+  backwards: boolean
+  disabled: boolean
+  maxLinearVel?: number
+}
 export interface MapPlacedResource { id: string; resourceType: 'CNC' | 'GATE' | 'BUF' | 'CHG'; pointId: string; x: number; y: number; approach: string }
 export interface MapControlZone { id: string; x: number; y: number; width: number; height: number; type: string }
 export interface MapEditorDraft {
   mapId: string
   version: string
   resolution: string
-  points: MapPoint[]
+  points: MapStation[]
   routes: MapRoute[]
   resources: MapPlacedResource[]
   zones: MapControlZone[]
