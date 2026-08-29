@@ -27,7 +27,7 @@ export interface Task {
   amrId: string | null
   requestDeviceId: string
   phase: string
-  status: '运行中' | '异常'
+  status: '待分配' | '运行中' | '异常'
   priority: '普通' | '高'
   duration: string
   progress: number
@@ -238,6 +238,8 @@ export interface TaskRecord {
   behaviorName: string
   behaviorVersion: string
   summary: string
+  /** 完成时该任务类型生效的调度策略名。 */
+  strategy?: string
 }
 
 export interface DispatchSettings {

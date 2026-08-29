@@ -24,8 +24,7 @@ export const useMonitorContextStore = defineStore('monitor-context', {
       if (state.taskFilter === 'running') return tasks.filter((task) => task.status === '运行中')
       if (state.taskFilter === 'abnormal') return tasks.filter((task) => task.status === '异常')
       return tasks
-    },
-  },
+    },  },
   actions: {
     async loadSnapshot() {
       this.loading = true

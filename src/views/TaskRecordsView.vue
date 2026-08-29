@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { getDispatchRules, updateDispatchRule } from '../api/modules/dispatch'
-import { getTwinSnapshot } from '../api/modules/operations'
-import { cancelTask, getTaskRecords } from '../api/modules/task-records'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useDispatchCenterStore } from '../stores/dispatch-center'
 import type { DispatchRule, Task, TaskRecord } from '../types/domain'
 
 type CenterTab = 'live' | 'settings' | 'records'
 type SelectedTask = { kind: 'live'; task: Task } | { kind: 'record'; task: TaskRecord }
 
-const activeTasks = ref<Task[]>([])
-const records = ref<TaskRecord[]>([])
-const dispatchRules = ref<DispatchRule[]>([])
+const center = useDispatchCenterStore()
+
 const activeTab = ref<CenterTab>('live')
 const liveQuery = ref('')
 const liveStatus = ref('全部状态')
@@ -28,8 +25,14 @@ const cancelTarget = ref<Task | null>(null)
 const canceling = ref(false)
 const cancelError = ref('')
 
-const runningCount = computed(() => activeTasks.value.filter((task) => task.status === '运行中').length)
-const abnormalCount = computed(() => activeTasks.value.filter((task) => task.status === '异常').length)
+const activeTasks = computed(() => center.tasks)
+const records = computed(() => center.records)
+const dispatchRules = computed(() => center.rules)
+
+const runningCount = computed(() => center.runningCount)
+const abnormalCount = computed(() => center.abnormalCount)
+const pendingCount = computed(() => center.pendingCount)
+const recordCountByType = computed(() => center.recordCountByType)
 
 const filteredLiveTasks = computed(() => activeTasks.value.filter((task) => {
   const matchesQuery = `${task.id}${task.type}${task.requestDeviceId}${task.amrId ?? ''}${task.phase}`.toLowerCase().includes(liveQuery.value.toLowerCase())
@@ -67,6 +70,7 @@ function statusClass(status: Task['status'] | TaskRecord['result']) {
   if (status === '已完成') return 'success'
   if (status === '已取消') return 'neutral'
   if (status === '异常') return 'fault'
+  if (status === '待分配') return 'pending'
   return 'running'
 }
 
@@ -80,11 +84,10 @@ function editRule(rule: DispatchRule) {
 async function saveRule() {
   if (!editingRule.value || ruleSaving.value) return
   ruleSaving.value = true
-  const saved = await updateDispatchRule({ ...editingRule.value, updatedAt: new Date().toLocaleString('zh-CN', { hour12: false }) })
-  const index = dispatchRules.value.findIndex((rule) => rule.id === saved.id)
-  if (index >= 0) dispatchRules.value[index] = saved
+  const saved = await center.saveRule(editingRule.value)
   ruleSaving.value = false
   editingRule.value = null
+  void saved
 }
 
 function requestCancel(task: Task) {
@@ -92,30 +95,23 @@ function requestCancel(task: Task) {
   cancelError.value = ''
 }
 
-async function confirmCancel() {
+function confirmCancel() {
   if (!cancelTarget.value || canceling.value) return
   canceling.value = true
   cancelError.value = ''
-  try {
-    const canceledTaskId = cancelTarget.value.id
-    const record = await cancelTask(canceledTaskId)
-    activeTasks.value = activeTasks.value.filter((task) => task.id !== canceledTaskId)
-    if (!records.value.some((task) => task.id === record.id)) records.value.unshift(record)
-    if (selected.value?.task.id === canceledTaskId) selected.value = null
-    cancelTarget.value = null
-  } catch (reason) {
-    cancelError.value = reason instanceof Error ? reason.message : '取消任务失败'
-  } finally {
-    canceling.value = false
-  }
+  const canceledTaskId = cancelTarget.value.id
+  center.cancelTask(canceledTaskId)
+  if (selected.value?.task.id === canceledTaskId) selected.value = null
+  cancelTarget.value = null
+  canceling.value = false
 }
 
 onMounted(async () => {
-  const [history, snapshot, rules] = await Promise.all([getTaskRecords(), getTwinSnapshot(), getDispatchRules()])
-  records.value = history
-  activeTasks.value = snapshot.tasks
-  dispatchRules.value = rules
+  await center.load()
+  center.start()
 })
+
+onBeforeUnmount(() => center.stop())
 </script>
 
 <template>
@@ -133,20 +129,22 @@ onMounted(async () => {
     <template v-if="activeTab === 'live'">
       <section class="dispatch-summary" aria-label="实时任务摘要">
         <article class="fault"><span>异常</span><strong>{{ abnormalCount }}</strong></article>
+        <article class="pending"><span>待分配</span><strong>{{ pendingCount }}</strong></article>
         <article class="running"><span>执行中</span><strong>{{ runningCount }}</strong></article>
         <article><span>当前任务</span><strong>{{ activeTasks.length }}</strong></article>
       </section>
       <section class="dispatch-list-panel">
         <div class="dispatch-toolbar">
           <label><span>⌕</span><input v-model="liveQuery" placeholder="搜索任务、设备、AMR 或当前阶段"></label>
-          <select v-model="liveStatus" aria-label="筛选实时任务状态"><option>全部状态</option><option>运行中</option><option>异常</option></select>
+          <select v-model="liveStatus" aria-label="筛选实时任务状态"><option>全部状态</option><option>待分配</option><option>运行中</option><option>异常</option></select>
         </div>
         <div class="resource-table-wrap dispatch-table-wrap">
           <table class="resource-table dispatch-table">
             <thead><tr><th>任务</th><th>请求设备</th><th>执行 AMR</th><th>当前阶段</th><th>执行时长</th><th>状态</th><th>操作</th></tr></thead>
             <tbody>
               <tr v-for="task in paginatedLiveTasks" :key="task.id" tabindex="0" @click="selectLiveTask(task)" @keydown.enter="selectLiveTask(task)">
-                <td><strong>{{ task.id }}</strong><small>{{ task.type }}</small></td><td class="type-data">{{ task.requestDeviceId }}</td><td class="type-data">{{ task.amrId ?? '待分配' }}</td><td>{{ task.phase }}</td><td class="type-data">{{ task.duration }}</td><td><span class="asset-status" :class="statusClass(task.status)">{{ task.status }}</span></td><td><button class="task-cancel-button" type="button" :aria-label="`取消任务 ${task.id}`" @click.stop="requestCancel(task)">取消</button></td>
+                <td><strong>{{ task.id }}</strong><small>{{ task.type }}</small></td>
+                <td class="type-data">{{ task.requestDeviceId }}</td><td class="type-data"><span>{{ task.amrId ?? '待分配' }}</span></td><td>{{ task.phase }}</td><td class="type-data">{{ task.duration }}</td><td><span class="asset-status" :class="statusClass(task.status)">{{ task.status }}</span></td><td><button class="task-cancel-button" type="button" :aria-label="`取消任务 ${task.id}`" @click.stop="requestCancel(task)">取消</button></td>
               </tr>
             </tbody>
           </table>
@@ -158,11 +156,11 @@ onMounted(async () => {
 
     <template v-else-if="activeTab === 'settings'">
       <section class="dispatch-list-panel settings-list-panel">
-        <div class="dispatch-toolbar settings-toolbar"><label><span>⌕</span><input v-model="ruleQuery" placeholder="搜索任务类型或调度策略"></label></div>
+        <div class="dispatch-toolbar settings-toolbar"><label><span>⌕</span><input v-model="ruleQuery" placeholder="搜索任务类型或调度策略"></label><span class="settings-hint">任务类型由系统自动同步，此处仅调整调度策略与 APS 开关</span></div>
         <div class="resource-table-wrap dispatch-table-wrap">
           <table class="resource-table dispatch-table dispatch-rules-table">
             <thead><tr><th>任务类型</th><th>调度策略</th><th>APS</th><th>修改时间</th><th>操作</th></tr></thead>
-            <tbody><tr v-for="rule in filteredRules" :key="rule.id"><td><strong>{{ rule.taskType }}</strong></td><td>{{ rule.strategy }}</td><td><span class="rule-aps" :class="{ active: rule.apsEnabled }">{{ rule.apsEnabled ? '开启' : '关闭' }}</span></td><td class="type-data">{{ rule.updatedAt }}</td><td><button class="table-action" type="button" @click="editRule(rule)">编辑</button></td></tr></tbody>
+            <tbody><tr v-for="rule in filteredRules" :key="rule.id"><td><strong>{{ rule.taskType }}</strong><small class="rule-record-count">已应用 {{ recordCountByType[rule.taskType] ?? 0 }} 次</small></td><td>{{ rule.strategy }}</td><td><span class="rule-aps" :class="{ active: rule.apsEnabled }">{{ rule.apsEnabled ? '开启' : '关闭' }}</span></td><td class="type-data">{{ rule.updatedAt }}</td><td><button class="table-action" type="button" @click="editRule(rule)">编辑</button></td></tr></tbody>
           </table>
           <div v-if="!filteredRules.length" class="dispatch-empty"><strong>没有符合条件的任务设置</strong><span>尝试搜索其他任务类型或策略</span></div>
         </div>
@@ -196,6 +194,7 @@ onMounted(async () => {
                 <div><dt>执行 AMR</dt><dd class="type-data">{{ selected.task.amrId ?? '待分配' }}</dd></div>
                 <div><dt>当前阶段</dt><dd>{{ selected.task.phase }}</dd></div>
                 <div><dt>执行时长</dt><dd class="type-data">{{ selected.task.duration }}</dd></div>
+                <div><dt>调度策略</dt><dd>{{ center.strategyLabel(selected.task.type) }}</dd></div>
               </dl>
               <footer><div><span>任务进度</span><strong class="type-data">{{ selected.task.progress }}%</strong></div><i><b :style="{ width: `${selected.task.progress}%` }"></b></i></footer>
             </section>
@@ -218,6 +217,7 @@ onMounted(async () => {
               <dl>
                 <div><dt>请求设备</dt><dd class="type-data">{{ selected.task.requestDeviceId }}</dd></div>
                 <div><dt>执行 AMR</dt><dd class="type-data">{{ selected.task.amrId }}</dd></div>
+                <div><dt>调度策略</dt><dd>{{ selected.task.strategy ?? '—' }}</dd></div>
                 <div><dt>开始时间</dt><dd class="type-data">{{ selected.task.requestedAt }}</dd></div>
                 <div><dt>结束时间</dt><dd class="type-data">{{ selected.task.finishedAt }}</dd></div>
               </dl>
@@ -241,6 +241,6 @@ onMounted(async () => {
 
     <div v-if="cancelTarget" class="modal-backdrop" @click.self="cancelTarget = null"><section class="dispatch-dialog cancel-task-dialog" role="dialog" aria-modal="true" aria-labelledby="cancel-task-dialog-title"><header><div><span>TASK CONTROL</span><strong id="cancel-task-dialog-title">取消任务</strong></div><button type="button" aria-label="关闭取消任务确认" @click="cancelTarget = null">×</button></header><div class="cancel-task-dialog__body"><strong>{{ cancelTarget.id }}</strong><dl><div><dt>任务类型</dt><dd>{{ cancelTarget.type }}</dd></div><div><dt>请求设备</dt><dd>{{ cancelTarget.requestDeviceId }}</dd></div><div><dt>执行 AMR</dt><dd>{{ cancelTarget.amrId ?? '待分配' }}</dd></div><div><dt>当前状态</dt><dd>{{ cancelTarget.status }}</dd></div></dl><p v-if="cancelError">{{ cancelError }}</p></div><footer><span>取消后任务将进入派单记录</span><div><button type="button" :disabled="canceling" @click="cancelTarget = null">返回</button><button class="danger" type="button" :disabled="canceling" @click="confirmCancel">{{ canceling ? '取消中' : '确认取消' }}</button></div></footer></section></div>
 
-    <div v-if="editingRule" class="modal-backdrop" @click.self="editingRule = null"><section class="dispatch-dialog dispatch-rule-dialog" role="dialog" aria-modal="true" aria-labelledby="dispatch-rule-dialog-title"><header><strong id="dispatch-rule-dialog-title">编辑调度策略</strong><button type="button" aria-label="关闭任务设置" @click="editingRule = null">×</button></header><div class="dispatch-rule-form"><div class="rule-form-row"><span>任务类型</span><strong>{{ editingRule.taskType }}</strong></div><label class="rule-form-row"><span>调度策略</span><select v-model="editingRule.strategy"><option>先进先出</option><option>最短距离</option><option>最短时间</option><option>提前叫料</option><option>负载均衡</option></select></label><label class="rule-form-row rule-form-switch"><span>APS</span><input v-model="editingRule.apsEnabled" type="checkbox"><b>{{ editingRule.apsEnabled ? '开启' : '关闭' }}</b></label></div><footer><div><button type="button" :disabled="ruleSaving" @click="editingRule = null">取消</button><button class="primary" type="button" :disabled="ruleSaving" @click="saveRule">{{ ruleSaving ? '保存中' : '保存' }}</button></div></footer></section></div>
+    <div v-if="editingRule" class="modal-backdrop" @click.self="editingRule = null"><section class="dispatch-dialog dispatch-rule-dialog" role="dialog" aria-modal="true" aria-labelledby="dispatch-rule-dialog-title"><header><strong id="dispatch-rule-dialog-title">编辑调度策略</strong><button type="button" aria-label="关闭任务设置" @click="editingRule = null">×</button></header><div class="dispatch-rule-form"><div class="rule-form-row"><span>任务类型</span><strong>{{ editingRule.taskType }}</strong></div><label class="rule-form-row"><span>调度策略</span><select v-model="editingRule.strategy"><option>先进先出</option><option>最短距离</option><option>最短时间</option><option>提前叫料</option><option>负载均衡</option></select></label><label class="rule-form-row rule-form-switch"><span>APS</span><input v-model="editingRule.apsEnabled" type="checkbox"><b>{{ editingRule.apsEnabled ? '开启' : '关闭' }}</b></label><p class="rule-form-note">策略变更后，该类型的待分配任务将按新策略派发；执行中任务不受影响。</p></div><footer><div><button type="button" :disabled="ruleSaving" @click="editingRule = null">取消</button><button class="primary" type="button" :disabled="ruleSaving" @click="saveRule">{{ ruleSaving ? '保存中' : '保存' }}</button></div></footer></section></div>
   </section>
 </template>
