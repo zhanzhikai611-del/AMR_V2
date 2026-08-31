@@ -112,8 +112,9 @@ export function createGlobalAnalytics(query: AnalyticsQuery): GlobalAnalytics {
   }
 }
 
-const taskTypes = ['半成品转运', '成品转运', '线边补料', '空箱回收']
+const taskTypes = ['半成品转运', '成品转运', '设备补料', '设备下料']
 const alarmNames = ['资源锁释放超时', '定位置信度低', '设备通讯中断', '路径阻塞']
+const stationLines = ['D', 'C', 'E']
 
 function historyDate(offset: number) {
   const date = new Date(2026, 7, 22)
@@ -131,7 +132,7 @@ const taskHistory: AnalyticsTaskRecord[] = Array.from({ length: 300 }, (_, index
   return {
     id: `TSK-${compactDate}-${String(300 - index).padStart(3, '0')}`,
     type: taskTypes[index % taskTypes.length],
-    requestDeviceId: `CNC-${String(25 + (index * 5) % 12).padStart(2, '0')}`,
+    requestDeviceId: `${stationLines[index % stationLines.length]}${String((((index * 5) % 12) + 1) * 2).padStart(2, '0')}`,
     startedAt: `${date} ${String(hour).padStart(2, '0')}:${String(startedMinute).padStart(2, '0')}:12`,
     endedAt: `${date} ${String(hour + Math.floor((startedMinute + durationMinutes) / 60)).padStart(2, '0')}:${String(endedMinute).padStart(2, '0')}:03`,
     duration: `${String(durationMinutes).padStart(2, '0')}:${String((index * 13) % 60).padStart(2, '0')}`,

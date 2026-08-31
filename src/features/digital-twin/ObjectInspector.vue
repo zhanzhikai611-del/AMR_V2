@@ -67,7 +67,7 @@ function formatPosition(amr: Amr | null) {
       </dl>
       <section class="service-scope">
         <header><div><strong>服务范围</strong></div><em>{{ (amr?.maxServiceDevices ?? amr?.serviceDevices ?? []).length }} 项</em></header>
-        <div class="scope-group"><span>服务 CNC</span><div><i v-for="device in (amr?.maxServiceDevices ?? amr?.serviceDevices ?? [])" :key="device" :class="{ unavailable: !amr?.serviceDevices.includes(device) }" :title="!amr?.serviceDevices.includes(device) ? '人工上料，不在 AMR 服务范围' : undefined">{{ device }}</i></div></div>
+        <div class="scope-group"><span>服务站点</span><div><i v-for="device in (amr?.maxServiceDevices ?? amr?.serviceDevices ?? [])" :key="device" :class="{ unavailable: !amr?.serviceDevices.includes(device) }" :title="!amr?.serviceDevices.includes(device) ? '人工上料，不在 AMR 服务范围' : undefined">{{ device }}</i></div></div>
       </section>
     </div>
   </aside>

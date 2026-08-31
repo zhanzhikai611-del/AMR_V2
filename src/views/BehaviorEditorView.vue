@@ -29,8 +29,8 @@ const nodeGroups: Array<{ label: string; items: PaletteItem[] }> = [
   ] },
   { label: 'AMR 动作', items: [
     { code: 'N', name: '导航至点位', detail: 'Navigate', kind: 'action' },
-    { code: 'P', name: '执行取料', detail: 'Pickup', kind: 'action' },
-    { code: 'D', name: '执行放料', detail: 'Dropoff', kind: 'action' },
+    { code: 'L', name: '执行上料', detail: 'Load', kind: 'action' },
+    { code: 'U', name: '执行下料', detail: 'Unload', kind: 'action' },
   ] },
   { label: '条件判断', items: [
     { code: 'C', name: '检查机台状态', detail: 'Check device', kind: 'condition' },

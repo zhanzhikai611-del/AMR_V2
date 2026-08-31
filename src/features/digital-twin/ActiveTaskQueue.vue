@@ -50,9 +50,9 @@ const filters = [
           <b class="type-data">{{ task.id }}</b>
           <em>{{ task.status }}</em>
         </span>
-        <span class="task-card__title">{{ task.type }}<small>{{ task.amrId ?? '待分配 AMR' }}</small></span>
+        <span class="task-card__title">{{ task.type }}<small>{{ task.amrId }}</small></span>
         <span class="task-card__route"><small>请求设备</small><b>{{ task.requestDeviceId }}</b></span>
-        <span class="task-card__meta"><span>{{ task.phase }}</span><time class="type-data">{{ task.duration }}</time></span>
+        <span class="task-card__meta"><span class="type-data">发起 {{ task.createdAt.slice(11) }}</span></span>
         <span class="task-progress"><i :style="{ width: `${task.progress}%` }"></i></span>
       </button>
       <div v-if="tasks.length === 0" class="task-empty">

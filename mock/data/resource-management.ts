@@ -7,7 +7,7 @@ export const amrModels: AmrModel[] = [
 ]
 
 export const deviceTypes: DeviceType[] = [
-  { id: 'CNC', name: 'CNC 机台', pointRequirement: '服务点位', statusCount: 8, enabled: true },
+  { id: 'ROBOT_ARM', name: '一拖二机械手臂', pointRequirement: '服务站点', statusCount: 8, enabled: true },
 ]
 
 export const mapDefinitions: MapDefinition[] = [

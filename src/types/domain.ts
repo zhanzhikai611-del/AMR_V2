@@ -24,11 +24,12 @@ export interface TimelineEvent {
 export interface Task {
   id: string
   type: string
-  amrId: string | null
+  amrId: string
   requestDeviceId: string
   phase: string
-  status: '待分配' | '运行中' | '异常'
+  status: '待执行' | '执行中' | '异常'
   priority: '普通' | '高'
+  createdAt: string
   duration: string
   progress: number
   behaviorName: string
@@ -252,6 +253,7 @@ export interface DispatchRule {
   id: string
   taskType: string
   strategy: DispatchSettings['strategy']
+  defaultPriority: Task['priority']
   apsEnabled: boolean
   updatedAt: string
 }

@@ -104,7 +104,7 @@ function endPan(event: PointerEvent) {
         <g class="selected-route-layer simulation-route-layer">
           <g v-for="task in visibleRouteTasks" :key="task.id" class="selected">
             <path class="route-planned" :d="task.plannedPath"/>
-            <path v-if="task.status === '运行中'" class="route-traveled" :d="task.plannedPath" pathLength="1" :style="{ strokeDasharray: `${routeProgress[task.id] ?? 0} 1` }"/>
+            <path v-if="task.status === '执行中'" class="route-traveled" :d="task.plannedPath" pathLength="1" :style="{ strokeDasharray: `${routeProgress[task.id] ?? 0} 1` }"/>
             <path v-else-if="task.traveledPath" class="route-traveled route-traveled-static" :d="task.traveledPath"/>
           </g>
         </g>

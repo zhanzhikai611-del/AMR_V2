@@ -46,7 +46,7 @@ onMounted(async () => { catalog.value = await getResourceCatalog() })
       </section>
       <section class="detail-panel">
         <header>服务范围</header>
-        <div class="scope-detail"><div><span>服务 CNC</span><p><i v-for="id in (item.maxServiceDevices ?? item.serviceDevices)" :key="id" :class="{ unavailable: !item.serviceDevices.includes(id) }">{{ id }}</i></p></div></div>
+        <div class="scope-detail"><div><span>服务一拖二站点</span><p><i v-for="id in (item.maxServiceDevices ?? item.serviceDevices)" :key="id" :class="{ unavailable: !item.serviceDevices.includes(id) }">{{ id }}</i></p></div></div>
       </section>
     </template>
 

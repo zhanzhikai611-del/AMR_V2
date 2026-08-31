@@ -30,7 +30,7 @@ function setCurrentMap(){ if(!runtimeTarget.value)return; maps.value.forEach(map
 <template>
   <section class="resource-page map-library-page">
     <header class="resource-page__header">
-      <div><p class="page-eyebrow">MAP VERSIONS</p><h1>地图管理</h1><p>管理全局系统使用的地图版本、草稿和发布状态</p></div>
+      <div><p class="page-eyebrow">MAP VERSIONS</p><h1>地图管理</h1></div>
       <button class="resource-primary-action" @click="showCreate=true">＋ 导入地图版本</button>
     </header>
     <div class="resource-toolbar">

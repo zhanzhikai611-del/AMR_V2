@@ -1,4 +1,5 @@
-export interface SystemUser { username:string; name:string; role:'现场人员'|'研发人员'|'只读用户'; status:'启用'|'停用'; lastLogin:string; createdAt:string }
+export type SystemUserRole = '只读用户' | '研发人员' | '系统管理员'
+export interface SystemUser { username:string; name:string; role:SystemUserRole; status:'启用'|'停用'; lastLogin:string; createdAt:string }
 export interface SystemRole { name:string; users:number; summary:string; boundary:string; tone:'blue'|'cyan'|'gray' }
 export interface DictionaryItem { category:string; code:string; name:string; color:string; order:number; status:'启用'|'停用' }
 export interface OperationLog { time:string; user:string; module:string; action:string; object:string; result:'成功'|'失败'; description:string }

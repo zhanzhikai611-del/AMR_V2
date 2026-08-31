@@ -1,6 +1,29 @@
 <script setup lang="ts">
-import { onMounted,ref } from 'vue'; import { getSystemRoles } from '../../api/modules/settings'; import type { SystemRole } from '../../types/settings'
-const roles=ref<SystemRole[]>([]),active=ref<SystemRole|null>(null); onMounted(async()=>roles.value=await getSystemRoles())
-const permissions=[['AMR 调试与直接控制','启动调试、导航、暂停、恢复与停止','现场人员'],['任务与交通处置','取消任务、异常资源释放','现场人员'],['地图与资源配置','编辑并发布地图及资源主数据','研发人员'],['行为树配置','编辑、校验、发布及绑定车辆','研发人员'],['技术日志排障','查看系统日志与 Trace ID','研发人员'],['业务数据查看','查看授权范围内的状态和记录','全部角色']]
+const pages = [
+  { group:'运行信息', page:'实时监控', viewer:true, developer:true, admin:false },
+  { group:'运行信息', page:'数据分析', viewer:true, developer:true, admin:false },
+  { group:'业务功能', page:'派单中心', viewer:false, developer:true, admin:false },
+  { group:'业务功能', page:'行为树管理', viewer:false, developer:true, admin:false },
+  { group:'业务功能', page:'地图管理', viewer:false, developer:true, admin:false },
+  { group:'业务功能', page:'资源管理', viewer:false, developer:true, admin:false },
+  { group:'系统设置', page:'用户管理', viewer:false, developer:false, admin:true },
+  { group:'系统设置', page:'角色权限', viewer:false, developer:false, admin:true },
+  { group:'系统设置', page:'系统日志', viewer:false, developer:false, admin:true },
+]
 </script>
-<template><section class="settings-page"><header class="settings-page__header"><div><p class="page-eyebrow">ROLE BOUNDARIES</p><h1>角色权限</h1></div><span class="settings-fixed-note">3 个系统固定角色 · 不支持新增</span></header><div class="role-card-grid"><article v-for="item in roles" :key="item.name"><header><strong>{{item.name}}</strong><span class="asset-status success">启用</span></header><div><b>{{item.users}}</b><small>名用户</small><p>{{item.summary}}</p><em :class="item.tone">{{item.boundary}}</em><button @click="active=item">查看权限</button></div></article></div><section class="permission-panel"><header><div><strong>操作权限边界</strong><small>系统固定规则，前端不可转授</small></div></header><div><div v-for="row in permissions" :key="row[0]" class="permission-line"><span><strong>{{row[0]}}</strong><small>{{row[1]}}</small></span><em>{{row[2]}}</em></div><aside><b>车辆控制安全边界</b><span>研发人员和只读用户即使拥有页面访问权限，也不得调用 AMR 调试、导航、动作或车辆状态控制接口。</span></aside></div></section><div v-if="active" class="modal-backdrop" @click.self="active=null"><section class="settings-dialog"><header><div><small>ROLE PERMISSIONS</small><strong>{{active.name}}</strong></div><button @click="active=null">×</button></header><div class="role-detail"><p>{{active.summary}}</p><div v-for="row in permissions.filter(p=>p[2]===active?.name||p[2]==='全部角色')" :key="row[0]"><span>✓</span><b>{{row[0]}}</b><small>{{row[1]}}</small></div></div><footer><button class="primary" @click="active=null">关闭</button></footer></section></div></section></template>
+
+<template>
+  <section class="settings-page">
+    <header class="settings-page__header">
+      <div><p class="page-eyebrow">PAGE ACCESS</p><h1>角色权限</h1><p class="settings-lead">按页面划分三个固定角色的访问范围</p></div>
+      <span class="settings-fixed-note">固定角色 · 暂不支持自定义</span>
+    </header>
+    <section class="permission-panel page-access-panel">
+      <header><div><strong>页面访问矩阵</strong><small>角色之间不继承，系统管理员不自动拥有业务页面权限</small></div></header>
+      <div>
+        <table class="access-matrix"><thead><tr><th>页面分组</th><th>页面</th><th>只读用户</th><th>研发人员</th><th>系统管理员</th></tr></thead><tbody><tr v-for="row in pages" :key="row.page"><td>{{row.group}}</td><td><strong>{{row.page}}</strong></td><td><span :class="{allowed:row.viewer}">{{row.viewer?'允许':'—'}}</span></td><td><span :class="{allowed:row.developer}">{{row.developer?'允许':'—'}}</span></td><td><span :class="{allowed:row.admin}">{{row.admin?'允许':'—'}}</span></td></tr></tbody></table>
+        <aside><b>权限规则</b><span>权限仅决定页面是否可访问。菜单展示、路由访问与后端接口均应使用同一角色规则。</span></aside>
+      </div>
+    </section>
+  </section>
+</template>

@@ -1,0 +1,350 @@
+{
+  "file": "Doc\\PRD\\AMR V1.0.0需求文档-研发实施版.docx",
+  "counts": {
+    "high": 34,
+    "medium": 0,
+    "low": 0
+  },
+  "findings": [
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "1",
+        "name": "Picture 1"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "2",
+        "name": "Picture 2"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "3",
+        "name": "Picture 3"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "4",
+        "name": "Picture 4"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "5",
+        "name": "Picture 5"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "6",
+        "name": "Picture 6"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "7",
+        "name": "Picture 7"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "8",
+        "name": "Picture 8"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "9",
+        "name": "Picture 9"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "10",
+        "name": "Picture 10"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "11",
+        "name": "Picture 11"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "12",
+        "name": "Picture 12"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "13",
+        "name": "Picture 13"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "14",
+        "name": "Picture 14"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "15",
+        "name": "Picture 15"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "16",
+        "name": "Picture 16"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "17",
+        "name": "Picture 17"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "18",
+        "name": "Picture 18"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "19",
+        "name": "Picture 19"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "20",
+        "name": "Picture 20"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "21",
+        "name": "Picture 21"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "22",
+        "name": "Picture 22"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "23",
+        "name": "Picture 23"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "24",
+        "name": "Picture 24"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "25",
+        "name": "Picture 25"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "26",
+        "name": "Picture 26"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "27",
+        "name": "Picture 27"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "28",
+        "name": "Picture 28"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "29",
+        "name": "Picture 29"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "30",
+        "name": "Picture 30"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "31",
+        "name": "Picture 31"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "32",
+        "name": "Picture 32"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "33",
+        "name": "Picture 33"
+      }
+    },
+    {
+      "severity": "high",
+      "kind": "image_missing_alt",
+      "message": "Image missing alt text (descr/title empty)",
+      "context": {
+        "part": "word/document.xml",
+        "id": "34",
+        "name": "Picture 34"
+      }
+    }
+  ]
+}

@@ -10,7 +10,6 @@ import MapLibraryView from '../views/MapLibraryView.vue'
 import MapEditorView from '../views/MapEditorView.vue'
 import UsersSettingsView from '../views/settings/UsersSettingsView.vue'
 import RolesSettingsView from '../views/settings/RolesSettingsView.vue'
-import DictionariesSettingsView from '../views/settings/DictionariesSettingsView.vue'
 import LogsSettingsView from '../views/settings/LogsSettingsView.vue'
 import AnalyticsView from '../views/AnalyticsView.vue'
 
@@ -21,26 +20,26 @@ export default createRouter({
       path: '/',
       component: AppLayout,
       children: [
-        { path: '', name: 'digital-twin', component: DigitalTwinView, meta: { menuId: 'twin' } },
-        { path: 'analytics', name: 'analytics', component: AnalyticsView, meta: { menuId: 'analytics' } },
-        { path: 'task-records', name: 'task-records', component: TaskRecordsView, meta: { menuId: 'records' } },
-        { path: 'behaviors', name: 'behaviors', component: BehaviorTreesView, meta: { menuId: 'behavior' } },
-        { path: 'behaviors/:id/edit', component: BehaviorEditorView, meta: { menuId: 'behavior' } },
-        { path: 'resources/amrs', component: ResourceManagementView, props: { section: 'amrs' }, meta: { groupId: 'resources', menuId: 'amrs' } },
-        { path: 'resources/amrs/:id', component: ResourceDetailView, props: { kind: 'amr' }, meta: { groupId: 'resources', menuId: 'amrs' } },
-        { path: 'resources/amr-models', component: ResourceManagementView, props: { section: 'amr-models' }, meta: { groupId: 'resources', menuId: 'amr-models' } },
-        { path: 'resources/devices', component: ResourceManagementView, props: { section: 'devices' }, meta: { groupId: 'resources', menuId: 'devices' } },
-        { path: 'resources/devices/:id', component: ResourceDetailView, props: { kind: 'device' }, meta: { groupId: 'resources', menuId: 'devices' } },
-        { path: 'resources/device-types', component: ResourceManagementView, props: { section: 'device-types' }, meta: { groupId: 'resources', menuId: 'device-types' } },
-        { path: 'maps', component: MapLibraryView, meta: { menuId: 'maps' } },
-        { path: 'maps/:id/edit', component: MapEditorView, meta: { menuId: 'maps' } },
+        { path: '', name: 'digital-twin', component: DigitalTwinView, meta: { menuId: 'twin', roles: ['只读用户','研发人员'] } },
+        { path: 'analytics', name: 'analytics', component: AnalyticsView, meta: { menuId: 'analytics', roles: ['只读用户','研发人员'] } },
+        { path: 'task-records', name: 'task-records', component: TaskRecordsView, meta: { menuId: 'records', roles: ['研发人员'] } },
+        { path: 'behaviors', name: 'behaviors', component: BehaviorTreesView, meta: { menuId: 'behavior', roles: ['研发人员'] } },
+        { path: 'behaviors/:id/edit', component: BehaviorEditorView, meta: { menuId: 'behavior', roles: ['研发人员'] } },
+        { path: 'resources/amrs', component: ResourceManagementView, props: { section: 'amrs' }, meta: { groupId: 'resources', menuId: 'amrs', roles: ['研发人员'] } },
+        { path: 'resources/amrs/:id', component: ResourceDetailView, props: { kind: 'amr' }, meta: { groupId: 'resources', menuId: 'amrs', roles: ['研发人员'] } },
+        { path: 'resources/amr-models', component: ResourceManagementView, props: { section: 'amr-models' }, meta: { groupId: 'resources', menuId: 'amr-models', roles: ['研发人员'] } },
+        { path: 'resources/devices', component: ResourceManagementView, props: { section: 'devices' }, meta: { groupId: 'resources', menuId: 'devices', roles: ['研发人员'] } },
+        { path: 'resources/devices/:id', component: ResourceDetailView, props: { kind: 'device' }, meta: { groupId: 'resources', menuId: 'devices', roles: ['研发人员'] } },
+        { path: 'resources/device-types', component: ResourceManagementView, props: { section: 'device-types' }, meta: { groupId: 'resources', menuId: 'device-types', roles: ['研发人员'] } },
+        { path: 'maps', component: MapLibraryView, meta: { menuId: 'maps', roles: ['研发人员'] } },
+        { path: 'maps/:id/edit', component: MapEditorView, meta: { menuId: 'maps', roles: ['研发人员'] } },
         { path: 'resources/maps', redirect: '/maps' },
         { path: 'resources/maps/:id/edit', redirect: (route) => `/maps/${route.params.id}/edit` },
-        { path:'settings/users',component:UsersSettingsView,meta:{groupId:'settings',menuId:'users'} },
-        { path:'settings/roles',component:RolesSettingsView,meta:{groupId:'settings',menuId:'roles'} },
-        { path:'settings/dictionaries',component:DictionariesSettingsView,meta:{groupId:'settings',menuId:'dictionaries'} },
-        { path:'settings/operation-logs',component:LogsSettingsView,props:{kind:'operation'},meta:{groupId:'settings',menuId:'operation-logs'} },
-        { path:'settings/system-logs',component:LogsSettingsView,props:{kind:'system'},meta:{groupId:'settings',menuId:'system-logs'} },
+        { path:'settings/users',component:UsersSettingsView,meta:{groupId:'settings',menuId:'users',roles:['系统管理员']} },
+        { path:'settings/roles',component:RolesSettingsView,meta:{groupId:'settings',menuId:'roles',roles:['系统管理员']} },
+        { path:'settings/dictionaries',redirect:'/settings/users' },
+        { path:'settings/operation-logs',redirect:'/settings/system-logs?tab=audit' },
+        { path:'settings/system-logs',component:LogsSettingsView,meta:{groupId:'settings',menuId:'system-logs',roles:['系统管理员']} },
       ],
     },
   ],
