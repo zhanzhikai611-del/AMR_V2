@@ -26,7 +26,7 @@ const defaultLayers = { pointcloud: true, network: true, devices: true, navigati
 const layers = reactive({ ...defaultLayers })
 const layerOptions = [
   { key: 'pointcloud', label: '点云地图', hint: '墙体、设备轮廓与实际通道', icon: 'cloud' },
-  { key: 'network', label: '逻辑地图', hint: '保留完整路线，不受站点显示影响', icon: 'network' },
+  { key: 'network', label: '路线', hint: '保留完整路线，不受站点显示影响', icon: 'network' },
   { key: 'devices', label: '设备站点', hint: 'AMR 在设备旁停靠的位置', icon: 'station' },
   { key: 'navigation', label: '一般站点', hint: '转弯、路口与路线衔接站点', icon: 'other' },
   { key: 'parking', label: '停车点', hint: '车辆停车与待命的位置', icon: 'parking' },
@@ -189,7 +189,7 @@ onBeforeUnmount(() => {
             <rect class="device-nameplate" :width="layout.width" :height="layout.height" rx="2" />
             <g data-map-interactive class="station-card-title" :aria-label="`设备 ${stationLabel(layout.point)}`">
               <rect class="station-title-hit" :width="layout.width" :height="layout.height" rx="2" />
-              <text :x="layout.width / 2" y="10">{{ stationLabel(layout.point) }}</text>
+              <text :x="layout.width / 2" :y="layout.height / 2" dominant-baseline="central">{{ stationLabel(layout.point) }}</text>
             </g>
             <title>{{ stationTitle(layout.point) }}</title>
           </g>

@@ -23,8 +23,10 @@ function validate(input) {
     const station = input.find(p => p.id === label.id)
     assert.equal(label.anchorX, station.x)
     assert.equal(label.anchorY, station.y)
-    assert.ok(label.edgeX === label.x || label.edgeX === label.x + label.width)
-    assert.ok(label.edgeY >= label.y && label.edgeY <= label.y + label.height)
+    assert.equal(label.x + label.width / 2, station.x, 'name stays centered above its own station')
+    assert.equal(label.edgeX, station.x)
+    assert.equal(label.edgeY, label.y + label.height)
+    assert.ok(label.edgeY < station.y - 3.5, 'name remains above the station marker')
     for (const other of labels.slice(index + 1)) assert.ok(!overlaps(label, other), `${label.id} overlaps ${other.id}`)
     for (const anchor of input) assert.ok(!overlaps(label, { x: anchor.x - 3.5, y: anchor.y - 3.5, width: 7, height: 7 }), 'do not cover station markers')
   }
