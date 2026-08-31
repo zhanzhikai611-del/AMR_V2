@@ -4,11 +4,12 @@ import { useRoute, useRouter } from 'vue-router'
 import { getMapDraft, publishMapDraft, saveMapDraft } from '../api/modules/maps'
 import { getResourceCatalog } from '../api/modules/resources'
 import type { MapControlZone, MapDefinition, MapEditorDraft, MapEditorTool, MapRoute, MapStation, StationAssociationType } from '../types/domain'
-import pointcloudMap from '../assets/cnc-pointcloud-map.png'
+import MapPointcloud from '../features/maps/MapPointcloud.vue'
+import { MAP_FRAME } from '../features/maps/map-geometry'
 
 type Selection = { kind:'point'|'route'|'zone'; id:string } | null
-const MAP_WIDTH = 760
-const MAP_HEIGHT = 520
+const MAP_WIDTH = MAP_FRAME.width
+const MAP_HEIGHT = MAP_FRAME.height
 const route = useRoute(); const router = useRouter(); const mapId = String(route.params.id)
 const draft = ref<MapEditorDraft>(); const mapInfo = ref<MapDefinition>(); const tool = ref<MapEditorTool>('select')
 const zoom = ref(100); const selected = ref<Selection>(null); const dirty = ref(false); const saving = ref(false); const notice = ref(''); const cursor = ref({x:0,y:0}); const zoneSpeedLimit = ref(0.5)
@@ -207,7 +208,7 @@ onUnmounted(()=>window.removeEventListener('keydown',handleShortcut))
       <main class="map-editor-canvas">
         <div class="editor-stage">
           <svg v-if="draft" :viewBox="viewBox" :class="{'is-panning':panning, 'zone-drawing':zoneDragging}" @click="onCanvasClick" @wheel.prevent="onWheel" @pointerdown="startPan" @pointermove="moveCanvas" @pointerup="endPan" @pointercancel="endPan">
-            <defs><pattern id="editorGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#c9d6de"/></pattern></defs><rect width="760" height="520" fill="url(#editorGrid)"/><image :href="pointcloudMap" x="20" y="52" width="720" height="405" preserveAspectRatio="none" class="editor-slam-map"/>
+            <defs><pattern id="editorGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#c9d6de"/></pattern></defs><rect :width="MAP_WIDTH" :height="MAP_HEIGHT" fill="url(#editorGrid)"/><MapPointcloud class="editor-slam-map"/>
             <g class="editor-zones"><rect v-for="zone in draft.zones" :key="zone.id" data-object :x="zone.x" :y="zone.y" :width="zone.width" :height="zone.height" :class="{selected:selected?.id===zone.id}" @click.stop="selectObject('zone',zone.id)"/></g>
             <g class="editor-base-paths"><path v-for="path in draft.topologyPaths" :key="path" :d="path"/></g>
             <g class="editor-map-lines"><template v-for="line in draft.routes" :key="line.id"><line v-if="pointById(line.startId)&&pointById(line.endId)" data-object :x1="pointById(line.startId)?.x" :y1="pointById(line.startId)?.y" :x2="pointById(line.endId)?.x" :y2="pointById(line.endId)?.y" :class="{selected:selected?.id===line.id,disabled:line.disabled,covered:isCovered('route',line.id)}" @click.stop="selectObject('route',line.id)"/></template></g>

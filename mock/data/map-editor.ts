@@ -1,4 +1,5 @@
 import type { MapEditorDraft, MapRoute, MapStation } from '../../src/types/domain'
+import { demoDeviceBindings } from './map-device-bindings'
 
 const points: MapStation[] = []
 const routes: MapRoute[] = []
@@ -138,10 +139,21 @@ connect(centerLine[centerLine.length - 1], rightGap[0])
 
 const rightUpperRows = [92, 108, 157, 205, 238, 286, 310]
 const rightUpper = rightUpperRows.map((y, index) => addPoint(`SIDE-RU-${y}`, 690, y, index > 0 && index < rightUpperRows.length - 1, 0))
+// 演示充电位设在右上角靠墙通道末端，复用既有站点与路线。
+const cornerCharger = points.find(point => point.id === rightUpper[0])!
+cornerCharger.associationType = 'charge'
+cornerCharger.charged = true
+cornerCharger.deviceId = 'CHG-01'
+cornerCharger.description = '右上角充电位'
 rightUpper.slice(1).forEach((id, index) => connect(rightUpper[index], id))
 connect(rightUpper[rightUpper.length - 1], rightGap[rightGap.length - 1])
 
 // 右下区域目前不建立路线，待现场通行范围确认后再补。
+
+for (const binding of demoDeviceBindings) {
+  const point = points.find(point => point.id === binding.stationId)
+  if (point) point.deviceId = binding.deviceId
+}
 
 const baseDraft: MapEditorDraft = {
   mapId: 'MAP-A',

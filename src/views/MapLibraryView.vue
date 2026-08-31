@@ -2,10 +2,20 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getResourceCatalog } from '../api/modules/resources'
-import type { MapDefinition } from '../types/domain'
-import pointcloudMap from '../assets/cnc-pointcloud-map.png'
+import { getMapDraft } from '../api/modules/maps'
+import type { MapDefinition, MapEditorDraft } from '../types/domain'
+import MapPointcloud from '../features/maps/MapPointcloud.vue'
+import { MAP_FRAME } from '../features/maps/map-geometry'
 
 const maps = ref<MapDefinition[]>([])
+const previews = ref<Record<string, MapEditorDraft>>({})
+const previewLines = computed(() => Object.fromEntries(Object.entries(previews.value).map(([id, map]) => {
+  const points = new Map(map.points.map(point => [point.id, point]))
+  return [id, map.routes.flatMap(route => {
+    const start = points.get(route.startId), end = points.get(route.endId)
+    return start && end ? [{ id: route.id, start, end }] : []
+  })]
+})))
 const query = ref('')
 const status = ref('全部状态')
 const source = ref('全部上传车辆')
@@ -21,7 +31,12 @@ const filteredMaps = computed(() => maps.value.filter((map) => {
 }))
 const currentMap = computed(() => maps.value.find(map=>map.current) ?? null)
 
-onMounted(async () => { maps.value = (await getResourceCatalog()).maps })
+onMounted(async () => {
+  maps.value = (await getResourceCatalog()).maps
+  await Promise.all(maps.value.filter(map => map.status !== '空白').map(async map => {
+    try { previews.value[map.id] = await getMapDraft(map.id) } catch { /* Keep the version card available when its preview cannot be loaded. */ }
+  }))
+})
 function openEditor(map: MapDefinition) { router.push(`/maps/${map.id}/edit`) }
 function requestSetCurrent(map:MapDefinition){ if(map.status==='已发布'&&!map.current)runtimeTarget.value=map }
 function setCurrentMap(){ if(!runtimeTarget.value)return; maps.value.forEach(map=>{ map.current=map.id===runtimeTarget.value?.id }); runtimeTarget.value=null }
@@ -43,8 +58,10 @@ function setCurrentMap(){ if(!runtimeTarget.value)return; maps.value.forEach(map
     <div class="map-library-grid">
       <article v-for="map in filteredMaps" :key="map.id" class="map-library-card" :class="{'is-current':map.current}" tabindex="0" @click="openEditor(map)" @keydown.enter="openEditor(map)">
         <div class="map-card-preview" :class="{ 'is-empty': map.status === '空白' }">
-          <img v-if="map.status !== '空白'" :src="pointcloudMap" alt="地图点云缩略图">
-          <svg v-if="map.status !== '空白'" viewBox="0 0 360 210" aria-hidden="true" class="map-card-network"><path d="M74 54V176M116 54V176M158 54V176M200 54V176M242 54V176M284 54V176M58 112H300M58 176H300"/><path d="M74 84l42 38M116 84L74 122M158 84l42 38M200 84l-42 38M242 84l42 38M284 84l-42 38"/></svg>
+          <svg v-if="previews[map.id]" :viewBox="`0 0 ${MAP_FRAME.width} ${MAP_FRAME.height}`" role="img" :aria-label="`${map.mapVersion} 地图预览`" class="map-library-preview">
+            <MapPointcloud />
+            <g class="preview-network"><line v-for="line in previewLines[map.id]" :key="line.id" :x1="line.start.x" :y1="line.start.y" :x2="line.end.x" :y2="line.end.y" /></g>
+          </svg>
           <span :class="`map-card-status is-${map.status}`">{{ map.status }}</span>
           <b class="map-card-open">打开地图编辑器 ↗</b>
         </div>
@@ -55,7 +72,7 @@ function setCurrentMap(){ if(!runtimeTarget.value)return; maps.value.forEach(map
             <button v-else class="map-runtime-action" :disabled="map.status!=='已发布'" :title="map.status!=='已发布'?'地图发布后才能设为当前运行地图':''" @click.stop="requestSetCurrent(map)">{{ map.status==='已发布'?'设置为当前地图':'未发布' }}</button>
           </div>
           <dl>
-            <div><dt>上传来源</dt><dd>{{ map.source }}</dd></div><div><dt>逻辑对象</dt><dd>{{ map.objectSummary }}</dd></div>
+            <div><dt>上传来源</dt><dd>{{ map.source }}</dd></div><div><dt>逻辑对象</dt><dd>{{ previews[map.id] ? `${previews[map.id]!.routes.length} 路线 · ${previews[map.id]!.points.length} 站点` : map.objectSummary }}</dd></div>
           </dl>
         </div>
       </article>
@@ -65,3 +82,8 @@ function setCurrentMap(){ if(!runtimeTarget.value)return; maps.value.forEach(map
     <div v-if="showCreate" class="modal-backdrop" @click.self="showCreate=false"><section class="create-dialog"><header><div><span>IMPORT MAP VERSION</span><strong>导入地图版本</strong></div><button @click="showCreate=false">×</button></header><label>地图版本<input placeholder="例如：V2.0"></label><label>地图来源<select><option>选择车辆上传记录</option><option>AMR-03 · 今日 14:36</option><option>AMR-06 · 今日 13:52</option><option>本地文件导入</option></select></label><footer><button @click="showCreate=false">取消</button><button class="primary" @click="showCreate=false">导入为草稿</button></footer></section></div>
   </section>
 </template>
+
+<style scoped>
+.map-library-preview { position: absolute; inset: 0; width: 100%; height: 100%; }
+.preview-network line { stroke: #1677ff; stroke-width: 1.5; opacity: .65; }
+</style>

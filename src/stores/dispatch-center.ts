@@ -3,6 +3,7 @@ import { getTwinSnapshot } from '../api/modules/operations'
 import { getTaskRecords } from '../api/modules/task-records'
 import { getDispatchRules, updateDispatchRule } from '../api/modules/dispatch'
 import type { Amr, BehaviorStep, DispatchRule, MapResource, Task, TaskRecord } from '../types/domain'
+import { advanceSimulatedSteps, snapshotExecution } from '../features/tasks/execution-history'
 
 /** 模拟推进节奏：每 10 秒推进一个 tick，对应执行时长 10 秒。 */
 const TICK_MS = 10000
@@ -178,6 +179,7 @@ export const useDispatchCenterStore = defineStore('dispatch-center', {
         if (task.status !== '执行中') continue
         task.progress = Math.min(task.progress + (4 + Math.round(Math.random() * 8)), 100)
         task.duration = addSeconds(task.duration, TICK_SECONDS)
+        task.behaviorSteps = advanceSimulatedSteps(task.behaviorSteps, task.progress, TICK_SECONDS)
         if (task.progress >= 100) completed.push(task.id)
       }
       for (const taskId of completed) this.completeTask(taskId)
@@ -313,6 +315,7 @@ export const useDispatchCenterStore = defineStore('dispatch-center', {
         behaviorVersion: task.behaviorVersion,
         summary: '任务完成，设备请求已满足，资源已释放。',
         strategy: this.strategyLabel(task.type),
+        ...snapshotExecution(task.behaviorSteps, '已完成'),
       }
       this.tasks.splice(index, 1)
       this.records.unshift(record)
@@ -340,6 +343,7 @@ export const useDispatchCenterStore = defineStore('dispatch-center', {
         behaviorVersion: task.behaviorVersion,
         summary: '模拟流转：任务异常持续 10 秒，系统自动归档为已取消。',
         strategy: this.strategyLabel(task.type),
+        ...snapshotExecution(task.behaviorSteps, '已取消'),
       }
       this.tasks.splice(index, 1)
       this.records.unshift(record)

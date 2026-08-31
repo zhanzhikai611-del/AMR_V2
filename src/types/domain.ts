@@ -108,6 +108,8 @@ export interface TrafficSegment {
 }
 
 export interface TwinSnapshot {
+  runtimeMap?: RuntimeMap
+  simulation?: boolean
   updatedAt: string
   scope: string
   tasks: Task[]
@@ -219,6 +221,11 @@ export interface MapEditorDraft {
   topologyPaths?: string[]
 }
 
+export interface RuntimeMap extends MapEditorDraft {
+  name: string
+  demo: boolean
+}
+
 export interface ResourceCatalog {
   amrs: Amr[]
   devices: MapResource[]
@@ -239,6 +246,10 @@ export interface TaskRecord {
   behaviorName: string
   behaviorVersion: string
   summary: string
+  /** 结束时的执行轨迹快照；旧记录可能未保存，不能按当前模板补造。 */
+  behaviorSteps?: BehaviorStep[]
+  canceledStepId?: string
+  cancelReason?: string
   /** 完成时该任务类型生效的调度策略名。 */
   strategy?: string
 }

@@ -407,7 +407,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, [tabindex]:focus-vis
 /* Live map simulation */
 .simulation-route-layer>g{transition:opacity .16s ease}.simulation-route-layer>g.muted{opacity:.16}.simulation-route-layer .route-planned{stroke:#8bc0ff;stroke-width:4;stroke-dasharray:9 7;opacity:.72}.simulation-route-layer .route-traveled{stroke:#1677ff;stroke-width:5;stroke-dashoffset:0;opacity:.95;transition:stroke-dasharray 34ms linear}.simulation-route-layer>g.selected .route-planned{stroke-width:5;opacity:.9}.simulation-route-layer>g.selected .route-traveled{stroke-width:6}
 .fault-pulse{fill:rgba(217,45,32,.14);stroke:#e14a3d;stroke-width:1.2;pointer-events:none;transform-box:fill-box;transform-origin:center;animation:fault-breathe 2.4s ease-out infinite}.fault-pulse-two{animation-delay:1.2s}.map-amr.fault.selected .fault-pulse{filter:none}
-.map-amr.dispatch-paused { opacity: .38; filter: grayscale(.85); }.map-amr.dispatch-paused.selected { opacity: .62; }.map-amr.dispatch-paused .fault-pulse { display: none; }
+.map-amr.dispatch-paused { opacity: 1; }.map-amr.dispatch-paused.muted { opacity: .65; }.map-amr.dispatch-paused.selected { opacity: 1; }.map-amr.dispatch-paused .fault-pulse { display: none; }
 @keyframes fault-breathe{0%{opacity:.34;transform:scale(.72)}75%,100%{opacity:0;transform:scale(1.55)}}
 @media(prefers-reduced-motion:reduce){.fault-pulse{animation:none;opacity:.16;transform:scale(1.15)}.fault-pulse-two{display:none}.simulation-route-layer .route-traveled{transition:none}}
 

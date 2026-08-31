@@ -10,7 +10,8 @@ const monitor = useMonitorContextStore()
 const inspectorCollapsed = ref(false)
 const sourceAmrs = computed(() => monitor.snapshot?.amrs ?? [])
 const sourceTasks = computed(() => monitor.snapshot?.tasks ?? [])
-const { displayAmrs, routeProgress } = useTwinSimulation(sourceAmrs, sourceTasks)
+const simulationEnabled = computed(() => monitor.snapshot?.simulation === true)
+const { displayAmrs, routeProgress } = useTwinSimulation(sourceAmrs, sourceTasks, simulationEnabled)
 const selectedDisplayAmr = computed(() => displayAmrs.value.find(amr => amr.id === monitor.selectedAmrId) ?? null)
 
 function selectAmr(id: string) {
@@ -37,7 +38,8 @@ onMounted(() => { if (!monitor.snapshot) void monitor.loadSnapshot() })
           :amrs="displayAmrs"
           :resources="monitor.snapshot.resources"
           :tasks="monitor.snapshot.tasks"
-          :topology="monitor.snapshot.topology"
+          :map="monitor.snapshot.runtimeMap"
+          :simulation="simulationEnabled"
           :selected-amr-id="monitor.selectedAmrId"
           :selected-task-id="monitor.selectedTaskId"
           :inspector-open="Boolean((monitor.selectedAmrId || monitor.selectedTaskId) && !inspectorCollapsed)"

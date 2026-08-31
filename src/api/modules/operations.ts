@@ -6,8 +6,9 @@ const useMock = import.meta.env.VITE_USE_MOCK !== 'false'
 export async function getTwinSnapshot(): Promise<TwinSnapshot> {
   if (useMock) {
     const { twinSnapshot } = await import('../../../mock/data/operations')
+    const { withRuntimeMap } = await import('../../../mock/data/runtime-map')
     await new Promise((resolve) => window.setTimeout(resolve, 180))
-    return structuredClone(twinSnapshot)
+    return withRuntimeMap(twinSnapshot)
   }
 
   const response = await http.get<{ data: TwinSnapshot }>('/digital-twin/snapshot')

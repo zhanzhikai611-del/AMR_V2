@@ -217,7 +217,7 @@ onBeforeUnmount(() => center.stop())
             </section>
 
             <section class="task-detail-process">
-              <header><div><span>执行过程</span><strong>{{ selected.task.behaviorName }}</strong></div><em>{{ selected.task.behaviorVersion }}</em></header>
+              <header><div><strong>执行过程</strong></div></header>
               <ol class="task-detail-steps">
                 <li v-for="step in selected.task.behaviorSteps" :key="step.id" :class="step.status">
                   <i><span></span></i>
@@ -242,11 +242,21 @@ onBeforeUnmount(() => center.stop())
             </section>
 
             <section class="task-detail-process record-process">
-              <header><div><span>任务过程</span><strong>{{ selected.task.behaviorName }}</strong></div><em>{{ selected.task.behaviorVersion }}</em></header>
-              <ol class="record-lifecycle">
-                <li class="success"><i></i><div><strong>任务创建</strong><time class="type-data">{{ selected.task.requestedAt }}</time></div></li>
-                <li :class="selected.task.result === '已完成' ? 'success' : 'canceled'"><i></i><div><strong>{{ selected.task.result }}</strong><time class="type-data">{{ selected.task.finishedAt }}</time></div></li>
+              <header><div><strong>执行过程</strong></div></header>
+              <ol v-if="selected.task.behaviorSteps?.length" class="task-detail-steps">
+                <li v-for="step in selected.task.behaviorSteps" :key="step.id" :class="step.id === selected.task.canceledStepId ? 'failure' : step.status">
+                  <i><span></span></i>
+                  <div>
+                    <strong>{{ step.name }}</strong>
+                    <small>{{ step.id === selected.task.canceledStepId ? '在此节点取消' : step.status === 'success' ? '已完成' : step.status === 'failure' ? '失败' : step.status === 'skipped' ? '已跳过' : '未执行' }}</small>
+                    <p v-if="step.id === selected.task.canceledStepId">{{ selected.task.cancelReason || step.detail || '未提供取消原因' }}<br>取消时间：{{ selected.task.finishedAt }}</p>
+                    <p v-else-if="step.detail">{{ step.detail }}</p>
+                  </div>
+                  <time v-if="step.duration !== '—'" class="type-data">{{ step.duration }}</time>
+                </li>
               </ol>
+              <p v-else class="task-result-summary">该历史记录未保存执行轨迹，无法还原实际执行节点。</p>
+              <p v-if="selected.task.result === '已取消' && !selected.task.canceledStepId" class="task-result-summary canceled">未记录取消节点（可能在执行前结束），不推断中止位置。</p>
               <p class="task-result-summary" :class="{ canceled: selected.task.result === '已取消' }">{{ selected.task.summary }}</p>
             </section>
           </template>
