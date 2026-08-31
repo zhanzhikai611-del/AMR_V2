@@ -6,3 +6,7 @@ dist
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+
+# 大文件夹 - 文档与截图不纳入版本控制
+Doc/PRD/
+Doc/screenshots/
