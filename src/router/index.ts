@@ -38,7 +38,7 @@ export default createRouter({
         { path:'settings/users',component:UsersSettingsView,meta:{groupId:'settings',menuId:'users',roles:['系统管理员']} },
         { path:'settings/roles',component:RolesSettingsView,meta:{groupId:'settings',menuId:'roles',roles:['系统管理员']} },
         { path:'settings/dictionaries',redirect:'/settings/users' },
-        { path:'settings/operation-logs',redirect:'/settings/system-logs?tab=audit' },
+        { path:'settings/operation-logs',redirect:'/settings/system-logs' },
         { path:'settings/system-logs',component:LogsSettingsView,meta:{groupId:'settings',menuId:'system-logs',roles:['系统管理员']} },
       ],
     },

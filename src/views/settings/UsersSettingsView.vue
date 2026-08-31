@@ -1,50 +1,78 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { getSystemUsers } from '../../api/modules/settings'
-import type { SystemUser } from '../../types/settings'
-
+import { getSystemUsers, getSystemRoles, saveSystemUser } from '../../api/modules/settings'
+import type { SystemUser, SystemRole } from '../../types/settings'
 const users = ref<SystemUser[]>([])
+const roles = ref<SystemRole[]>([])
 const query = ref('')
-const role = ref('全部角色')
-const status = ref('全部状态')
+const role = ref('')
+const status = ref('')
 const editing = ref<SystemUser | null>(null)
 const originalUsername = ref('')
+const busy = ref(false)
+const loading = ref(true)
+const error = ref('')
+const notice = ref('')
 const filtered = computed(() => users.value.filter(user =>
-  (!query.value || `${user.username}${user.name}`.toLowerCase().includes(query.value.toLowerCase())) &&
-  (role.value === '全部角色' || user.role === role.value) &&
-  (status.value === '全部状态' || user.status === status.value),
-))
-
+  (!query.value.trim() || `${user.username} ${user.name} ${user.departmentCode ?? ""} ${user.departmentName ?? ""}`.toLowerCase().includes(query.value.trim().toLowerCase())) &&
+  (!role.value || user.role === role.value) && (!status.value || user.status === status.value)))
+async function load() {
+  loading.value = true; error.value = ''
+  try { [users.value, roles.value] = await Promise.all([getSystemUsers(), getSystemRoles()]) }
+  catch { error.value = '用户数据加载失败，请重试。' }
+  finally { loading.value = false }
+}
 function create() {
-  originalUsername.value = ''
-  editing.value = { username:'', name:'', role:'只读用户', status:'启用', lastLogin:'—', createdAt:new Date().toISOString().slice(0,10) }
+  originalUsername.value = ''; error.value = ''; notice.value = ''
+  editing.value = { username:'', name:'', departmentCode:'', departmentName:'', email:'', loginIp:'', role:roles.value.find(item => item.name === '只读用户')?.name ?? roles.value[0]?.name ?? '', status:'启用', lastLogin:'—', createdAt:new Date().toLocaleDateString('sv-SE') }
 }
-function edit(user: SystemUser) {
-  originalUsername.value = user.username
-  editing.value = { ...user }
+function edit(user: SystemUser) { originalUsername.value = user.username; editing.value = { departmentCode:'', departmentName:'', email:'', loginIp:'', ...user }; error.value = ''; notice.value = '' }
+async function save() {
+  if (!editing.value || busy.value) return
+  busy.value = true; error.value = ''
+  try { await saveSystemUser({ ...editing.value }, originalUsername.value); editing.value = null; await load(); notice.value = '用户已保存。' }
+  catch (e) { error.value = e instanceof Error ? e.message : '保存失败，请重试。' }
+  finally { busy.value = false }
 }
-function save() {
-  if (!editing.value) return
-  const index = users.value.findIndex(user => user.username === originalUsername.value)
-  if (index < 0) users.value.push({ ...editing.value })
-  else users.value[index] = { ...editing.value }
-  editing.value = null
+async function toggle(user: SystemUser) {
+  if (busy.value) return
+  if (user.status === '启用' && !window.confirm(`确定停用用户「${user.username}」？历史记录将保留。`)) return
+  busy.value = true; error.value = ''; notice.value = ''
+  try { await saveSystemUser({ ...user, status:user.status === '启用' ? '停用' : '启用' }, user.username); await load(); notice.value = '账号状态已更新。' }
+  catch (e) { error.value = e instanceof Error ? e.message : '更新失败，请重试。' }
+  finally { busy.value = false }
 }
-function toggle(user: SystemUser) { user.status = user.status === '启用' ? '停用' : '启用' }
-onMounted(async () => { users.value = await getSystemUsers() })
+function close() { if (!busy.value) { editing.value = null; error.value = '' } }
+onMounted(load)
 </script>
 
 <template>
   <section class="settings-page">
     <header class="settings-page__header">
-      <div><p class="page-eyebrow">IDENTITY & ACCESS</p><h1>用户管理</h1><p class="settings-lead">管理账号、角色归属与访问状态</p></div>
-      <button class="settings-primary" @click="create">＋ 新增用户</button>
+      <div><p class="page-eyebrow">IDENTITY & ACCESS</p><h1>用户管理</h1></div>
+      <button class="settings-primary" :disabled="loading || !roles.length" @click="create">＋ 新增用户</button>
     </header>
+    <p v-if="error && !editing" class="settings-error" role="alert">{{ error }} <button class="table-action" @click="load">重新加载</button></p>
+    <p v-if="notice" class="settings-notice" role="status">{{ notice }}</p>
     <div class="settings-toolbar">
-      <label><span>⌕</span><input v-model="query" placeholder="搜索用户名或姓名"></label>
-      <div><select v-model="role"><option>全部角色</option><option>只读用户</option><option>研发人员</option><option>系统管理员</option></select><select v-model="status"><option>全部状态</option><option>启用</option><option>停用</option></select></div>
+      <label><span>⌕</span><input v-model="query" placeholder="搜索工号、昵称或部门" aria-label="搜索用户"></label>
+      <div><select v-model="role" aria-label="筛选角色"><option value="">全部角色</option><option v-for="item in roles" :key="item.name">{{ item.name }}</option></select><select v-model="status" aria-label="筛选状态"><option value="">全部状态</option><option>启用</option><option>停用</option></select></div>
+      <span class="settings-hint">共 {{ filtered.length }} 个用户</span>
     </div>
-    <div class="settings-table-wrap"><table class="settings-table"><thead><tr><th>用户名</th><th>姓名</th><th>角色</th><th>状态</th><th>最近登录</th><th>创建日期</th><th>操作</th></tr></thead><tbody><tr v-for="user in filtered" :key="user.username"><td class="type-data settings-id">{{user.username}}</td><td>{{user.name}}</td><td><span class="settings-tag" :class="user.role">{{user.role}}</span></td><td><span class="asset-status" :class="user.status==='启用'?'success':'neutral'">{{user.status}}</span></td><td class="muted-cell">{{user.lastLogin}}</td><td class="muted-cell">{{user.createdAt}}</td><td><div class="row-actions"><button class="table-action" @click="edit(user)">编辑</button><button class="table-action" @click="toggle(user)">{{user.status==='启用'?'停用':'启用'}}</button></div></td></tr></tbody></table></div>
-    <div v-if="editing" class="modal-backdrop" @click.self="editing=null"><section class="settings-dialog"><header><div><small>USER PROFILE</small><strong>{{originalUsername?'编辑用户':'新增用户'}}</strong></div><button aria-label="关闭" @click="editing=null">×</button></header><div class="settings-dialog__body"><label>用户名<input v-model.trim="editing.username" :readonly="!!originalUsername" placeholder="例如 dev.frontend"></label><label>姓名<input v-model.trim="editing.name" placeholder="用户显示名称"></label><label>角色<select v-model="editing.role"><option>只读用户</option><option>研发人员</option><option>系统管理员</option></select></label><label>状态<select v-model="editing.status"><option>启用</option><option>停用</option></select></label><p class="form-boundary">角色决定可访问的页面；停用账号后禁止登录，但保留历史审计记录。</p></div><footer><button @click="editing=null">取消</button><button class="primary" :disabled="!editing.username||!editing.name" @click="save">保存用户</button></footer></section></div>
+    <div class="settings-table-wrap"><table class="settings-table settings-users-table"><thead><tr><th>工号</th><th>用户昵称</th><th>角色</th><th>状态</th><th>最近登录</th><th>创建日期</th><th class="settings-actions-column">操作</th></tr></thead><tbody>
+      <tr v-for="user in filtered" :key="user.username"><td class="type-data settings-id">{{ user.username }}</td><td>{{ user.name }}</td><td><span class="settings-tag" :class="user.role">{{ user.role }}</span></td><td><span class="asset-status" :class="user.status==='启用'?'success':'neutral'">{{ user.status }}</span></td><td class="muted-cell">{{ user.lastLogin }}</td><td class="muted-cell">{{ user.createdAt }}</td><td class="settings-actions-column"><div class="row-actions"><button class="table-action" :disabled="busy" @click="edit(user)">编辑</button><button class="table-action" :disabled="busy" @click="toggle(user)">{{ user.status==='启用'?'停用':'启用' }}</button></div></td></tr>
+      <tr v-if="loading || !filtered.length"><td colspan="7" class="settings-empty">{{ loading ? '正在加载用户…' : '没有匹配的用户，请调整筛选条件或新增用户。' }}</td></tr>
+    </tbody></table></div>
+    <div v-if="editing" class="modal-backdrop" @click.self="close" @keydown.esc="close"><form class="settings-dialog settings-user-dialog" role="dialog" aria-modal="true" aria-labelledby="user-dialog-title" @submit.prevent="save"><header><div><small>USER PROFILE</small><strong id="user-dialog-title">{{ originalUsername?'编辑用户':'新增用户' }}</strong></div><button type="button" aria-label="关闭" :disabled="busy" @click="close">×</button></header><div class="settings-dialog__body settings-user-form">
+      <label for="user-number"><span class="required-field">工号</span><input id="user-number" v-model.trim="editing.username" :readonly="!!originalUsername" :disabled="busy" maxlength="40" required placeholder="请输入工号"></label>
+      <label for="user-nickname"><span class="required-field">用户昵称</span><input id="user-nickname" v-model.trim="editing.name" :disabled="busy" maxlength="40" required placeholder="请输入用户昵称"></label>
+      <label for="user-department-code"><span>部门代码</span><input id="user-department-code" v-model.trim="editing.departmentCode" :disabled="busy" maxlength="40" placeholder="请输入部门代码"></label>
+      <label for="user-department-name"><span>部门名称</span><input id="user-department-name" v-model.trim="editing.departmentName" :disabled="busy" maxlength="80" placeholder="请输入部门名称"></label>
+      <label for="user-email"><span>邮箱</span><input id="user-email" v-model.trim="editing.email" :disabled="busy" type="email" maxlength="254" placeholder="请输入邮箱"></label>
+      <label for="user-login-ip"><span>登录 IP</span><input id="user-login-ip" v-model.trim="editing.loginIp" :disabled="busy" maxlength="45" placeholder="请输入登录 IP（可选）"></label>
+      <label for="user-role"><span class="required-field">角色分配</span><select id="user-role" v-model="editing.role" :disabled="busy" required><option value="" disabled>请选择角色</option><option v-for="item in roles" :key="item.name">{{ item.name }}</option></select></label>
+      <fieldset class="settings-user-status" :disabled="busy"><legend>状态</legend><div><label><input v-model="editing.status" type="radio" value="启用" name="user-status">正常</label><label><input v-model="editing.status" type="radio" value="停用" name="user-status">停用</label></div></fieldset>
+      <p v-if="error" class="settings-error" role="alert">{{ error }}</p>
+    </div><footer><button type="button" :disabled="busy" @click="close">取消</button><button class="primary" :disabled="busy || !editing.username || !editing.name || !editing.role">{{ busy?'保存中…':'保存用户' }}</button></footer></form></div>
   </section>
 </template>
