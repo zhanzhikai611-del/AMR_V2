@@ -23,8 +23,21 @@ function validate(input) {
     const station = input.find(p => p.id === label.id)
     assert.equal(label.anchorX, station.x)
     assert.equal(label.anchorY, station.y)
-    assert.equal(label.x + label.width / 2, station.x, 'name stays centered above its own station')
-    assert.equal(label.edgeX, station.x)
+    const partner = input.find(p => p.id !== station.id && p.y === station.y && Math.abs(p.x - station.x) <= 10)
+    if (partner) {
+      const partnerLabel = labels.find(item => item.id === partner.id)
+      assert.equal(label.y, partnerLabel.y, 'paired names share a height')
+      if (station.x < partner.x) {
+        assert.ok(label.x + label.width < station.x, 'left name opens left')
+        assert.equal(label.edgeX, label.x + label.width)
+      } else {
+        assert.ok(label.x > station.x, 'right name opens right')
+        assert.equal(label.edgeX, label.x)
+      }
+    } else {
+      assert.equal(label.x + label.width / 2, station.x, 'isolated name stays centered')
+      assert.equal(label.edgeX, station.x)
+    }
     assert.equal(label.edgeY, label.y + label.height)
     assert.ok(label.edgeY < station.y - 3.5, 'name remains above the station marker')
     for (const other of labels.slice(index + 1)) assert.ok(!overlaps(label, other), `${label.id} overlaps ${other.id}`)
@@ -34,6 +47,7 @@ function validate(input) {
 }
 assert.equal(stations.length, 120)
 const current = validate(stations)
+assert.ok(current.every(label => label.anchorY - label.edgeY === 7), 'current map fits short leaders without moving any pair to another row')
 assert.deepEqual(current, layoutStationLabels([...stations].reverse()), 'layout does not depend on source array order')
 for (const count of [2, 3, 5, 8, 12]) {
   const variant = structuredClone(stations)

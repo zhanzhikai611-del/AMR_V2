@@ -1,0 +1,172 @@
+{
+  "word/header3.xml": {
+    "size": 1217,
+    "sha256": "19e9a1f4d5460d2be48562b2b3488a9b443979d6b8b8925f7e176999b12a4920",
+    "policy": "preserve"
+  },
+  "word/styles.xml": {
+    "size": 34195,
+    "sha256": "2e0b441c598341f2facec163a391bafaa7d0ea9c7f915557aa01e501cfd3c311",
+    "policy": "preserve"
+  },
+  "word/footer1.xml": {
+    "size": 1160,
+    "sha256": "d756cf3ebcbaf8251b1e2cb3310e361106ef0bb9996a0ae358df0cd7ddcb4512",
+    "policy": "preserve"
+  },
+  "word/header2.xml": {
+    "size": 1217,
+    "sha256": "19e9a1f4d5460d2be48562b2b3488a9b443979d6b8b8925f7e176999b12a4920",
+    "policy": "preserve"
+  },
+  "word/numbering.xml": {
+    "size": 5127,
+    "sha256": "7937d8e92623b6672a7d307d3215aaa51fe62b990382973f1b7cbfbaee5ee889",
+    "policy": "preserve"
+  },
+  "word/media/image2.png": {
+    "size": 9099,
+    "sha256": "4a99f3a27741aa0de222752dcf0823a7832da9f31c3b3797a4c3a39d7a4aafcd",
+    "policy": "preserve"
+  },
+  "word/media/image11.png": {
+    "size": 2112737,
+    "sha256": "74c89fecbbc1657fb735b83a844ddfa3a0b5da0b3a6b6541123bd35db75390cf",
+    "policy": "preserve"
+  },
+  "word/media/image10.png": {
+    "size": 1638244,
+    "sha256": "c1a5764eccac913c714e87047c8467936761437b588bdc4af9ea360ae8dfedb9",
+    "policy": "preserve"
+  },
+  "word/media/image12.png": {
+    "size": 2092961,
+    "sha256": "5dd03a9b6aff010aae4589a8ac619b8d06ff8d593256c28d9a7399cb80bf128a",
+    "policy": "preserve"
+  },
+  "word/media/image13.png": {
+    "size": 2109432,
+    "sha256": "f532aab8a94c3d966ae7e0a16e44bfc97a38e58328a86765e909bbe7496308fc",
+    "policy": "preserve"
+  },
+  "word/media/image14.png": {
+    "size": 2089014,
+    "sha256": "acf623eae17a04152dc242297ca29fcebfb19fc159b075a7bf9f19de0c2b8c48",
+    "policy": "preserve"
+  },
+  "word/media/image15.png": {
+    "size": 2101014,
+    "sha256": "16d54c959aabbb5b8c8850148e0d08580b943b689db3d3700a99f1976925d995",
+    "policy": "preserve"
+  },
+  "word/media/image16.png": {
+    "size": 2100732,
+    "sha256": "3e20778d0e5bfd1d16fa0a915050e2b1bf944db8a3d6159bdca01bad71035004",
+    "policy": "preserve"
+  },
+  "word/header1.xml": {
+    "size": 1241,
+    "sha256": "7e0f65bc0509c4d25694ed10c4debf270390927bd3f8316811ba017ea52ed86c",
+    "policy": "preserve"
+  },
+  "word/footer3.xml": {
+    "size": 2218,
+    "sha256": "6ed55e726cf9a347da6f19962770a0c8c40276fca12412e8840e0c1f8ac31ad6",
+    "policy": "preserve"
+  },
+  "word/footer2.xml": {
+    "size": 2218,
+    "sha256": "6ed55e726cf9a347da6f19962770a0c8c40276fca12412e8840e0c1f8ac31ad6",
+    "policy": "preserve"
+  },
+  "word/fontTable.xml": {
+    "size": 1419,
+    "sha256": "43c4bfaa1c547152d163155410a65e1052088f635610e4d78cfedfcefaba9078",
+    "policy": "preserve"
+  },
+  "word/settings.xml": {
+    "size": 1174,
+    "sha256": "a8b96e3611eca75dfaee39c7ee55be525d57299d98c69f5f53d60ce448d85d32",
+    "policy": "editable"
+  },
+  "word/theme/theme1.xml": {
+    "size": 6030,
+    "sha256": "c8c9015dccaf551c85086a767d2c35ab7dfd847fc2cf27a0cc794a4d1cab4203",
+    "policy": "preserve"
+  },
+  "word/_rels/document.xml.rels": {
+    "size": 3834,
+    "sha256": "f920923c016a9f55abdfa552de93588b50d58403b0a9d654637b8b2401c7f3e2",
+    "policy": "preserve"
+  },
+  "docProps/custom.xml": {
+    "size": 241,
+    "sha256": "9b1afafd2d4a7132c3f88bb8c1a6976f0e722be9949d6e72eb441608283c4d01",
+    "policy": "preserve"
+  },
+  "docProps/core.xml": {
+    "size": 735,
+    "sha256": "01aea50e068d57524a5db9a75b22589ebe791bd65ca2ecc59d1a6496e8ff890a",
+    "policy": "preserve"
+  },
+  "docProps/app.xml": {
+    "size": 593,
+    "sha256": "fd43aaa91f57e0822d301cb28738af3714a7e1a4920fa398b97f7f7b7aa31edc",
+    "policy": "preserve"
+  },
+  "_rels/.rels": {
+    "size": 720,
+    "sha256": "3823de16366678a094490aa4983c96c800dd02d98852331736bf558c1f6ebfcf",
+    "policy": "preserve"
+  },
+  "[Content_Types].xml": {
+    "size": 2353,
+    "sha256": "82d23bab129de22fd635220d6b3f41835761aa09899af1d41aa78575762e0d23",
+    "policy": "preserve"
+  },
+  "word/media/image9.png": {
+    "size": 234313,
+    "sha256": "ec042349091b6d93ab133cc775477cfdf863827ad66cdd9408f3d2a5880f0462",
+    "policy": "preserve"
+  },
+  "word/media/image8.png": {
+    "size": 242709,
+    "sha256": "ecf9340b4d478b6b36ecfececa77a8b33fc3e542136200b37429b95f7845f25e",
+    "policy": "preserve"
+  },
+  "word/media/image7.png": {
+    "size": 315926,
+    "sha256": "af48c49e7aefba9ee559a606b7d0db22b7fcd4f133c8a0994fe753b2783c7769",
+    "policy": "preserve"
+  },
+  "word/media/image6.png": {
+    "size": 179328,
+    "sha256": "08b12fe99d64f6202af8758338bdd5c6959e6d9af795466835dfb557a3ab3c3b",
+    "policy": "preserve"
+  },
+  "word/media/image5.png": {
+    "size": 141473,
+    "sha256": "7988549c5281fd9434c995329e9db959fdce1d9e811cb147bf43fa2ddfca4908",
+    "policy": "preserve"
+  },
+  "word/media/image4.png": {
+    "size": 161619,
+    "sha256": "a887f7d180151f83908e83d1cd89848aa6c74026c7fb3fbb31d777df3ff2ddbe",
+    "policy": "preserve"
+  },
+  "word/media/image3.png": {
+    "size": 117584,
+    "sha256": "d42832a1f07c2ba95a7be0f46b24a503455f96439ebb9665ac3ae01f8f51b5e7",
+    "policy": "preserve"
+  },
+  "word/media/image1.png": {
+    "size": 168666,
+    "sha256": "94c2c28a416024442db292af48fa19c5aa9de16fb0d5d749d3447a665520231f",
+    "policy": "preserve"
+  },
+  "word/document.xml": {
+    "size": 346422,
+    "sha256": "db3f42d85eef07439d2755219f029a9da7c9405f124ea67a0fd1958e85833557",
+    "policy": "editable"
+  }
+}

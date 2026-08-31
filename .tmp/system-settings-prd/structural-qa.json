@@ -1,0 +1,10 @@
+{
+  "output": "C:\\Users\\Kai\\Documents\\ChatGPT\\AMR\\AMR_V2\\Doc\\PRD\\AMR V1.0.0需求文档-系统设置专项.docx",
+  "changed_parts": [
+    "word/settings.xml",
+    "word/document.xml"
+  ],
+  "characters": 9687,
+  "tables": 17,
+  "source_sha256": "e0f8d2c97724b36d3c1616bb41cfbeb97730756d30fefe7c312c0bdc2e66b876"
+}

@@ -1,0 +1,11 @@
+# System settings PRD template contract
+Reference: C:\Users\Kai\Documents\ChatGPT\AMR\AMR_V2\Doc\PRD\需求文档模板.docx
+SHA256: e0f8d2c97724b36d3c1616bb41cfbeb97730756d30fefe7c312c0bdc2e66b876
+Reference render: template-render; 26 pages, 1 section. Content reference: AMR V1.0.0需求文档.docx; only section 8 headings were defined.
+Page geometry: A4 11906x16838 DXA; margins L/R 792, top1080, bottom936; header/footer403. Preserve sectPr and all recurring header/footer relationships.
+Styles: preserve styles.xml. Normal 10pt, 1.3 lines, after5pt, text15202B; headings H1 18pt black, before12/after8pt, H2 15pt blue0C5DCC before10/after6pt, H3 12pt black before8/after5pt. Source direct font override 微軟正黑體 retained for body and headings; widow control enabled in new paragraphs.
+Table pattern: document.xml/body/tbl at block17, width10180 DXA, label1499/content8681, fixed layout, indent0, cell top/bottom130/start/end140; grayF3F6F8 label with 9.5pt blue bold, 10pt body. Clone properties; long prose rows may split, compact data rows may not. Nested tables use available content width with exact grids and repeated header. All source tables and drawings may be removed from body as out-of-scope; package binaries remain untouched.
+Slots: replace body content except sectPr. Retain section8 numbering; fill only systems settings. Drop unrelated chapters, cover, revision pages and reference links; concise metadata within section8. Expand heading/table patterns to cover users, roles, runtime logs, integration and acceptance. No UI screenshots available as document sources: use textual UI specification instead of placeholder images.
+Fields: preserve PAGE fields in footers; set updateFields=true. No TOC inserted. Metadata/title source parts remain unchanged unless body replacement.
+Content language: Traditional explanatory prose; UI labels copied exactly from current Simplified Chinese UI. Latest user decisions override stale template: no data dictionary or management audit. Specify prototype vs production boundaries explicitly.
+Fidelity: preserve every ZIP member byte for byte except document.xml/settings.xml. Source files unchanged. No page system changes. Page breaks allowed at feature groups for standalone chapter readability. All output pages must be rendered and inspected.

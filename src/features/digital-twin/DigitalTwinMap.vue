@@ -79,7 +79,7 @@ function stationClasses(point: MapStation) {
   return { 'service-highlight': selectedServiceResources.value.has(point.deviceId),
     focused: hoveredStationId.value === point.id,
     muted: Boolean(props.selectedAmrId && !selectedServiceResources.value.has(point.deviceId) && hoveredStationId.value !== point.id),
-    disabled: point.disabled, fault: deviceIndex.value.get(point.deviceId)?.state === 'fault' }
+    disabled: point.disabled }
 }
 function chooseAmr(id: string) { emit('selectAmr', id) }
 function measure() {
@@ -156,6 +156,8 @@ onBeforeUnmount(() => {
         <defs>
           <pattern id="monitor-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#dce4ea" stroke-width="0.5" /></pattern>
           <filter id="selection-shadow" x="-100%" y="-100%" width="300%" height="300%"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#1677ff" flood-opacity=".32" /></filter>
+          <filter id="station-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1" flood-color="#58a6ff" flood-opacity=".42" /></filter>
+          <filter id="station-hover-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.35" flood-color="#58a6ff" flood-opacity=".6" /></filter>
         </defs>
         <rect :x="view.x" :y="view.y" :width="view.width" :height="view.height" fill="url(#monitor-grid)" />
         <MapPointcloud v-if="layers.pointcloud" class="monitor-pointcloud" />
@@ -169,21 +171,22 @@ onBeforeUnmount(() => {
         </g>
         <g v-if="layers.devices" class="monitor-stations">
           <g v-for="point in deviceStations" :key="point.id" data-map-interactive :data-station-id="point.id" :data-device-id="point.deviceId" :class="stationClasses(point)" :transform="`translate(${point.x} ${point.y})`" :aria-label="`设备站点 ${stationLabel(point)}`" @pointerenter="hoveredStationId = point.id" @pointerleave="hoveredStationId = null">
-            <title>{{ stationTitle(point) }}</title><circle class="station-hit-target" r="4" /><circle v-if="selectedServiceResources.has(point.deviceId) || hoveredStationId === point.id" class="station-halo" r="5.5" />
+            <title>{{ stationTitle(point) }}</title><circle class="station-hit-target" r="4" />
             <path class="station-symbol" d="M0-3.5L3.2 2.8L-3.2 2.8Z" :transform="`rotate(${point.yaw * 180 / Math.PI})`" />
           </g>
         </g>
         <g class="selected-route-layer simulation-route-layer monitor-task-routes">
           <g v-for="task in visibleRouteTasks" :key="task.id" class="selected">
             <path class="route-planned" :d="task.plannedPath" />
-            <path v-if="simulation && task.status === '执行中'" class="route-traveled" :d="task.plannedPath" pathLength="1" :style="{ strokeDasharray: `${routeProgress[task.id] ?? 0} 1` }" />
+            <!-- Keep progress in map coordinates; compensate only the stroke width
+                 so zoom cannot change the traveled distance relative to the AMR. -->
+            <path v-if="simulation && task.status === '执行中'" class="route-traveled route-traveled-simulated" :d="task.plannedPath" pathLength="1" :style="{ strokeDasharray: `${routeProgress[task.id] ?? 0} 1`, strokeWidth: 3 / scale }" />
             <path v-else-if="task.traveledPath" class="route-traveled route-traveled-static" :d="task.traveledPath" />
           </g>
         </g>
         <g v-if="layers.devices && layers.labels" class="monitor-device-labels">
           <g v-for="layout in labelLayouts" :key="`leader-${layout.id}`" class="monitor-label-connector" :class="stationClasses(layout.point)" :data-leader-station-id="layout.id">
-            <path class="label-leader-halo" :d="layout.leader" /><path class="label-leader" :d="layout.leader" />
-            <circle class="label-attachment" :cx="layout.edgeX" :cy="layout.edgeY" r="1.1" />
+            <path class="label-leader" :d="layout.leader" />
           </g>
           <g v-for="layout in labelLayouts" :key="layout.id" data-map-interactive class="monitor-device-label" :data-label-station-id="layout.id" :class="stationClasses(layout.point)" :transform="`translate(${layout.x} ${layout.y})`" @pointerenter="hoveredStationId = layout.id" @pointerleave="hoveredStationId = null">
             <rect class="device-nameplate" :width="layout.width" :height="layout.height" rx="2" />
