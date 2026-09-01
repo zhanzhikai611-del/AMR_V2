@@ -40,12 +40,12 @@
 .monitor-task-routes > g.selected .route-planned,
 .monitor-task-routes > g.selected .route-traveled { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; filter: none; pointer-events: none; }
 .monitor-task-routes > g.selected .route-planned { stroke: #3889d6; stroke-width: 2.6; stroke-dasharray: 7 4; opacity: .95; }
-.monitor-task-routes > g.selected .route-traveled { stroke: #355c7c; stroke-width: 3; opacity: 1; }
+.monitor-task-routes > g.selected .route-traveled { stroke: #087e83; stroke-width: 3; opacity: 1; }
 .monitor-task-routes > g.selected .route-traveled-simulated { vector-effect: none; transition: none; }
 .monitor-task-routes > g.selected .route-traveled-static { stroke-dasharray: none; }
 .monitor-route-legend { top: 14px; bottom: auto; left: 16px; padding: 7px 9px; border: 1px solid #dce4ea; background: rgba(255,255,255,.9); letter-spacing: .3px; }
 .monitor-route-legend .planned { width: 20px; height: 3px; border: 0; border-radius: 0; background: repeating-linear-gradient(to right, #3889d6 0 7px, transparent 7px 11px); }
-.monitor-route-legend .traveled { width: 20px; height: 3px; border: 0; border-radius: 1px; background: #355c7c; }
+.monitor-route-legend .traveled { width: 20px; height: 3px; border: 0; border-radius: 1px; background: #087e83; }
 .monitor-route-legend .muted { opacity: .4; }
 .monitor-layer-control { position: absolute; top: 14px; right: 16px; z-index: 8; }
 .selection-collapsed .monitor-layer-control { right: 154px; }
