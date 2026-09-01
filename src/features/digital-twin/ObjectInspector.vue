@@ -24,7 +24,7 @@ function formatPosition(amr: Amr | null) {
   <aside class="object-inspector">
     <header class="inspector-header">
       <div><h2>{{ amr?.id ?? task?.id }}</h2></div>
-      <div class="inspector-header-actions"><button type="button" aria-label="收起 AMR 详情" @click="emit('collapse')">›</button><button type="button" aria-label="关闭检查面板" @click="emit('close')"><AppIcon name="close" /></button></div>
+      <div class="inspector-header-actions"><button type="button" aria-label="收起 AMR 详情" @click="emit('collapse')"><AppIcon class="inspector-collapse-icon" name="chevron" :size="16" /></button><button type="button" aria-label="关闭检查面板" @click="emit('close')"><AppIcon name="close" :size="16" /></button></div>
     </header>
     <nav class="inspector-tabs" aria-label="对象详情">
       <button v-for="tab in tabs" :key="tab.id" type="button" :class="{ active: activeTab === tab.id }" :disabled="tab.id === 'vehicle' && !amr" @click="activeTab = tab.id">{{ tab.label }}</button>

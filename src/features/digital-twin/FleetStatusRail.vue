@@ -32,7 +32,7 @@ const counts = computed(() => ({
     </div>
     <div class="fleet-rail__scope">
       <span>运行范围</span>
-      <button type="button">{{ runtimeScope.current.label }} <b>⌄</b></button>
+      <div class="scope-fixed" aria-label="当前运行范围"><span>{{ runtimeScope.current.label }}</span></div>
     </div>
   </section>
 </template>
