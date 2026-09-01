@@ -481,6 +481,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .point-property-hero{background:#f7fafc}.point-property-hero small{color:#647b88;font-family:var(--font-zh);font-weight:500;letter-spacing:0}.point-property-hero strong{font-size:17px}.point-property-panel summary{font-weight:500}.point-binding-note{color:#526d7c;background:#f4f8fa;border-left-color:#9cb8c8}.point-property-grid select:disabled{color:#8b9ba4;background:#f3f5f6;cursor:not-allowed}
 .point-property-hero>label i{background:#b9c6ce}.point-property-hero>label input:checked+i{background:#1677e8}.point-property-hero>label input:checked+i::after{transform:translateX(12px)}.point-property-hero>label input:not(:checked)+i{background:#b9c6ce}.point-property-hero>label input:not(:checked)+i::after{transform:none}
 .map-editor-workbench .map-canvas-legend{top:auto;bottom:13px;color:#627984;background:rgba(255,255,255,.94);box-shadow:0 2px 7px rgba(24,47,60,.06)}
+.map-distance-scale{z-index:7;display:grid;gap:3px;min-width:58px;padding:5px 7px;color:#526b78;background:rgba(255,255,255,.9);border:1px solid rgba(181,198,207,.9);border-radius:4px;box-shadow:0 2px 7px rgba(24,47,60,.06);pointer-events:none}.map-distance-scale>span{font:600 9px var(--font-latin);line-height:1;text-align:center}.map-distance-scale>i{position:relative;display:block;max-width:120px;height:7px;border-right:1px solid #526b78;border-bottom:2px solid #526b78;border-left:1px solid #526b78}.map-distance-scale>i b{position:absolute;left:50%;bottom:-2px;width:1px;height:5px;background:#526b78}.editor-distance-scale{position:absolute;right:13px;bottom:13px}
 .map-editor-workbench .empty-inspector{padding-top:78px}.map-editor-workbench .empty-inspector b{color:#2e4653;font-weight:600}.map-editor-workbench .empty-inspector span{color:#70838d}
 @media(max-width:1080px){.map-editor-workbench .map-toolrail button{padding:0 8px}.map-editor-workbench .map-toolrail button span{display:none}.map-editor-workbench .map-toolrail>p{display:none}}
 
@@ -537,3 +538,26 @@ button:focus-visible, a:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .settings-user-status>div{display:flex;align-items:center;gap:28px;min-height:38px}
 .settings-user-status label{display:flex;align-items:center;gap:8px}.settings-user-status input[type=radio]{width:16px;height:16px;padding:0;margin:0;accent-color:var(--running)}
 @media(max-width:600px){.settings-user-form{padding:20px 16px}.settings-user-form>label{grid-template-columns:76px minmax(0,1fr);gap:12px}.settings-user-status{padding-left:88px}.settings-user-status legend{width:76px}}
+
+/* 行为树不再区分子树，节点库直接展示四类节点。 */
+.behavior-node-library{grid-template-rows:46px minmax(0,1fr)}
+.create-dialog textarea{padding:9px;border:1px solid var(--line-strong);font:inherit;resize:vertical}
+
+/* 行为树操作采用紧凑分段式层级：修改优先，删除保持克制但明确。 */
+.behavior-row-actions{display:flex;gap:8px;align-items:center}
+.behavior-action{height:30px;padding:0 11px;color:#0969c7;background:#fff;border:1px solid #9fc8f5;border-radius:3px;font:500 12px/28px var(--font-zh);letter-spacing:.2px;cursor:pointer;transition:color .15s ease,background-color .15s ease,border-color .15s ease}
+.behavior-action:hover{color:#0755a5;background:#f3f8ff;border-color:#6ba9eb}
+.behavior-action--modify{color:#0969c7}
+.behavior-action--danger{color:#c74343;border-color:#e6adad}
+.behavior-action--danger:hover{color:#a92f2f;background:#fff5f5;border-color:#d77f7f}
+.behavior-action:focus-visible{outline:2px solid #1677ff;outline-offset:2px}
+
+/* 节点属性空状态沿用流程图语汇，提供明确的下一步提示。 */
+.behavior-empty-inspector{display:flex;min-height:250px;flex-direction:column;align-items:center;padding:54px 24px 24px;text-align:center}
+.behavior-empty-inspector>i{position:relative;width:70px;height:48px;margin-bottom:18px;background:linear-gradient(#b9cbd6,#b9cbd6) center 12px/1px 17px no-repeat;font-style:normal}
+.behavior-empty-inspector>i::before{content:"";position:absolute;top:0;left:26px;width:18px;height:12px;background:#edf5fb;border:1px solid #87b6da;border-radius:3px;box-shadow:0 2px 5px rgba(44,91,122,.08)}
+.behavior-empty-inspector>i::after{content:"";position:absolute;top:28px;left:12px;width:46px;height:1px;background:#b9cbd6}
+.behavior-empty-inspector>i span{position:absolute;top:28px;width:13px;height:13px;background:#fff;border:1px solid #8da7b7;border-radius:3px;box-shadow:0 2px 4px rgba(38,68,87,.08)}
+.behavior-empty-inspector>i span:nth-child(1){left:5px}.behavior-empty-inspector>i span:nth-child(2){left:29px}.behavior-empty-inspector>i span:nth-child(3){right:4px}
+.behavior-empty-inspector>b{color:#2b4555;font-size:14px;font-weight:600;letter-spacing:.3px}
+.behavior-empty-inspector>span{margin-top:9px;color:#758995;font-size:12px;line-height:1.75}

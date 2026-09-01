@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, toRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getMapDraft, publishMapDraft, saveMapDraft } from '../api/modules/maps'
-import { getResourceCatalog } from '../api/modules/resources'
+import { getMapDefinitions, getMapDevices, getMapDraft, publishMapDraft, saveMapDraft } from '../api/modules/maps'
 import type { MapControlZone, MapDefinition, MapEditorDraft, MapEditorTool, MapRoute, MapStation, StationAssociationType } from '../types/domain'
 import MapPointcloud from '../features/maps/MapPointcloud.vue'
-import { MAP_FRAME } from '../features/maps/map-geometry'
+import { getMapScaleBar, mapMetersPerUnit, MAP_FRAME } from '../features/maps/map-geometry'
 
 type Selection = { kind:'point'|'route'|'zone'; id:string } | null
 const MAP_WIDTH = MAP_FRAME.width
@@ -19,6 +18,9 @@ const history = ref<MapEditorDraft[]>([])
 const cameraCenter = ref({x:MAP_WIDTH/2,y:MAP_HEIGHT/2}); const panning = ref(false); const zoneDragging = ref(false)
 let panStart = {clientX:0,clientY:0,centerX:0,centerY:0}; let panMoved = false
 const propertyCollapsed = ref(false)
+const stage = ref<HTMLElement | null>(null)
+const stageSize = ref({width:760,height:520})
+let stageObserver: ResizeObserver | undefined
 const deviceOptions = ref<Array<{id:string;label:string;type:string}>>([])
 const pending = ref<{first?: {x:number;y:number}; startId?:string; endId?:string; zoneDrag?: {anchor:{x:number;y:number}; current:{x:number;y:number}} }>({})
 const bidirectional = ref(true); const backwards = ref(false); const speed = ref(1.2); const zoneType = ref('互斥区 · 同时允许 1 台 AMR')
@@ -31,6 +33,8 @@ const viewBox = computed(() => {
 })
 const labelsVisible = computed(() => zoom.value >= 170)
 const symbolScale = computed(() => Math.min(1.15, 100/zoom.value))
+const editorPixelsPerUnit = computed(() => Math.min(stageSize.value.width / (MAP_WIDTH/(zoom.value/100)), stageSize.value.height / (MAP_HEIGHT/(zoom.value/100))))
+const scaleBar = computed(() => getMapScaleBar(editorPixelsPerUnit.value, mapMetersPerUnit(draft.value?.resolution)))
 const selectedObject = computed(() => {
   if (!draft.value || !selected.value) return null
   const pools = { point:draft.value.points, route:draft.value.routes, zone:draft.value.zones }
@@ -196,8 +200,8 @@ async function publish(){
   if(dirty.value) await save()
   publishConfirm.value=true
 }
-onMounted(async()=>{ window.addEventListener('keydown',handleShortcut); const [data,catalog]=await Promise.all([getMapDraft(mapId),getResourceCatalog()]); draft.value=data; draft.value.points.forEach(point=>{ if(!['none','dock','charge','parking'].includes(point.associationType))point.associationType='none' }); mapInfo.value=catalog.maps.find(map=>map.id===mapId); deviceOptions.value=catalog.devices.map(device=>({id:device.id,label:device.label,type:device.type})) })
-onUnmounted(()=>window.removeEventListener('keydown',handleShortcut))
+onMounted(async()=>{ window.addEventListener('keydown',handleShortcut); stageObserver=new ResizeObserver(entries=>{ const rect=entries[0]?.contentRect; if(rect)stageSize.value={width:rect.width,height:rect.height} }); if(stage.value)stageObserver.observe(stage.value); const [data,maps,devices]=await Promise.all([getMapDraft(mapId),getMapDefinitions(),getMapDevices()]); draft.value=data; draft.value.points.forEach(point=>{ if(!['none','dock','charge','parking'].includes(point.associationType))point.associationType='none' }); mapInfo.value=maps.find(map=>map.id===mapId); deviceOptions.value=devices.map(device=>({id:device.id,label:device.label,type:device.type})) })
+onUnmounted(()=>{ window.removeEventListener('keydown',handleShortcut); stageObserver?.disconnect() })
 </script>
 
 <template>
@@ -206,7 +210,7 @@ onUnmounted(()=>window.removeEventListener('keydown',handleShortcut))
     <div class="map-editor-shell" :class="{ 'property-collapsed': propertyCollapsed }">
       <aside class="map-toolrail"><nav><button v-for="item in tools" :key="item.id" :class="{active:tool===item.id}" @click="chooseTool(item.id)"><svg viewBox="0 0 20 20" aria-hidden="true"><path v-if="item.id==='select'" d="M4 3l10 7-4.5 1.2L7 16z"/><path v-else-if="item.id==='point'" d="M10 3v14M3 10h14"/><path v-else-if="item.id==='route'" d="M4 15L9 5l7 9M4 15h3M14 14h3"/><path v-else d="M4 5h12v10H4z"/></svg><span>{{ item.label }}</span></button></nav><p v-if="tool!=='select'"><b>{{ toolLabel }}</b><span>{{ toolHint }}　按 Esc 取消</span></p><div class="map-zoom-tools"><button aria-label="缩小地图" @click="setZoom(zoom-20)">−</button><span>{{ zoom }}%</span><button aria-label="放大地图" @click="setZoom(zoom+20)">＋</button><button @click="setZoom(100)">适应</button></div></aside>
       <main class="map-editor-canvas">
-        <div class="editor-stage">
+        <div ref="stage" class="editor-stage">
           <svg v-if="draft" :viewBox="viewBox" :class="{'is-panning':panning, 'zone-drawing':zoneDragging}" @click="onCanvasClick" @wheel.prevent="onWheel" @pointerdown="startPan" @pointermove="moveCanvas" @pointerup="endPan" @pointercancel="endPan">
             <defs><pattern id="editorGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#c9d6de"/></pattern></defs><rect :width="MAP_WIDTH" :height="MAP_HEIGHT" fill="url(#editorGrid)"/><MapPointcloud class="editor-slam-map"/>
             <g class="editor-zones"><rect v-for="zone in draft.zones" :key="zone.id" data-object :x="zone.x" :y="zone.y" :width="zone.width" :height="zone.height" :class="{selected:selected?.id===zone.id}" @click.stop="selectObject('zone',zone.id)"/></g>
@@ -216,6 +220,7 @@ onUnmounted(()=>window.removeEventListener('keydown',handleShortcut))
             <rect v-if="pending.zoneDrag" :x="Math.min(pending.zoneDrag.anchor.x,pending.zoneDrag.current.x)" :y="Math.min(pending.zoneDrag.anchor.y,pending.zoneDrag.current.y)" :width="Math.abs(pending.zoneDrag.anchor.x-pending.zoneDrag.current.x)" :height="Math.abs(pending.zoneDrag.anchor.y-pending.zoneDrag.current.y)" class="zone-preview-rect"/>
           </svg>
           <div class="map-canvas-legend"><span><i class="point point-none"></i>一般站点</span><span><i class="point point-dock"></i>设备站点</span><span><i class="point point-charge"></i>充电站点</span><span><i class="point point-parking"></i>停车站点</span><span><i class="route"></i>路线</span><span><i class="zone"></i>管制区域</span></div>
+          <div class="map-distance-scale editor-distance-scale" aria-label="地图比例尺"><span>{{ scaleBar.meters }} m</span><i :style="{ width: `${scaleBar.pixels}px` }"><b></b></i></div>
         </div>
       </main>
       <aside class="map-properties" @focusin="beginPropertyEdit"><header><span>{{ tool==='select'?'对象属性':toolLabel }}</span><button :title="propertyCollapsed?'展开属性栏':'折叠属性栏'" @click="propertyCollapsed=!propertyCollapsed">{{ propertyCollapsed?'‹':'›' }}</button></header>

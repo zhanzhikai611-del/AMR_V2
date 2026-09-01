@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getResourceCatalog } from '../api/modules/resources'
-import { getMapDraft } from '../api/modules/maps'
+import { getMapDefinitions, getMapDraft } from '../api/modules/maps'
 import type { MapDefinition, MapEditorDraft } from '../types/domain'
 import MapPointcloud from '../features/maps/MapPointcloud.vue'
 import { MAP_FRAME } from '../features/maps/map-geometry'
@@ -32,7 +31,7 @@ const filteredMaps = computed(() => maps.value.filter((map) => {
 const currentMap = computed(() => maps.value.find(map=>map.current) ?? null)
 
 onMounted(async () => {
-  maps.value = (await getResourceCatalog()).maps
+  maps.value = await getMapDefinitions()
   await Promise.all(maps.value.filter(map => map.status !== '空白').map(async map => {
     try { previews.value[map.id] = await getMapDraft(map.id) } catch { /* Keep the version card available when its preview cannot be loaded. */ }
   }))

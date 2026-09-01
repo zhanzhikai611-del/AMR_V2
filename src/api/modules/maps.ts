@@ -1,7 +1,15 @@
 import { http } from '../http'
-import type { MapEditorDraft } from '../../types/domain'
+import type { MapDefinition, MapEditorDraft, MapResource } from '../../types/domain'
 
 const useMock = import.meta.env.VITE_USE_MOCK !== 'false'
+export async function getMapDefinitions(): Promise<MapDefinition[]> {
+  if (useMock) return structuredClone((await import('../../../mock/data/maps')).mapDefinitions)
+  return (await http.get<{ data: MapDefinition[] }>('/maps')).data.data
+}
+export async function getMapDevices(): Promise<MapResource[]> {
+  if (useMock) return structuredClone((await import('../../../mock/data/operations')).twinSnapshot.resources)
+  return (await http.get<{ data: MapResource[] }>('/maps/devices')).data.data
+}
 export async function getMapDraft(id: string): Promise<MapEditorDraft> {
   if (useMock) {
     const { mapEditorDrafts } = await import('../../../mock/data/map-editor')

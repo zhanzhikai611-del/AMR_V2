@@ -122,25 +122,6 @@ export interface TwinSnapshot {
   unconfirmedAlarms: number
 }
 
-export interface AmrModel {
-  id: string
-  chassis: string
-  maxSpeed: string
-  maxAngularSpeed: string
-  acceleration: string
-  arrivalThreshold: string
-  lookaheadDistance: string
-  enabled: boolean
-}
-
-export interface DeviceType {
-  id: string
-  name: string
-  pointRequirement: string
-  statusCount: number
-  enabled: boolean
-}
-
 export interface MapDefinition {
   id: string
   name: string
@@ -226,14 +207,6 @@ export interface RuntimeMap extends MapEditorDraft {
   demo: boolean
 }
 
-export interface ResourceCatalog {
-  amrs: Amr[]
-  devices: MapResource[]
-  models: AmrModel[]
-  deviceTypes: DeviceType[]
-  maps: MapDefinition[]
-}
-
 export interface TaskRecord {
   id: string
   type: string
@@ -272,14 +245,11 @@ export interface DispatchRule {
 export interface BehaviorTreeDefinition {
   id: string
   name: string
-  version: string
   taskType: string
   status: '已发布' | '草稿'
   updatedAt: string
   nodeCount: number
-  kind: 'behavior' | 'subtree'
   summary: string
-  references: string
   boundAmrIds?: string[]
   nodes: Array<{ id: string; name: string; kind: 'sequence' | 'action' | 'condition'; x: number; y: number; parentId?: string }>
 }

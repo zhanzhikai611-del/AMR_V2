@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import type { Amr, MapResource, MapStation, RuntimeMap, Task } from '../../types/domain'
 import MapPointcloud from '../maps/MapPointcloud.vue'
-import { MAP_FRAME } from '../maps/map-geometry'
+import { getMapScaleBar, mapMetersPerUnit, MAP_FRAME } from '../maps/map-geometry'
 import { layoutStationLabels } from './station-label-layout'
 
 const props = defineProps<{
@@ -22,17 +22,20 @@ const controls = ref<HTMLElement | null>(null)
 const layerButton = ref<HTMLButtonElement | null>(null)
 const layersOpen = ref(false)
 const hoveredStationId = ref<string | null>(null)
-const defaultLayers = { pointcloud: true, network: true, devices: true, navigation: false, parking: false, charging: false, labels: true }
+const defaultLayers = { pointcloud: true, network: true, devices: true, navigation: false, parking: false, charging: false,
+  deviceLabels: true, navigationLabels: false, parkingLabels: false, chargingLabels: false }
 const layers = reactive({ ...defaultLayers })
-const layerOptions = [
-  { key: 'pointcloud', label: '点云地图', hint: '墙体、设备轮廓与实际通道', icon: 'cloud' },
-  { key: 'network', label: '路线', hint: '保留完整路线，不受站点显示影响', icon: 'network' },
-  { key: 'devices', label: '设备站点', hint: 'AMR 在设备旁停靠的位置', icon: 'station' },
-  { key: 'navigation', label: '一般站点', hint: '转弯、路口与路线衔接站点', icon: 'other' },
-  { key: 'parking', label: '停车点', hint: '车辆停车与待命的位置', icon: 'parking' },
-  { key: 'charging', label: '充电点', hint: '车辆自动回充的位置', icon: 'charge' },
-  { key: 'labels', label: '设备名称', hint: '悬停名称，突出对应站点与引线', icon: 'label' },
+const baseLayerOptions = [
+  { key: 'pointcloud', label: '点云地图', icon: 'cloud' },
+  { key: 'network', label: '路线', icon: 'network' },
 ] as const
+const stationLayerOptions = [
+  { key: 'devices', labelKey: 'deviceLabels', label: '设备站点', icon: 'station' },
+  { key: 'navigation', labelKey: 'navigationLabels', label: '一般站点', icon: 'other' },
+  { key: 'parking', labelKey: 'parkingLabels', label: '停车点', icon: 'parking' },
+  { key: 'charging', labelKey: 'chargingLabels', label: '充电点', icon: 'charge' },
+] as const
+const layerOptions = [...baseLayerOptions, ...stationLayerOptions]
 const viewport = ref({ width: 760, height: 520 })
 const fullViewport = ref({ width: 760, height: 520 })
 const center = ref({ x: MAP_FRAME.width / 2, y: MAP_FRAME.height / 2 })
@@ -48,6 +51,7 @@ const view = computed(() => {
 })
 const viewBox = computed(() => `${view.value.x} ${view.value.y} ${view.value.width} ${view.value.height}`)
 const markerScale = computed(() => Math.min(1.15, Math.max(0.4, 1 / scale.value)))
+const scaleBar = computed(() => getMapScaleBar(scale.value, mapMetersPerUnit(props.map?.resolution)))
 const selectedAmr = computed(() => props.amrs.find(amr => amr.id === props.selectedAmrId))
 const pointIndex = computed(() => new Map(props.map?.points.map(point => [point.id, point]) ?? []))
 const deviceIndex = computed(() => new Map(props.resources.map(resource => [resource.id, resource])))
@@ -66,6 +70,14 @@ const visibleRouteTasks = computed(() => props.selectedTaskId
 const isServiceActive = (amr: Pick<Amr, 'connectionStatus' | 'status'>) => amr.connectionStatus !== 'offline' && amr.status !== '离线' && amr.status !== '停用'
 const selectedServiceResources = computed(() => selectedAmr.value && isServiceActive(selectedAmr.value)
   ? new Set(selectedAmr.value.serviceDevices) : new Set<string>())
+const taskStateByDevice = computed(() => {
+  const states = new Map<string, 'active' | 'fault'>()
+  for (const task of props.tasks) {
+    if (task.status === '异常') states.set(task.requestDeviceId, 'fault')
+    else if (task.status === '执行中' && !states.has(task.requestDeviceId)) states.set(task.requestDeviceId, 'active')
+  }
+  return states
+})
 // Names and fixed station geometry determine layout; vehicle motion and service
 // membership do not change the label footprint or cause positions to jump.
 const labelLayouts = computed(() => layoutStationLabels(deviceStations.value.map(point => ({
@@ -76,10 +88,17 @@ function stationTitle(point: MapStation) {
   return `${point.name} · ${point.deviceId ? stationLabel(point) : '未关联设备'}${point.disabled ? ' · 已禁用' : ''}`
 }
 function stationClasses(point: MapStation) {
+  const taskState = taskStateByDevice.value.get(point.deviceId)
   return { 'service-highlight': selectedServiceResources.value.has(point.deviceId),
+    'task-active': taskState === 'active', 'task-fault': taskState === 'fault',
     focused: hoveredStationId.value === point.id,
-    muted: Boolean(props.selectedAmrId && !selectedServiceResources.value.has(point.deviceId) && hoveredStationId.value !== point.id),
+    muted: Boolean(props.selectedAmrId && !selectedServiceResources.value.has(point.deviceId) && !taskState && hoveredStationId.value !== point.id),
     disabled: point.disabled }
+}
+function otherStationLabelVisible(point: MapStation) {
+  return (point.associationType === 'none' && layers.navigationLabels) ||
+    (point.associationType === 'parking' && layers.parkingLabels) ||
+    (point.associationType === 'charge' && layers.chargingLabels)
 }
 function chooseAmr(id: string) { emit('selectAmr', id) }
 function measure() {
@@ -158,6 +177,8 @@ onBeforeUnmount(() => {
           <filter id="selection-shadow" x="-100%" y="-100%" width="300%" height="300%"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#1677ff" flood-opacity=".32" /></filter>
           <filter id="station-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1" flood-color="#58a6ff" flood-opacity=".42" /></filter>
           <filter id="station-hover-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.35" flood-color="#58a6ff" flood-opacity=".6" /></filter>
+          <filter id="station-active-glow" x="-150%" y="-150%" width="400%" height="400%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.15" flood-color="#79c7ff" flood-opacity=".88" /><feDropShadow dx="0" dy="0" stdDeviation="2.8" flood-color="#4aa8ef" flood-opacity=".3" /></filter>
+          <filter id="station-fault-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.2" flood-color="#e5484d" flood-opacity=".55" /></filter>
         </defs>
         <rect :x="view.x" :y="view.y" :width="view.width" :height="view.height" fill="url(#monitor-grid)" />
         <MapPointcloud v-if="layers.pointcloud" class="monitor-pointcloud" />
@@ -167,12 +188,13 @@ onBeforeUnmount(() => {
         <g class="monitor-other-stations">
           <g v-for="point in otherStations" :key="point.id" :transform="`translate(${point.x} ${point.y})`" :class="[point.associationType, { disabled: point.disabled }]">
             <title>{{ point.name }}</title><path d="M0-2.5L2.3 2L-2.3 2Z" :transform="`rotate(${point.yaw * 180 / Math.PI})`" />
+            <text v-if="otherStationLabelVisible(point)" x="0" y="-4.5">{{ point.name }}</text>
           </g>
         </g>
         <g v-if="layers.devices" class="monitor-stations">
           <g v-for="point in deviceStations" :key="point.id" data-map-interactive :data-station-id="point.id" :data-device-id="point.deviceId" :class="stationClasses(point)" :transform="`translate(${point.x} ${point.y})`" :aria-label="`设备站点 ${stationLabel(point)}`" @pointerenter="hoveredStationId = point.id" @pointerleave="hoveredStationId = null">
             <title>{{ stationTitle(point) }}</title><circle class="station-hit-target" r="4" />
-            <path class="station-symbol" d="M0-3.5L3.2 2.8L-3.2 2.8Z" :transform="`rotate(${point.yaw * 180 / Math.PI})`" />
+            <path class="station-symbol" d="M0-2.5L2.3 2L-2.3 2Z" :transform="`rotate(${point.yaw * 180 / Math.PI})`" />
           </g>
         </g>
         <g class="selected-route-layer simulation-route-layer monitor-task-routes">
@@ -184,14 +206,14 @@ onBeforeUnmount(() => {
             <path v-else-if="task.traveledPath" class="route-traveled route-traveled-static" :d="task.traveledPath" />
           </g>
         </g>
-        <g v-if="layers.devices && layers.labels" class="monitor-device-labels">
+        <g v-if="layers.devices && layers.deviceLabels" class="monitor-device-labels">
           <g v-for="layout in labelLayouts" :key="`leader-${layout.id}`" class="monitor-label-connector" :class="stationClasses(layout.point)" :data-leader-station-id="layout.id">
             <path class="label-leader" :d="layout.leader" />
           </g>
           <g v-for="layout in labelLayouts" :key="layout.id" data-map-interactive class="monitor-device-label" :data-label-station-id="layout.id" :class="stationClasses(layout.point)" :transform="`translate(${layout.x} ${layout.y})`" @pointerenter="hoveredStationId = layout.id" @pointerleave="hoveredStationId = null">
-            <rect class="device-nameplate" :width="layout.width" :height="layout.height" rx="2" />
+            <rect class="device-nameplate" :width="layout.width" :height="layout.height" rx="1.6" />
             <g data-map-interactive class="station-card-title" :aria-label="`设备 ${stationLabel(layout.point)}`">
-              <rect class="station-title-hit" :width="layout.width" :height="layout.height" rx="2" />
+              <rect class="station-title-hit" :width="layout.width" :height="layout.height" rx="1.6" />
               <text :x="layout.width / 2" :y="layout.height / 2" dominant-baseline="central">{{ stationLabel(layout.point) }}</text>
             </g>
             <title>{{ stationTitle(layout.point) }}</title>
@@ -214,12 +236,21 @@ onBeforeUnmount(() => {
         </button>
         <section v-if="layersOpen" id="monitor-layer-panel" class="monitor-layer-panel" aria-label="地图图层">
           <header><strong>地图图层</strong><div class="layer-header-actions"><button type="button" class="layer-reset" @click="Object.assign(layers, defaultLayers)">恢复默认图层</button><button type="button" class="layer-close" aria-label="关闭图层面板" @click="closeLayers(true)">×</button></div></header>
-          <label v-for="option in layerOptions" :key="option.key" class="monitor-layer-row">
-            <i class="layer-swatch" :class="option.icon" aria-hidden="true"></i><span><strong>{{ option.label }}</strong><small>{{ option.hint }}</small></span><input v-model="layers[option.key]" type="checkbox" :aria-label="option.label" />
+          <label v-for="option in baseLayerOptions" :key="option.key" class="monitor-layer-row">
+            <i class="layer-swatch" :class="option.icon" aria-hidden="true"></i><strong>{{ option.label }}</strong><input v-model="layers[option.key]" type="checkbox" :aria-label="option.label" />
           </label>
+          <div class="station-layer-group">
+            <div class="station-layer-heading"><strong>站点</strong><span>站点</span><span>标签</span></div>
+            <div v-for="option in stationLayerOptions" :key="option.key" class="monitor-layer-row station-layer-row">
+              <i class="layer-swatch" :class="option.icon" aria-hidden="true"></i><strong>{{ option.label }}</strong>
+              <label class="layer-cell-check"><input v-model="layers[option.key]" type="checkbox" :aria-label="`显示${option.label}`" /></label>
+              <label class="layer-cell-check" :class="{ disabled: !layers[option.key] }"><input v-model="layers[option.labelKey]" type="checkbox" :disabled="!layers[option.key]" :aria-label="`显示${option.label}标签`" /></label>
+            </div>
+          </div>
         </section>
       </div>
       <div class="monitor-view-tools" aria-label="地图视图"><button type="button" aria-label="缩小地图" :disabled="zoom <= 0.5" @click="changeZoom(zoom / 1.25)">−</button><span>{{ Math.round(zoom * 100) }}%</span><button type="button" aria-label="放大地图" :disabled="zoom >= 4" @click="changeZoom(zoom * 1.25)">＋</button><button type="button" @click="fitMap">适应地图</button></div>
+      <div class="map-distance-scale monitor-distance-scale" aria-label="地图比例尺"><span>{{ scaleBar.meters }} m</span><i :style="{ width: `${scaleBar.pixels}px` }"><b></b></i></div>
     </template>
     <div v-else class="page-state"><strong>尚未提供已生效的运行地图</strong><span>请确认运行数据包含地图版本、站点与路线。</span></div>
   </section>

@@ -16,9 +16,6 @@ defineProps<{ name: string; size?: number }>()
     <template v-else-if="name === 'behavior'">
       <circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="12" r="2"/><path d="M8 5h2a3 3 0 0 1 3 3v1a3 3 0 0 0 3 3M8 19h2a3 3 0 0 0 3-3v-1a3 3 0 0 1 3-3"/>
     </template>
-    <template v-else-if="name === 'resources'">
-      <rect x="3" y="4" width="7" height="7" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/><rect x="14" y="15" width="7" height="6" rx="1"/>
-    </template>
     <template v-else-if="name === 'settings'">
       <circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.7-1L14.5 3h-5L9 6.1a8 8 0 0 0-1.7 1L5 6.1 3 9.5 5 11a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a8 8 0 0 0 1.7 1l.4 3.1h5l.4-3.1a8 8 0 0 0 1.7-1l2.4 1 2-3.4L19 13a7 7 0 0 0 0-1Z"/>
     </template>

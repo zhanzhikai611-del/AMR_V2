@@ -1,54 +1,53 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getBehaviorTree, getBehaviorTrees } from '../api/modules/behaviors'
+import { getBehaviorTree } from '../api/modules/behaviors'
 import type { BehaviorTreeDefinition } from '../types/domain'
 
 type NodeKind = BehaviorTreeDefinition['nodes'][number]['kind']
-type PaletteItem = { code: string; name: string; detail: string; kind: NodeKind; source?: string }
+type PaletteItem = { code: string; name: string; detail: string; kind: NodeKind }
 
 const route = useRoute()
 const router = useRouter()
 const tree = ref<BehaviorTreeDefinition | null>(null)
-const subtrees = ref<BehaviorTreeDefinition[]>([])
 const selectedId = ref<string | null>(null)
-const libraryTab = ref<'subtrees' | 'nodes'>('subtrees')
 const canvasMode = ref<'select' | 'connect'>('select')
 const connectionSourceId = ref<string | null>(null)
 const zoom = ref(100)
 const draggedItem = ref<PaletteItem | null>(null)
 const statusMessage = ref('草稿已加载')
 const validationTone = ref<'normal' | 'success' | 'fault'>('normal')
-const nodeSettings = ref<Record<string, { timeout: number; failure: string; target: string }>>({})
+const nodeSettings = ref<Record<string, { timeout: number; failure: string }>>({})
 
 const nodeGroups: Array<{ label: string; items: PaletteItem[] }> = [
-  { label: '控制节点', items: [
-    { code: '→', name: '顺序执行', detail: 'Sequence', kind: 'sequence' },
-    { code: '?', name: '选择执行', detail: 'Selector', kind: 'condition' },
-    { code: '∥', name: '并行执行', detail: 'Parallel', kind: 'sequence' },
-  ] },
-  { label: 'AMR 动作', items: [
+  { label: '移动类', items: [
     { code: 'N', name: '导航至点位', detail: 'Navigate', kind: 'action' },
+    { code: 'F', name: '跟随路径', detail: 'Follow path', kind: 'action' },
+    { code: 'D', name: '对接站点', detail: 'Dock', kind: 'action' },
+  ] },
+  { label: '动作类', items: [
     { code: 'L', name: '执行上料', detail: 'Load', kind: 'action' },
     { code: 'U', name: '执行下料', detail: 'Unload', kind: 'action' },
+    { code: 'W', name: '等待', detail: 'Wait', kind: 'action' },
   ] },
-  { label: '条件判断', items: [
+  { label: '感知类', items: [
     { code: 'C', name: '检查机台状态', detail: 'Check device', kind: 'condition' },
     { code: 'B', name: '检查剩余电量', detail: 'Check battery', kind: 'condition' },
+  ] },
+  { label: '脚本类', items: [
+    { code: 'JS', name: '执行脚本', detail: 'Run script', kind: 'action' },
+    { code: 'API', name: '调用接口', detail: 'Call API', kind: 'action' },
   ] },
 ]
 
 const fallback = (): BehaviorTreeDefinition => ({
   id: route.params.id as string,
   name: route.query.name as string || '未命名结构',
-  version: 'v0.1',
-  taskType: route.query.kind === 'subtree' ? '可复用流程' : '成品转运',
-  status: '草稿',
+  taskType: '成品转运',
+  status: route.query.status === '已发布' ? '已发布' : '草稿',
   updatedAt: '2026-08-15 13:40',
   nodeCount: 1,
-  kind: route.query.kind === 'subtree' ? 'subtree' : 'behavior',
-  summary: '尚未配置',
-  references: '未引用',
+  summary: route.query.summary as string || '尚未配置',
   nodes: [{ id: 'root', name: route.query.name as string || '根节点', kind: 'sequence', x: 450, y: 72 }],
 })
 
@@ -59,10 +58,6 @@ const connections = computed(() => (tree.value?.nodes ?? []).flatMap((node) => {
   return parent ? [{ id: `${parent.id}-${node.id}`, from: parent, to: node }] : []
 }))
 const structureValid = computed(() => Boolean(tree.value?.nodes.length) && tree.value!.nodes.slice(1).every((node) => node.parentId))
-
-function paletteSubtree(item: BehaviorTreeDefinition): PaletteItem {
-  return { code: 'ST', name: item.name, detail: `${item.id} · ${item.nodeCount} nodes`, kind: 'action', source: item.id }
-}
 
 function startPaletteDrag(item: PaletteItem) {
   draggedItem.value = item
@@ -75,7 +70,7 @@ function addNode(event: DragEvent) {
   const y = Math.max(80, Math.min(500, (event.clientY - rect.top) / rect.height * 560))
   const id = `node-${Date.now()}`
   tree.value.nodes.push({ id, name: draggedItem.value.name, kind: draggedItem.value.kind, x, y })
-  nodeSettings.value[id] = { timeout: 60, failure: '返回失败', target: draggedItem.value.source ?? '未选择' }
+  nodeSettings.value[id] = { timeout: 60, failure: '返回失败' }
   tree.value.nodeCount = tree.value.nodes.length
   selectedId.value = id
   draggedItem.value = null
@@ -121,7 +116,7 @@ function deleteSelected() {
 }
 
 function settingsFor(id: string) {
-  return nodeSettings.value[id] ??= { timeout: 60, failure: '返回失败', target: '未选择' }
+  return nodeSettings.value[id] ??= { timeout: 60, failure: '返回失败' }
 }
 
 function saveDraft() {
@@ -140,31 +135,27 @@ function publishTree() {
   validateTree()
   if (!tree.value || !structureValid.value) return
   tree.value.status = '已发布'
-  statusMessage.value = `${tree.value.kind === 'subtree' ? '子树' : '行为树'}已发布`
+  statusMessage.value = '行为树已发布'
 }
 
 onMounted(async () => {
-  const allTrees = await getBehaviorTrees()
-  subtrees.value = allTrees.filter((item) => item.kind === 'subtree' && item.status === '已发布')
   try { tree.value = await getBehaviorTree(route.params.id as string) } catch { tree.value = fallback() }
-  tree.value.nodes.forEach((node) => { nodeSettings.value[node.id] = { timeout: 60, failure: '返回失败', target: '未选择' } })
+  tree.value.nodes.forEach((node) => { nodeSettings.value[node.id] = { timeout: 60, failure: '返回失败' } })
 })
 </script>
 
 <template>
   <section v-if="tree" class="editor-page behavior-editor-page">
     <header class="editor-topbar">
-      <div class="editor-breadcrumb"><button @click="router.push('/behaviors')">←</button><span>行为树列表 / <strong>{{ tree.name }}</strong></span><em>{{ tree.version }} · {{ tree.status }}</em></div>
+      <div class="editor-breadcrumb"><button @click="router.push('/behaviors')">←</button><span>行为树列表 / <strong>{{ tree.name }}</strong></span><em>{{ tree.status }}</em></div>
       <div><button @click="saveDraft">保存草稿</button><button @click="validateTree">校验流程</button><button class="primary" @click="publishTree">发布</button></div>
     </header>
 
     <div class="behavior-editor-shell behavior-workbench">
       <aside class="editor-library behavior-node-library">
-        <header><span>节点库</span><b>{{ libraryTab === 'subtrees' ? subtrees.length : nodeGroups.flatMap(group => group.items).length }}</b></header>
-        <nav><button :class="{ active: libraryTab === 'subtrees' }" @click="libraryTab = 'subtrees'"><i>ST</i>子树</button><button :class="{ active: libraryTab === 'nodes' }" @click="libraryTab = 'nodes'"><i>ND</i>基础节点</button></nav>
+        <header><span>节点库</span><b>{{ nodeGroups.flatMap(group => group.items).length }}</b></header>
         <div class="behavior-library-scroll">
-          <section v-if="libraryTab === 'subtrees'" class="behavior-palette-group"><h3>已发布子树</h3><button v-for="item in subtrees" :key="item.id" draggable="true" @dragstart="startPaletteDrag(paletteSubtree(item))"><i class="subtree">ST</i><span><strong>{{ item.name }}</strong><small>{{ item.id }} · {{ item.nodeCount }} nodes</small></span><em>{{ item.version }}</em></button></section>
-          <section v-for="group in nodeGroups" v-else :key="group.label" class="behavior-palette-group"><h3>{{ group.label }}</h3><button v-for="item in group.items" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong><small>{{ item.detail }}</small></span></button></section>
+          <section v-for="group in nodeGroups" :key="group.label" class="behavior-palette-group"><h3>{{ group.label }}</h3><button v-for="item in group.items" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong><small>{{ item.detail }}</small></span></button></section>
         </div>
       </aside>
 
@@ -184,12 +175,15 @@ onMounted(async () => {
           <label>节点名称<input v-model="selectedNode.name"></label>
           <label>节点编号<input :value="selectedNode.id" disabled></label>
           <label>节点类型<select v-model="selectedNode.kind"><option value="sequence">控制节点</option><option value="action">动作节点</option><option value="condition">条件节点</option></select></label>
-          <label>目标对象<input v-model="settingsFor(selectedNode.id).target"></label>
           <label>超时时间<input v-model.number="settingsFor(selectedNode.id).timeout" type="number" min="0"></label>
           <section class="behavior-runtime-policy"><h3>运行策略</h3><label>失败处理<select v-model="settingsFor(selectedNode.id).failure"><option>返回失败</option><option>重试 1 次</option><option>重试 2 次</option><option>终止任务</option></select></label></section>
           <button class="danger" :disabled="!selectedNode.parentId" @click="deleteSelected">删除节点</button>
         </template>
-        <div v-else class="empty-inspector"><b>未选择节点</b><span>点击画布节点查看属性，或从左侧拖入子树和基础节点。</span></div>
+        <div v-else class="empty-inspector behavior-empty-inspector">
+          <i aria-hidden="true"><span></span><span></span><span></span></i>
+          <b>选择一个节点</b>
+          <span>点击画布中的节点查看属性<br>也可以从左侧拖入新节点</span>
+        </div>
       </aside>
     </div>
   </section>

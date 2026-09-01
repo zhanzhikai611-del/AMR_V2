@@ -1,6 +1,6 @@
 import type { MapEditorDraft, MapStation, Point, TwinSnapshot } from '../../src/types/domain'
 import { mapEditorDrafts } from './map-editor'
-import { mapDefinitions } from './resource-management'
+import { mapDefinitions } from './maps'
 
 function pathData(points: Point[]) {
   return points.map((point, index) => `${index ? 'L' : 'M'}${point.x} ${point.y}`).join('')

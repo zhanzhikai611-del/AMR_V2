@@ -187,14 +187,14 @@ onMounted(loadAll)
             <label><span>⌕</span><input v-model="alarmKeyword" type="search" placeholder="搜索报警编号、类型或关联任务"></label>
             <select v-model="alarmType"><option value="all">全部类型</option><option v-for="type in alarmTypes" :key="type" :value="type">{{ type }}</option></select>
           </div>
-          <div class="analytics-alarm-head"><span>报警</span><span>发生 / 恢复时间</span><span>关联任务</span><span>时长 / 结果</span></div>
+          <div class="analytics-alarm-head"><span>报警</span><span>发生 / 恢复时间</span><span>关联任务</span><span style="justify-self:end">时长</span></div>
           <ol class="analytics-alarm-records">
             <li v-for="alarm in paginatedAlarms" :key="alarm.id">
               <i aria-hidden="true"></i>
               <div class="alarm-record-identity"><strong>{{ alarm.type }}</strong><small class="type-data">{{ alarm.id }}</small></div>
               <div class="alarm-record-time type-data"><span>{{ alarm.occurredAt }}</span><small>至 {{ alarm.recoveredAt }}</small></div>
               <span class="alarm-record-task type-data">{{ alarm.taskId ?? '—' }}</span>
-              <div class="alarm-record-result"><span class="type-data">{{ alarm.duration }}</span><span class="asset-status success">{{ alarm.result }}</span></div>
+              <div class="alarm-record-result"><span class="type-data">{{ alarm.duration }}</span></div>
             </li>
             <li v-if="!paginatedAlarms.length" class="analytics-alarm-empty">没有符合条件的报警记录</li>
           </ol>
