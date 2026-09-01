@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { getSystemUsers, getSystemRoles, saveSystemUser } from '../../api/modules/settings'
+import { deleteSystemUser, getSystemUsers, getSystemRoles, saveSystemUser } from '../../api/modules/settings'
 import type { SystemUser, SystemRole } from '../../types/settings'
 const users = ref<SystemUser[]>([])
 const roles = ref<SystemRole[]>([])
@@ -34,12 +34,11 @@ async function save() {
   catch (e) { error.value = e instanceof Error ? e.message : '保存失败，请重试。' }
   finally { busy.value = false }
 }
-async function toggle(user: SystemUser) {
-  if (busy.value) return
-  if (user.status === '启用' && !window.confirm(`确定停用用户「${user.username}」？历史记录将保留。`)) return
+async function remove(user: SystemUser) {
+  if (busy.value || !window.confirm(`确定删除用户「${user.username}」？删除后将无法恢复。`)) return
   busy.value = true; error.value = ''; notice.value = ''
-  try { await saveSystemUser({ ...user, status:user.status === '启用' ? '停用' : '启用' }, user.username); await load(); notice.value = '账号状态已更新。' }
-  catch (e) { error.value = e instanceof Error ? e.message : '更新失败，请重试。' }
+  try { await deleteSystemUser(user.username); await load(); notice.value = '用户已删除。' }
+  catch (e) { error.value = e instanceof Error ? e.message : '删除失败，请重试。' }
   finally { busy.value = false }
 }
 function close() { if (!busy.value) { editing.value = null; error.value = '' } }
@@ -60,7 +59,7 @@ onMounted(load)
       <span class="settings-hint">共 {{ filtered.length }} 个用户</span>
     </div>
     <div class="settings-table-wrap"><table class="settings-table settings-users-table"><thead><tr><th>工号</th><th>用户昵称</th><th>角色</th><th>状态</th><th>最近登录</th><th>创建日期</th><th class="settings-actions-column">操作</th></tr></thead><tbody>
-      <tr v-for="user in filtered" :key="user.username"><td class="type-data settings-id">{{ user.username }}</td><td>{{ user.name }}</td><td><span class="settings-tag" :class="user.role">{{ user.role }}</span></td><td><span class="asset-status" :class="user.status==='启用'?'success':'neutral'">{{ user.status }}</span></td><td class="muted-cell">{{ user.lastLogin }}</td><td class="muted-cell">{{ user.createdAt }}</td><td class="settings-actions-column"><div class="row-actions"><button class="table-action" :disabled="busy" @click="edit(user)">编辑</button><button class="table-action" :disabled="busy" @click="toggle(user)">{{ user.status==='启用'?'停用':'启用' }}</button></div></td></tr>
+      <tr v-for="user in filtered" :key="user.username"><td class="type-data settings-id">{{ user.username }}</td><td>{{ user.name }}</td><td><span class="settings-tag" :class="user.role">{{ user.role }}</span></td><td><span class="asset-status" :class="user.status==='启用'?'success':'neutral'">{{ user.status }}</span></td><td class="muted-cell">{{ user.lastLogin }}</td><td class="muted-cell">{{ user.createdAt }}</td><td class="settings-actions-column"><div class="row-actions"><button class="table-action" :disabled="busy" @click="edit(user)">编辑</button><button class="table-action table-action--danger" :disabled="busy" @click="remove(user)">删除</button></div></td></tr>
       <tr v-if="loading || !filtered.length"><td colspan="7" class="settings-empty">{{ loading ? '正在加载用户…' : '没有匹配的用户，请调整筛选条件或新增用户。' }}</td></tr>
     </tbody></table></div>
     <div v-if="editing" class="modal-backdrop" @click.self="close" @keydown.esc="close"><form class="settings-dialog settings-user-dialog" role="dialog" aria-modal="true" aria-labelledby="user-dialog-title" @submit.prevent="save"><header><div><small>USER PROFILE</small><strong id="user-dialog-title">{{ originalUsername?'编辑用户':'新增用户' }}</strong></div><button type="button" aria-label="关闭" :disabled="busy" @click="close">×</button></header><div class="settings-dialog__body settings-user-form">

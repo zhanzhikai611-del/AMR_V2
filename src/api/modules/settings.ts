@@ -51,6 +51,15 @@ export async function saveSystemUser(user: SystemUser, original = '') {
   else data.users[index] = { ...user }
   commit(data)
 }
+export async function deleteSystemUser(username: string) {
+  if (!settingsDemoMode) { await http.delete(`/settings/users/${encodeURIComponent(username)}`); return }
+  const data = await readData()
+  const user = data.users.find(item => item.username === username)
+  if (!user) throw new Error('用户不存在，请刷新后重试。')
+  if (user.role === '系统管理员' && user.status === '启用' && !data.users.some(item => item.username !== username && item.role === '系统管理员' && item.status === '启用')) throw new Error('至少保留一个启用的系统管理员账号。')
+  data.users = data.users.filter(item => item.username !== username)
+  commit(data)
+}
 export async function saveSystemRole(role: SystemRole, original = '') {
   if (!role.name.trim() || role.name.length > 24) throw new Error('角色名称需为 1–24 字。')
   if (role.summary.length > 160) throw new Error('角色说明最多 160 字。')
@@ -77,7 +86,7 @@ export async function deleteSystemRole(name: string) {
   if (!settingsDemoMode) { await http.delete(`/settings/roles/${encodeURIComponent(name)}`); return }
   const data = await readData()
   const role = data.roles.find(item => item.name === name)
-  if (!role || role.builtin) throw new Error('默认角色不可删除。')
+  if (!role) throw new Error('角色不存在，请刷新后重试。')
   if (data.users.some(user => user.role === name)) throw new Error('角色下仍有用户，请先调整用户角色。')
   data.roles = data.roles.filter(item => item.name !== name)
   commit(data)

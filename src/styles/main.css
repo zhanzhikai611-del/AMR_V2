@@ -531,6 +531,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, [tabindex]:focus-vis
 /* Keep action headings and controls on the same column axis. */
 .settings-table th.settings-actions-column,.settings-table td.settings-actions-column{width:144px;min-width:144px;text-align:center}
 .settings-table .settings-actions-column .row-actions{justify-content:center;flex-wrap:nowrap}
+.table-action.table-action--danger{color:#c43b32;border-color:#e0a39e;background:#fff}
+.table-action.table-action--danger:hover:not(:disabled){color:#a72d25;border-color:#c95b53;background:#fff5f4}
+.table-action.table-action--danger:disabled{color:#b9a4a2;border-color:#dfd0cf;background:#faf8f8}
 .settings-user-dialog{width:640px;display:flex;flex-direction:column;overflow:hidden;max-height:90vh}
 .settings-user-dialog>header,.settings-user-dialog>footer{flex-shrink:0}
 .settings-user-form{display:flex;flex-direction:column;gap:18px;padding:24px 30px;overflow-y:auto;min-height:0}
