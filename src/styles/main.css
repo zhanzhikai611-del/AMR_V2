@@ -31,8 +31,8 @@
   --waiting-soft: #fff6df;
   --fault: #d92d20;
   --fault-soft: #fff0ee;
-  --charging: #7a5af8;
-  --idle: #20a66a;
+  --charging: #20a66a;
+  --idle: #7a5af8;
   --disabled: #8192a1;
   --shadow-panel: 0 12px 34px rgba(34, 61, 72, 0.13);
   color: var(--structural-ink);

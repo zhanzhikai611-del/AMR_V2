@@ -111,6 +111,10 @@ function addHorizontalLine(prefix: string, y: number, xs: number[], showArrows =
 // 没有成排设备停靠点的横向通道保持单线，并在交汇处保留方向箭头。
 const horizontalXs = [140, ...aisleCenters.flatMap((x) => [x - laneOffset, x + laneOffset])]
 const centerLine = addHorizontalLine('H-C', 274, horizontalXs, true, [3, 7, 11, 15])
+;[3, 7, 11, 15].forEach((pointIndex, homeIndex) => {
+  const home = points.find(point => point.id === centerLine[pointIndex])
+  if (home) { home.name = `HOME-${String(homeIndex + 1).padStart(2, '0')}`; home.alias = home.name; home.description = 'AMR 空闲待命位置' }
+})
 const bottomLine = addHorizontalLine('H-B', 435, [140, ...aisleCenters.flatMap((x) => [x - laneOffset, x + laneOffset])])
 
 aisleLaneIds.forEach((lanes, aisleIndex) => {
