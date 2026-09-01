@@ -6,6 +6,7 @@ import type { BehaviorTreeDefinition } from '../types/domain'
 
 type NodeKind = BehaviorTreeDefinition['nodes'][number]['kind']
 type PaletteItem = { code: string; name: string; detail: string; kind: NodeKind }
+type ActionGroup = { id: string; label: string; items: PaletteItem[] }
 
 const route = useRoute()
 const router = useRouter()
@@ -18,27 +19,43 @@ const draggedItem = ref<PaletteItem | null>(null)
 const statusMessage = ref('草稿已加载')
 const validationTone = ref<'normal' | 'success' | 'fault'>('normal')
 const nodeSettings = ref<Record<string, { timeout: number; failure: string }>>({})
+const expandedActionGroups = ref<Record<string, boolean>>({ movement: true, operation: true, perception: true, script: true })
 
-const nodeGroups: Array<{ label: string; items: PaletteItem[] }> = [
-  { label: '移动类', items: [
+const controlNodes: PaletteItem[] = [
+  { code: 'SEQ', name: '顺序节点', detail: 'Sequence', kind: 'sequence' },
+]
+
+const actionGroups: ActionGroup[] = [
+  { id: 'movement', label: '移动类', items: [
     { code: 'N', name: '导航至点位', detail: 'Navigate', kind: 'action' },
     { code: 'F', name: '跟随路径', detail: 'Follow path', kind: 'action' },
     { code: 'D', name: '对接站点', detail: 'Dock', kind: 'action' },
   ] },
-  { label: '动作类', items: [
+  { id: 'operation', label: '动作类', items: [
     { code: 'L', name: '执行上料', detail: 'Load', kind: 'action' },
     { code: 'U', name: '执行下料', detail: 'Unload', kind: 'action' },
     { code: 'W', name: '等待', detail: 'Wait', kind: 'action' },
   ] },
-  { label: '感知类', items: [
-    { code: 'C', name: '检查机台状态', detail: 'Check device', kind: 'condition' },
-    { code: 'B', name: '检查剩余电量', detail: 'Check battery', kind: 'condition' },
+  { id: 'perception', label: '感知类', items: [
+    { code: 'S', name: '读取传感器', detail: 'Read sensor', kind: 'action' },
+    { code: 'O', name: '检测障碍物', detail: 'Detect obstacle', kind: 'action' },
   ] },
-  { label: '脚本类', items: [
+  { id: 'script', label: '脚本类', items: [
     { code: 'JS', name: '执行脚本', detail: 'Run script', kind: 'action' },
     { code: 'API', name: '调用接口', detail: 'Call API', kind: 'action' },
   ] },
 ]
+
+const conditionNodes: PaletteItem[] = [
+  { code: 'C', name: '检查机台状态', detail: 'Check device', kind: 'condition' },
+  { code: 'B', name: '检查剩余电量', detail: 'Check battery', kind: 'condition' },
+]
+
+const paletteItemCount = computed(() => controlNodes.length + conditionNodes.length + actionGroups.reduce((sum, group) => sum + group.items.length, 0))
+
+function toggleActionGroup(id: string) {
+  expandedActionGroups.value[id] = !expandedActionGroups.value[id]
+}
 
 const fallback = (): BehaviorTreeDefinition => ({
   id: route.params.id as string,
@@ -153,9 +170,29 @@ onMounted(async () => {
 
     <div class="behavior-editor-shell behavior-workbench">
       <aside class="editor-library behavior-node-library">
-        <header><span>节点库</span><b>{{ nodeGroups.flatMap(group => group.items).length }}</b></header>
+        <header><span>节点库</span><b>{{ paletteItemCount }}</b></header>
         <div class="behavior-library-scroll">
-          <section v-for="group in nodeGroups" :key="group.label" class="behavior-palette-group"><h3>{{ group.label }}</h3><button v-for="item in group.items" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong><small>{{ item.detail }}</small></span></button></section>
+          <section class="behavior-library-section">
+            <h2>控制节点</h2>
+            <div class="behavior-palette-items"><button v-for="item in controlNodes" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong><small>{{ item.detail }}</small></span></button></div>
+          </section>
+
+          <section class="behavior-library-section behavior-action-section">
+            <h2>AMR 动作</h2>
+            <div v-for="group in actionGroups" :key="group.id" class="behavior-action-group" :class="{ collapsed: !expandedActionGroups[group.id] }">
+              <button class="behavior-group-toggle" type="button" :aria-expanded="expandedActionGroups[group.id]" :aria-controls="`action-group-${group.id}`" @click="toggleActionGroup(group.id)">
+                <span>{{ group.label }}</span><small>{{ group.items.length }}</small><i aria-hidden="true">›</i>
+              </button>
+              <div v-show="expandedActionGroups[group.id]" :id="`action-group-${group.id}`" class="behavior-palette-items">
+                <button v-for="item in group.items" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong><small>{{ item.detail }}</small></span></button>
+              </div>
+            </div>
+          </section>
+
+          <section class="behavior-library-section">
+            <h2>条件判断</h2>
+            <div class="behavior-palette-items"><button v-for="item in conditionNodes" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong><small>{{ item.detail }}</small></span></button></div>
+          </section>
         </div>
       </aside>
 
