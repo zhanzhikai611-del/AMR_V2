@@ -19,10 +19,10 @@ const STRATEGY_LABEL: Record<DispatchRule['strategy'], string> = {
 
 /** 模拟随机生成的新任务模板，类型与任务设置里的规则对齐。 */
 const NEW_TASK_TEMPLATES: Array<Pick<Task, 'type' | 'requestDeviceId' | 'behaviorName' | 'behaviorVersion'>> = [
-  { type: '设备补料', requestDeviceId: 'D16', behaviorName: '设备补料流程', behaviorVersion: 'v1.0' },
-  { type: '设备下料', requestDeviceId: 'C18', behaviorName: '设备下料流程', behaviorVersion: 'v1.0' },
-  { type: '成品转运', requestDeviceId: 'D24', behaviorName: '成品转运流程', behaviorVersion: 'v1.0' },
-  { type: '半成品转运', requestDeviceId: 'E18', behaviorName: '半成品转运流程', behaviorVersion: 'v1.0' },
+  { type: '设备补料', requestDeviceId: 'D16', behaviorName: '设备补料', behaviorVersion: 'v1.0' },
+  { type: '设备下料', requestDeviceId: 'C18', behaviorName: '设备下料', behaviorVersion: 'v1.0' },
+  { type: '成品转运', requestDeviceId: 'D24', behaviorName: '成品转运', behaviorVersion: 'v1.0' },
+  { type: '半成品转运', requestDeviceId: 'E18', behaviorName: '半成品转运', behaviorVersion: 'v1.0' },
 ]
 
 function createTransferSteps(taskType: string, suffix: string): BehaviorStep[] {

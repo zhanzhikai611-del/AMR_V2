@@ -69,7 +69,7 @@ onMounted(async () => {
     <div v-if="createOpen" class="modal-backdrop" @click.self="createOpen = false">
       <section class="create-dialog">
         <header><div><span>CREATE BEHAVIOR TREE</span><strong>新建行为树</strong></div><button @click="createOpen = false">×</button></header>
-        <label>名称<input v-model="newName" placeholder="例如：设备补料流程"></label>
+        <label>名称<input v-model="newName" placeholder="例如：设备补料"></label>
         <label>流程概述<textarea v-model="newSummary" rows="3" placeholder="简要说明流程步骤和用途"></textarea></label>
         <label>状态<select v-model="newStatus"><option>草稿</option><option>已发布</option></select></label>
         <footer><button @click="createOpen = false">取消</button><button class="primary" :disabled="!newName.trim()" @click="createTree">创建并编辑</button></footer>
