@@ -50,9 +50,10 @@ const view = computed(() => {
   return { x: center.value.x - width / 2, y: center.value.y - height / 2, width, height }
 })
 const viewBox = computed(() => `${view.value.x} ${view.value.y} ${view.value.width} ${view.value.height}`)
-const markerScale = computed(() => Math.min(1.15, Math.max(0.4, 1 / scale.value)))
+const markerScale = computed(() => 1.2 * Math.min(1.15, Math.max(0.4, 1 / scale.value)))
 const scaleBar = computed(() => getMapScaleBar(scale.value, mapMetersPerUnit(props.map?.resolution)))
 const selectedAmr = computed(() => props.amrs.find(amr => amr.id === props.selectedAmrId))
+const visibleAmrs = computed(() => props.amrs.filter(amr => amr.connectionStatus !== 'offline' && amr.status !== '离线'))
 const pointIndex = computed(() => new Map(props.map?.points.map(point => [point.id, point]) ?? []))
 const deviceIndex = computed(() => new Map(props.resources.map(resource => [resource.id, resource])))
 const mapRoutes = computed(() => (props.map?.routes ?? []).flatMap(route => {
@@ -70,6 +71,11 @@ const visibleRouteTasks = computed(() => props.selectedTaskId
 const isServiceActive = (amr: Pick<Amr, 'connectionStatus' | 'status'>) => amr.connectionStatus !== 'offline' && amr.status !== '离线' && amr.status !== '停用'
 const selectedServiceResources = computed(() => selectedAmr.value && isServiceActive(selectedAmr.value)
   ? new Set(selectedAmr.value.serviceDevices) : new Set<string>())
+const selectedTaskDestination = computed(() => {
+  const amr = selectedAmr.value
+  if (!amr || !isServiceActive(amr)) return null
+  return props.tasks.find(task => task.id === amr.taskId && task.amrId === amr.id && task.status === '执行中')?.requestDeviceId ?? null
+})
 const taskStateByDevice = computed(() => {
   const states = new Map<string, 'active' | 'fault'>()
   for (const task of props.tasks) {
@@ -89,10 +95,12 @@ function stationTitle(point: MapStation) {
 }
 function stationClasses(point: MapStation) {
   const taskState = taskStateByDevice.value.get(point.deviceId)
+  const selectedDestination = selectedTaskDestination.value === point.deviceId
   return { 'service-highlight': selectedServiceResources.value.has(point.deviceId),
+    'selected-destination': selectedDestination,
     'task-active': taskState === 'active', 'task-fault': taskState === 'fault',
     focused: hoveredStationId.value === point.id,
-    muted: Boolean(props.selectedAmrId && !selectedServiceResources.value.has(point.deviceId) && !taskState && hoveredStationId.value !== point.id),
+    muted: Boolean(props.selectedAmrId && !selectedServiceResources.value.has(point.deviceId) && !selectedDestination),
     disabled: point.disabled }
 }
 function otherStationLabelVisible(point: MapStation) {
@@ -175,9 +183,9 @@ onBeforeUnmount(() => {
         <defs>
           <pattern id="monitor-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#dce4ea" stroke-width="0.5" /></pattern>
           <filter id="selection-shadow" x="-100%" y="-100%" width="300%" height="300%"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#1677ff" flood-opacity=".32" /></filter>
-          <filter id="station-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1" flood-color="#58a6ff" flood-opacity=".42" /></filter>
-          <filter id="station-hover-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.35" flood-color="#58a6ff" flood-opacity=".6" /></filter>
-          <filter id="station-active-glow" x="-150%" y="-150%" width="400%" height="400%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.15" flood-color="#79c7ff" flood-opacity=".88" /><feDropShadow dx="0" dy="0" stdDeviation="2.8" flood-color="#4aa8ef" flood-opacity=".3" /></filter>
+          <filter id="station-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1" flood-color="#e7bd62" flood-opacity=".42" /></filter>
+          <filter id="station-hover-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.35" flood-color="#e7bd62" flood-opacity=".6" /></filter>
+          <filter id="station-active-glow" x="-150%" y="-150%" width="400%" height="400%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.15" flood-color="#e7bd62" flood-opacity=".55" /><feDropShadow dx="0" dy="0" stdDeviation="2.8" flood-color="#e7bd62" flood-opacity=".18" /></filter>
           <filter id="station-fault-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.2" flood-color="#e5484d" flood-opacity=".55" /></filter>
         </defs>
         <rect :x="view.x" :y="view.y" :width="view.width" :height="view.height" fill="url(#monitor-grid)" />
@@ -211,16 +219,16 @@ onBeforeUnmount(() => {
             <path class="label-leader" :d="layout.leader" />
           </g>
           <g v-for="layout in labelLayouts" :key="layout.id" data-map-interactive class="monitor-device-label" :data-label-station-id="layout.id" :class="stationClasses(layout.point)" :transform="`translate(${layout.x} ${layout.y})`" @pointerenter="hoveredStationId = layout.id" @pointerleave="hoveredStationId = null">
-            <rect class="device-nameplate" :width="layout.width" :height="layout.height" rx="1.6" />
+            <rect class="device-nameplate" :width="layout.width" :height="layout.height" :rx="layout.height / 2" />
             <g data-map-interactive class="station-card-title" :aria-label="`设备 ${stationLabel(layout.point)}`">
-              <rect class="station-title-hit" :width="layout.width" :height="layout.height" rx="1.6" />
+              <rect class="station-title-hit" :width="layout.width" :height="layout.height" :rx="layout.height / 2" />
               <text :x="layout.width / 2" :y="layout.height / 2" dominant-baseline="central">{{ stationLabel(layout.point) }}</text>
             </g>
             <title>{{ stationTitle(layout.point) }}</title>
           </g>
         </g>
         <g class="amr-layer">
-          <g v-for="amr in amrs" :key="amr.id" data-map-interactive :transform="`translate(${amr.position.x} ${amr.position.y}) scale(${markerScale})`" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id, 'dispatch-paused': amr.status === '停用' }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}`" @click="chooseAmr(amr.id)" @keydown.enter.stop.prevent="chooseAmr(amr.id)" @keydown.space.stop.prevent="chooseAmr(amr.id)">
+          <g v-for="amr in visibleAmrs" :key="amr.id" data-map-interactive :transform="`translate(${amr.position.x} ${amr.position.y}) scale(${markerScale})`" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id, 'dispatch-paused': amr.status === '停用' }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}`" @click="chooseAmr(amr.id)" @keydown.enter.stop.prevent="chooseAmr(amr.id)" @keydown.space.stop.prevent="chooseAmr(amr.id)">
             <rect class="amr-hit-target" x="-22" y="-20" width="44" height="40" rx="10" />
             <circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-one" r="18" /><circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-two" r="18" />
             <circle class="selection-ring" r="17" /><circle class="amr-body" r="12" />
