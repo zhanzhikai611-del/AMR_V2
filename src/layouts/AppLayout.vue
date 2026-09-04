@@ -13,6 +13,10 @@ const navigation = [
   { id: 'records', label: '派单中心', icon: 'records', route: '/task-records' },
   { id: 'behavior', label: '行为树管理', icon: 'behavior', route: '/behaviors' },
   { id: 'maps', label: '地图管理', icon: 'layers', route: '/maps' },
+  { id: 'resources', label: '资源管理', icon: 'resources', children: [
+    { id: 'amrs', label: 'AMR 管理', route: '/resources/amrs' },
+    { id: 'devices', label: '设备管理', route: '/resources/devices' },
+  ] },
   { id: 'settings', label: '系统设置', icon: 'settings', children: [
     { id: 'users', label: '用户管理', route: '/settings/users' },
     { id: 'roles', label: '角色权限', route: '/settings/roles' },
@@ -24,7 +28,7 @@ const activeGroup = computed(() => route.meta.groupId as string | undefined)
 const isWorkbench = computed(() => route.path.startsWith('/maps/') && route.path.endsWith('/edit'))
 
 onMounted(() => {
-  if (activeGroup.value === 'settings') {
+  if (activeGroup.value === 'resources' || activeGroup.value === 'settings') {
     layout.expandedGroup = activeGroup.value
   }
 })
@@ -55,7 +59,7 @@ onMounted(() => {
               class="navigation-item group-trigger"
               type="button"
               :title="layout.navigationCollapsed ? item.label : undefined"
-              @click="layout.toggleGroup(item.id as 'settings')"
+              @click="layout.toggleGroup(item.id as 'resources' | 'settings')"
             >
               <AppIcon :name="item.icon" />
               <span>{{ item.label }}</span>

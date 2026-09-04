@@ -37,6 +37,9 @@ defineProps<{ name: string; size?: number }>()
     <template v-else-if="name === 'layers'">
       <path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/>
     </template>
+    <template v-else-if="name === 'resources'">
+      <rect x="3" y="4" width="7" height="7" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/><rect x="14" y="15" width="7" height="6" rx="1"/>
+    </template>
     <template v-else>
       <circle cx="12" cy="12" r="8"/>
     </template>

@@ -10,6 +10,8 @@ import UsersSettingsView from '../views/settings/UsersSettingsView.vue'
 import RolesSettingsView from '../views/settings/RolesSettingsView.vue'
 import LogsSettingsView from '../views/settings/LogsSettingsView.vue'
 import AnalyticsView from '../views/AnalyticsView.vue'
+import ResourceManagementView from '../views/ResourceManagementView.vue'
+import ResourceDetailView from '../views/ResourceDetailView.vue'
 
 export default createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -25,6 +27,10 @@ export default createRouter({
         { path: 'behaviors/:id/edit', component: BehaviorEditorView, meta: { menuId: 'behavior', roles: ['研发人员'] } },
         { path: 'maps', component: MapLibraryView, meta: { menuId: 'maps', roles: ['研发人员'] } },
         { path: 'maps/:id/edit', component: MapEditorView, meta: { menuId: 'maps', roles: ['研发人员'] } },
+        { path: 'resources/amrs', component: ResourceManagementView, props: { section: 'amrs' }, meta: { groupId: 'resources', menuId: 'amrs', roles: ['研发人员'] } },
+        { path: 'resources/amrs/:id', component: ResourceDetailView, props: { kind: 'amr' }, meta: { groupId: 'resources', menuId: 'amrs', roles: ['研发人员'] } },
+        { path: 'resources/devices', component: ResourceManagementView, props: { section: 'devices' }, meta: { groupId: 'resources', menuId: 'devices', roles: ['研发人员'] } },
+        { path: 'resources/devices/:id', component: ResourceDetailView, props: { kind: 'device' }, meta: { groupId: 'resources', menuId: 'devices', roles: ['研发人员'] } },
         { path:'settings/users',component:UsersSettingsView,meta:{groupId:'settings',menuId:'users',roles:['系统管理员']} },
         { path:'settings/roles',component:RolesSettingsView,meta:{groupId:'settings',menuId:'roles',roles:['系统管理员']} },
         { path:'settings/dictionaries',redirect:'/settings/users' },

@@ -10,8 +10,10 @@ const transferFlow = (prefix: string, toLoad: string, toUnload: string) => [
 ]
 
 export const behaviorTrees: BehaviorTreeDefinition[] = [
-  { id: 'BT-001', name: '设备补料', taskType: '设备补料', status: '已发布', updatedAt: '2026-08-29 13:40', nodeCount: 5, summary: '前往备料点 → 执行上料 → 前往目标设备 → 执行下料', boundAmrIds: ['AMR-01', 'AMR-02', 'AMR-04'], nodes: transferFlow('bt1', '前往备料点', '前往目标设备') },
-  { id: 'BT-002', name: '设备下料', taskType: '设备下料', status: '已发布', updatedAt: '2026-08-29 13:40', nodeCount: 5, summary: '前往目标设备 → 执行上料 → 前往下料点 → 执行下料', boundAmrIds: ['AMR-03', 'AMR-05'], nodes: transferFlow('bt2', '前往目标设备', '前往下料点') },
-  { id: 'BT-003', name: '成品转运', taskType: '成品转运', status: '已发布', updatedAt: '2026-08-29 13:40', nodeCount: 5, summary: '前往产出设备 → 执行上料 → 前往成品下料点 → 执行下料', boundAmrIds: ['AMR-02', 'AMR-03', 'AMR-06'], nodes: transferFlow('bt3', '前往产出设备', '前往成品下料点') },
-  { id: 'BT-004', name: '半成品转运', taskType: '半成品转运', status: '草稿', updatedAt: '2026-08-29 13:40', nodeCount: 5, summary: '前往上游设备 → 执行上料 → 前往下游设备 → 执行下料', boundAmrIds: ['AMR-05', 'AMR-06'], nodes: transferFlow('bt4', '前往上游设备', '前往下游设备') },
+  { id: 'BT-001', kind: '行为树', name: '中转台-CNC-上料', taskType: '上料', status: '已发布', updatedAt: '2026-08-29 13:40', nodeCount: 5, summary: '从中转台取料并运送至 CNC', boundAmrIds: ['AMR-01', 'AMR-02', 'AMR-04'], nodes: transferFlow('bt1', '前往中转台', '前往 CNC') },
+  { id: 'BT-002', kind: '行为树', name: 'CNC-中转台-下料', taskType: '下料', status: '已发布', updatedAt: '2026-08-29 13:40', nodeCount: 5, summary: '从 CNC 取料并运送至中转台', boundAmrIds: ['AMR-03', 'AMR-05'], nodes: transferFlow('bt2', '前往 CNC', '前往中转台') },
+  { id: 'BT-003', kind: '行为树', name: 'CNC-CNC-上下料', taskType: '上下料', status: '已发布', updatedAt: '2026-08-29 13:40', nodeCount: 5, summary: '完成两台 CNC 之间的上下料转运', boundAmrIds: ['AMR-02', 'AMR-03', 'AMR-06'], nodes: transferFlow('bt3', '前往上游 CNC', '前往下游 CNC') },
+  { id: 'BT-004', kind: '行为树', name: 'CNC-充电站-充电', taskType: '充电', status: '待发布', updatedAt: '2026-08-29 13:40', nodeCount: 5, summary: '从 CNC 区域前往充电站执行充电', boundAmrIds: ['AMR-05', 'AMR-06'], nodes: transferFlow('bt4', '离开 CNC', '前往充电站') },
+  { id: 'ST-001', kind: '子树', name: '站点对接检查', taskType: '通用子流程', updatedAt: '2026-08-27 09:15', nodeCount: 3, summary: '检查站点状态并完成精确对接', nodes: transferFlow('st1', '检查站点状态', '执行精确对接').slice(0, 3) },
+  { id: 'ST-002', kind: '子树', name: '异常复位流程', taskType: '通用子流程', updatedAt: '2026-08-25 16:30', nodeCount: 3, summary: '清除异常、设备复位并返回主流程', nodes: transferFlow('st2', '清除异常', '设备复位').slice(0, 3) },
 ]

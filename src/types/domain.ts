@@ -122,6 +122,11 @@ export interface TwinSnapshot {
   unconfirmedAlarms: number
 }
 
+export interface ResourceCatalog {
+  amrs: Amr[]
+  devices: MapResource[]
+}
+
 export interface MapDefinition {
   id: string
   name: string
@@ -244,12 +249,13 @@ export interface DispatchRule {
 
 export interface BehaviorTreeDefinition {
   id: string
+  kind: '行为树' | '子树'
   name: string
   taskType: string
-  status: '已发布' | '草稿'
+  status?: '待发布' | '已发布'
   updatedAt: string
   nodeCount: number
   summary: string
   boundAmrIds?: string[]
-  nodes: Array<{ id: string; name: string; kind: 'sequence' | 'action' | 'condition'; x: number; y: number; parentId?: string }>
+  nodes: Array<{ id: string; name: string; kind: 'sequence' | 'action' | 'condition' | 'subtree'; x: number; y: number; parentId?: string }>
 }

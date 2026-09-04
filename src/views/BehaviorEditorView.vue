@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getBehaviorTree } from '../api/modules/behaviors'
+import { getBehaviorTree, getBehaviorTrees } from '../api/modules/behaviors'
 import type { BehaviorTreeDefinition } from '../types/domain'
 
 type NodeKind = BehaviorTreeDefinition['nodes'][number]['kind']
@@ -11,38 +11,42 @@ type ActionGroup = { id: string; label: string; items: PaletteItem[] }
 const route = useRoute()
 const router = useRouter()
 const tree = ref<BehaviorTreeDefinition | null>(null)
+const libraryMode = ref<'nodes' | 'subtrees'>('nodes')
+const availableSubtrees = ref<BehaviorTreeDefinition[]>([])
 const selectedId = ref<string | null>(null)
 const canvasMode = ref<'select' | 'connect'>('select')
 const connectionSourceId = ref<string | null>(null)
 const zoom = ref(100)
 const draggedItem = ref<PaletteItem | null>(null)
-const statusMessage = ref('草稿已加载')
+const statusMessage = ref('结构已加载')
 const validationTone = ref<'normal' | 'success' | 'fault'>('normal')
 const nodeSettings = ref<Record<string, { timeout: number; failure: string }>>({})
-const expandedActionGroups = ref<Record<string, boolean>>({ movement: true, operation: true, perception: true, script: true })
+const expandedActionGroups = ref<Record<string, boolean>>({ movement: true, forklift: true, roller: true, manipulator: true })
 
 const controlNodes: PaletteItem[] = [
   { code: 'SEQ', name: '顺序节点', detail: 'Sequence', kind: 'sequence' },
 ]
 
 const actionGroups: ActionGroup[] = [
-  { id: 'movement', label: '移动类', items: [
+  { id: 'movement', label: '通用移动', items: [
     { code: 'N', name: '导航至点位', detail: 'Navigate', kind: 'action' },
     { code: 'F', name: '跟随路径', detail: 'Follow path', kind: 'action' },
     { code: 'D', name: '对接站点', detail: 'Dock', kind: 'action' },
   ] },
-  { id: 'operation', label: '动作类', items: [
-    { code: 'L', name: '执行上料', detail: 'Load', kind: 'action' },
-    { code: 'U', name: '执行下料', detail: 'Unload', kind: 'action' },
-    { code: 'W', name: '等待', detail: 'Wait', kind: 'action' },
+  { id: 'forklift', label: '叉车', items: [
+    { code: 'FP', name: '货叉取货', detail: 'Fork pickup', kind: 'action' },
+    { code: 'FD', name: '货叉卸货', detail: 'Fork dropoff', kind: 'action' },
+    { code: 'FL', name: '调整货叉高度', detail: 'Fork lift', kind: 'action' },
   ] },
-  { id: 'perception', label: '感知类', items: [
-    { code: 'S', name: '读取传感器', detail: 'Read sensor', kind: 'action' },
-    { code: 'O', name: '检测障碍物', detail: 'Detect obstacle', kind: 'action' },
+  { id: 'roller', label: '滚筒', items: [
+    { code: 'RI', name: '滚筒接料', detail: 'Roller intake', kind: 'action' },
+    { code: 'RO', name: '滚筒出料', detail: 'Roller output', kind: 'action' },
+    { code: 'RS', name: '停止滚筒', detail: 'Roller stop', kind: 'action' },
   ] },
-  { id: 'script', label: '脚本类', items: [
-    { code: 'JS', name: '执行脚本', detail: 'Run script', kind: 'action' },
-    { code: 'API', name: '调用接口', detail: 'Call API', kind: 'action' },
+  { id: 'manipulator', label: '复合机械手', items: [
+    { code: 'MP', name: '机械手抓取', detail: 'Arm pickup', kind: 'action' },
+    { code: 'MD', name: '机械手放置', detail: 'Arm place', kind: 'action' },
+    { code: 'MR', name: '机械手复位', detail: 'Arm reset', kind: 'action' },
   ] },
 ]
 
@@ -52,6 +56,10 @@ const conditionNodes: PaletteItem[] = [
 ]
 
 const paletteItemCount = computed(() => controlNodes.length + conditionNodes.length + actionGroups.reduce((sum, group) => sum + group.items.length, 0))
+const subtreePaletteItems = computed<PaletteItem[]>(() => availableSubtrees.value
+  .filter((item) => item.id !== tree.value?.id)
+  .map((item) => ({ code: 'ST', name: item.name, detail: item.summary, kind: 'subtree' })))
+const visibleLibraryCount = computed(() => libraryMode.value === 'nodes' ? paletteItemCount.value : subtreePaletteItems.value.length)
 
 function toggleActionGroup(id: string) {
   expandedActionGroups.value[id] = !expandedActionGroups.value[id]
@@ -59,9 +67,10 @@ function toggleActionGroup(id: string) {
 
 const fallback = (): BehaviorTreeDefinition => ({
   id: route.params.id as string,
+  kind: route.query.kind === '子树' ? '子树' : '行为树',
   name: route.query.name as string || '未命名结构',
   taskType: '成品转运',
-  status: route.query.status === '已发布' ? '已发布' : '草稿',
+  status: route.query.kind === '子树' ? undefined : route.query.status === '已发布' ? '已发布' : '待发布',
   updatedAt: '2026-08-15 13:40',
   nodeCount: 1,
   summary: route.query.summary as string || '尚未配置',
@@ -136,10 +145,10 @@ function settingsFor(id: string) {
   return nodeSettings.value[id] ??= { timeout: 60, failure: '返回失败' }
 }
 
-function saveDraft() {
+function saveTree() {
   if (!tree.value) return
-  tree.value.status = '草稿'
-  statusMessage.value = '草稿已保存'
+  if (tree.value.kind === '行为树' && tree.value.status !== '已发布') tree.value.status = '待发布'
+  statusMessage.value = '已保存'
   validationTone.value = 'success'
 }
 
@@ -157,6 +166,7 @@ function publishTree() {
 
 onMounted(async () => {
   try { tree.value = await getBehaviorTree(route.params.id as string) } catch { tree.value = fallback() }
+  try { availableSubtrees.value = (await getBehaviorTrees()).filter((item) => item.kind === '子树') } catch { availableSubtrees.value = [] }
   tree.value.nodes.forEach((node) => { nodeSettings.value[node.id] = { timeout: 60, failure: '返回失败' } })
 })
 </script>
@@ -164,14 +174,18 @@ onMounted(async () => {
 <template>
   <section v-if="tree" class="editor-page behavior-editor-page">
     <header class="editor-topbar">
-      <div class="editor-breadcrumb"><button @click="router.push('/behaviors')">←</button><span>行为树列表 / <strong>{{ tree.name }}</strong></span><em>{{ tree.status }}</em></div>
-      <div><button @click="saveDraft">保存草稿</button><button @click="validateTree">校验流程</button><button class="primary" @click="publishTree">发布</button></div>
+      <div class="editor-breadcrumb"><button @click="router.push('/behaviors')">←</button><span>{{ tree.kind }}列表 / <strong>{{ tree.name }}</strong></span><em v-if="tree.kind === '行为树'">{{ tree.status }}</em></div>
+      <div><button @click="saveTree">保存</button><button @click="validateTree">校验流程</button><button v-if="tree.kind === '行为树'" class="primary" @click="publishTree">发布</button></div>
     </header>
 
     <div class="behavior-editor-shell behavior-workbench">
       <aside class="editor-library behavior-node-library">
-        <header><span>节点库</span><b>{{ paletteItemCount }}</b></header>
-        <div class="behavior-library-scroll">
+        <header><span>{{ libraryMode === 'nodes' ? '节点库' : '子树库' }}</span><b>{{ visibleLibraryCount }}</b></header>
+        <nav aria-label="编辑资源类型">
+          <button :class="{ active: libraryMode === 'nodes' }" @click="libraryMode = 'nodes'"><i>N</i>节点库</button>
+          <button :class="{ active: libraryMode === 'subtrees' }" @click="libraryMode = 'subtrees'"><i>ST</i>子树</button>
+        </nav>
+        <div v-if="libraryMode === 'nodes'" class="behavior-library-scroll">
           <section class="behavior-library-section">
             <h2>控制节点</h2>
             <div class="behavior-palette-items"><button v-for="item in controlNodes" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong><small>{{ item.detail }}</small></span></button></div>
@@ -194,6 +208,13 @@ onMounted(async () => {
             <div class="behavior-palette-items"><button v-for="item in conditionNodes" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong><small>{{ item.detail }}</small></span></button></div>
           </section>
         </div>
+        <div v-else class="behavior-library-scroll subtree-library-scroll">
+          <section class="behavior-palette-group">
+            <h3>可复用子树</h3>
+            <button v-for="item in subtreePaletteItems" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i class="subtree">ST</i><span><strong>{{ item.name }}</strong><small>{{ item.detail }}</small></span></button>
+            <p v-if="!subtreePaletteItems.length" class="behavior-library-empty">暂无可用子树</p>
+          </section>
+        </div>
       </aside>
 
       <main class="behavior-canvas interactive-behavior-canvas" @dragover.prevent @drop="addNode">
@@ -211,7 +232,7 @@ onMounted(async () => {
         <template v-if="selectedNode">
           <label>节点名称<input v-model="selectedNode.name"></label>
           <label>节点编号<input :value="selectedNode.id" disabled></label>
-          <label>节点类型<select v-model="selectedNode.kind"><option value="sequence">控制节点</option><option value="action">动作节点</option><option value="condition">条件节点</option></select></label>
+          <label>节点类型<select v-model="selectedNode.kind"><option value="sequence">控制节点</option><option value="action">动作节点</option><option value="condition">条件节点</option><option value="subtree">子树</option></select></label>
           <label>超时时间<input v-model.number="settingsFor(selectedNode.id).timeout" type="number" min="0"></label>
           <section class="behavior-runtime-policy"><h3>运行策略</h3><label>失败处理<select v-model="settingsFor(selectedNode.id).failure"><option>返回失败</option><option>重试 1 次</option><option>重试 2 次</option><option>终止任务</option></select></label></section>
           <button class="danger" :disabled="!selectedNode.parentId" @click="deleteSelected">删除节点</button>
