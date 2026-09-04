@@ -2,7 +2,7 @@
 .monitor-map.is-inspecting { margin-right: min(450px, 38vw); }
 .monitor-canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 .monitor-canvas.is-dragging { cursor: grabbing; }
-.monitor-pointcloud { opacity: .6; pointer-events: none; }
+.monitor-pointcloud { opacity: .5; pointer-events: none; }
 .monitor-network line { stroke: #46677d; stroke-width: 1.6; stroke-linecap: round; opacity: .76; vector-effect: non-scaling-stroke; }
 .monitor-network .disabled { stroke: #a7afb7; stroke-dasharray: 3 3; }
 .station-symbol { fill: #52788e; stroke: #f5faff; stroke-width: .65; paint-order: stroke; transition: fill 160ms ease, stroke 160ms ease; }
@@ -26,17 +26,17 @@
 .monitor-label-connector.service-highlight .label-leader { stroke: #1677e8; }
 .monitor-label-connector.focused .label-leader { stroke-width: 1.65; opacity: 1; }
 .monitor-device-label { pointer-events: all; cursor: default; }
-.device-nameplate { fill: #fff4cc; stroke: #d8c68d; stroke-width: .55; transition: fill 160ms ease, stroke 160ms ease; }
+.device-nameplate { fill: #294553; stroke: #fff; stroke-width: .45; filter: drop-shadow(0 1px .65px rgba(20,40,50,.34)); transition: fill 160ms ease, stroke 160ms ease; }
 .station-card-title { pointer-events: all; cursor: default; }
 .station-title-hit { fill: transparent; stroke: none; }
-.monitor-device-label text { fill: #30343b; text-anchor: middle; font: 600 6px var(--font-latin); letter-spacing: 0; pointer-events: none; }
-.monitor-device-label.disabled .device-nameplate { fill: #e5e7eb; }
-.monitor-device-label.service-highlight .device-nameplate { stroke: #c9a24d; stroke-width: .7; filter: url(#station-glow); }
-.monitor-device-label.task-active .device-nameplate { stroke-width: 1; filter: url(#station-active-glow); }
-.monitor-device-label.task-fault .device-nameplate { fill: #fee2e2; stroke: #e5484d; stroke-width: .8; filter: url(#station-fault-glow); }
-.monitor-device-label.focused:not(.task-fault) .device-nameplate { stroke: #c9a24d; stroke-width: .8; filter: url(#station-hover-glow); }
-.monitor-device-label:is(.task-active, .selected-destination):not(.task-fault) .device-nameplate { fill: #ffe7a3; stroke: #c9a24d; stroke-width: 1; filter: url(#station-active-glow); }
-.monitor-device-label:is(.task-active, .selected-destination):not(.task-fault) text { fill: #30343b; }
+.monitor-device-label text { fill: #f7fafc; text-anchor: middle; font: 700 6px var(--font-latin); letter-spacing: .04em; pointer-events: none; }
+.monitor-device-label.disabled .device-nameplate { fill: #73848c; stroke: #eef2f4; }
+.monitor-device-label.service-highlight .device-nameplate { stroke: #2d88d8; stroke-width: .85; filter: url(#station-glow); }
+.monitor-device-label.task-active .device-nameplate { fill: #174f73; stroke: #73c7ff; stroke-width: 1; filter: url(#station-active-glow); }
+.monitor-device-label.task-fault .device-nameplate { fill: #8f302d; stroke: #ffb4ae; stroke-width: 1; filter: url(#station-fault-glow); }
+.monitor-device-label.focused:not(.task-fault) .device-nameplate { fill: #1e5875; stroke: #78ccff; stroke-width: 1; filter: url(#station-hover-glow); }
+.monitor-device-label:is(.task-active, .selected-destination):not(.task-fault) .device-nameplate { fill: #174f73; stroke: #73c7ff; stroke-width: 1; filter: url(#station-active-glow); }
+.monitor-device-label:is(.task-active, .selected-destination):not(.task-fault) text { fill: #fff; }
 .monitor-stations .task-fault .station-symbol { fill: #e5484d; filter: url(#station-fault-glow); }
 .monitor-task-routes > g.selected .route-planned,
 .monitor-task-routes > g.selected .route-traveled { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; filter: none; pointer-events: none; }

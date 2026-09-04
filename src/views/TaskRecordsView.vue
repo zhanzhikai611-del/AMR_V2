@@ -107,6 +107,10 @@ function queueLabel(task: Task): string {
 function selectLiveTask(task: Task) { selected.value = { kind: 'live', task } }
 function selectRecord(task: TaskRecord) { selected.value = { kind: 'record', task } }
 
+function filterFromSummary(status: Task['status'] | '全部状态') {
+  liveStatus.value = status === '全部状态' || liveStatus.value === status ? '全部状态' : status
+}
+
 function editRule(rule: DispatchRule) {
   editingRule.value = { ...rule }
 }
@@ -142,10 +146,10 @@ onBeforeUnmount(() => center.stop())
 
     <template v-if="activeTab === 'live'">
       <section class="dispatch-summary" aria-label="实时任务摘要">
-        <article class="fault"><span>异常</span><strong>{{ abnormalCount }}</strong></article>
-        <article class="pending"><span>待执行</span><strong>{{ queuedCount }}</strong></article>
-        <article class="running"><span>执行中</span><strong>{{ runningCount }}</strong></article>
-        <article><span>当前任务</span><strong>{{ activeTasks.length }}</strong></article>
+        <article class="fault" :class="{ active: liveStatus === '异常' }" role="button" tabindex="0" :aria-pressed="liveStatus === '异常'" @click="filterFromSummary('异常')" @keydown.enter.prevent="filterFromSummary('异常')" @keydown.space.prevent="filterFromSummary('异常')"><span>异常</span><strong>{{ abnormalCount }}</strong></article>
+        <article class="pending" :class="{ active: liveStatus === '待执行' }" role="button" tabindex="0" :aria-pressed="liveStatus === '待执行'" @click="filterFromSummary('待执行')" @keydown.enter.prevent="filterFromSummary('待执行')" @keydown.space.prevent="filterFromSummary('待执行')"><span>待执行</span><strong>{{ queuedCount }}</strong></article>
+        <article class="running" :class="{ active: liveStatus === '执行中' }" role="button" tabindex="0" :aria-pressed="liveStatus === '执行中'" @click="filterFromSummary('执行中')" @keydown.enter.prevent="filterFromSummary('执行中')" @keydown.space.prevent="filterFromSummary('执行中')"><span>执行中</span><strong>{{ runningCount }}</strong></article>
+        <article :class="{ active: liveStatus === '全部状态' }" role="button" tabindex="0" :aria-pressed="liveStatus === '全部状态'" @click="filterFromSummary('全部状态')" @keydown.enter.prevent="filterFromSummary('全部状态')" @keydown.space.prevent="filterFromSummary('全部状态')"><span>当前任务</span><strong>{{ activeTasks.length }}</strong></article>
       </section>
       <section class="dispatch-list-panel">
         <div class="dispatch-toolbar">

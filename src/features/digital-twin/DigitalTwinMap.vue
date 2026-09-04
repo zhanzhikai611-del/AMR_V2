@@ -39,7 +39,7 @@ const layerOptions = [...baseLayerOptions, ...stationLayerOptions]
 const viewport = ref({ width: 760, height: 520 })
 const fullViewport = ref({ width: 760, height: 520 })
 const center = ref({ x: MAP_FRAME.width / 2, y: MAP_FRAME.height / 2 })
-const zoom = ref(1)
+const zoom = ref(1.25)
 const dragging = ref(false)
 let dragOrigin = { clientX: 0, clientY: 0, x: 0, y: 0 }
 let resizeObserver: ResizeObserver | undefined
@@ -69,8 +69,6 @@ const otherStations = computed(() => props.map?.points.filter(point =>
 const visibleRouteTasks = computed(() => props.selectedTaskId
   ? props.tasks.filter(task => task.id === props.selectedTaskId && task.amrId && task.plannedPath) : [])
 const isServiceActive = (amr: Pick<Amr, 'connectionStatus' | 'status'>) => amr.connectionStatus !== 'offline' && amr.status !== '离线' && amr.status !== '停用'
-const selectedServiceResources = computed(() => selectedAmr.value && isServiceActive(selectedAmr.value)
-  ? new Set(selectedAmr.value.serviceDevices) : new Set<string>())
 const selectedTaskDestination = computed(() => {
   const amr = selectedAmr.value
   if (!amr || !isServiceActive(amr)) return null
@@ -96,11 +94,9 @@ function stationTitle(point: MapStation) {
 function stationClasses(point: MapStation) {
   const taskState = taskStateByDevice.value.get(point.deviceId)
   const selectedDestination = selectedTaskDestination.value === point.deviceId
-  return { 'service-highlight': selectedServiceResources.value.has(point.deviceId),
-    'selected-destination': selectedDestination,
+  return { 'selected-destination': selectedDestination,
     'task-active': taskState === 'active', 'task-fault': taskState === 'fault',
     focused: hoveredStationId.value === point.id,
-    muted: Boolean(props.selectedAmrId && !selectedServiceResources.value.has(point.deviceId) && !selectedDestination),
     disabled: point.disabled }
 }
 function otherStationLabelVisible(point: MapStation) {
@@ -115,11 +111,12 @@ function measure() {
   const full = canvas.value?.closest('.twin-stage')?.getBoundingClientRect()
   if (full && full.width > 0 && full.height > 0) fullViewport.value = { width: full.width, height: full.height }
 }
-function fitMap() {
+function setFittedZoom(multiplier: number) {
   const fullScale = Math.min(fullViewport.value.width / MAP_FRAME.width, fullViewport.value.height / MAP_FRAME.height)
-  zoom.value = Math.min(viewport.value.width / MAP_FRAME.width, viewport.value.height / MAP_FRAME.height) / fullScale
+  zoom.value = Math.min(viewport.value.width / MAP_FRAME.width, viewport.value.height / MAP_FRAME.height) / fullScale * multiplier
   center.value = { x: MAP_FRAME.width / 2, y: MAP_FRAME.height / 2 }
 }
+function fitMap() { setFittedZoom(1) }
 function changeZoom(next: number) { zoom.value = Math.max(0.5, Math.min(4, next)) }
 function wheel(event: WheelEvent) {
   const rect = canvas.value?.getBoundingClientRect()
@@ -160,7 +157,7 @@ function keepSelectionVisible() {
     y: center.value.y + (point.y < top ? point.y - top : point.y > bottom ? point.y - bottom : 0) }
 }
 watch(() => [props.selectedAmrId, props.inspectorOpen], async () => { await nextTick(); measure(); keepSelectionVisible() })
-watch(() => props.map?.mapId, fitMap)
+watch(() => props.map?.mapId, () => setFittedZoom(1.25))
 onMounted(() => {
   measure()
   resizeObserver = new ResizeObserver(() => { measure(); keepSelectionVisible() })
@@ -219,9 +216,9 @@ onBeforeUnmount(() => {
             <path class="label-leader" :d="layout.leader" />
           </g>
           <g v-for="layout in labelLayouts" :key="layout.id" data-map-interactive class="monitor-device-label" :data-label-station-id="layout.id" :class="stationClasses(layout.point)" :transform="`translate(${layout.x} ${layout.y})`" @pointerenter="hoveredStationId = layout.id" @pointerleave="hoveredStationId = null">
-            <rect class="device-nameplate" :width="layout.width" :height="layout.height" :rx="layout.height / 2" />
+            <rect class="device-nameplate" :width="layout.width" :height="layout.height" rx="3" />
             <g data-map-interactive class="station-card-title" :aria-label="`设备 ${stationLabel(layout.point)}`">
-              <rect class="station-title-hit" :width="layout.width" :height="layout.height" :rx="layout.height / 2" />
+              <rect class="station-title-hit" :width="layout.width" :height="layout.height" rx="3" />
               <text :x="layout.width / 2" :y="layout.height / 2" dominant-baseline="central">{{ stationLabel(layout.point) }}</text>
             </g>
             <title>{{ stationTitle(layout.point) }}</title>
@@ -231,9 +228,27 @@ onBeforeUnmount(() => {
           <g v-for="amr in visibleAmrs" :key="amr.id" data-map-interactive :transform="`translate(${amr.position.x} ${amr.position.y}) scale(${markerScale})`" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id, 'dispatch-paused': amr.status === '停用' }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}`" @click="chooseAmr(amr.id)" @keydown.enter.stop.prevent="chooseAmr(amr.id)" @keydown.space.stop.prevent="chooseAmr(amr.id)">
             <rect class="amr-hit-target" x="-22" y="-20" width="44" height="40" rx="10" />
             <circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-one" r="18" /><circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-two" r="18" />
-            <circle class="selection-ring" r="17" /><circle class="amr-body" r="12" />
-            <g class="amr-direction" :transform="`rotate(${amr.heading})`"><path d="M0-20L5-12L0-14L-5-12Z" /></g>
-            <text class="amr-id" x="0" y="3.5">{{ amr.id.slice(-2) }}</text>
+            <circle class="selection-ring" r="18" />
+            <g class="amr-chassis" :transform="`rotate(${amr.heading}) scale(.42) translate(-36 -44)`">
+              <ellipse class="amr-floor-shadow" cx="39" cy="48" rx="28" ry="34" />
+              <path class="amr-direction" d="M36 3 42 11H30Z" />
+              <rect class="amr-wheel" x="7" y="29" width="8" height="25" rx="3" />
+              <rect class="amr-wheel" x="57" y="29" width="8" height="25" rx="3" />
+              <path class="amr-side" d="M17 18h38c5 0 8 4 8 9v35c0 7-5 12-12 12H21c-7 0-12-5-12-12V27c0-5 3-9 8-9Z" />
+              <path class="amr-body" d="M19 13h34c5 0 9 4 9 9v34c0 7-5 12-12 12H22c-7 0-12-5-12-12V22c0-5 4-9 9-9Z" />
+              <path class="amr-front" d="M20 13h32c4 0 7 2 9 6l-7 7H18l-7-7c2-4 5-6 9-6Z" />
+              <circle class="amr-sensor" cx="18" cy="20" r="2.4" />
+              <circle class="amr-sensor" cx="54" cy="20" r="2.4" />
+              <rect class="amr-deck" x="20" y="30" width="32" height="28" rx="5" />
+              <path class="amr-deck-detail" d="M25 35h6M41 35h6M25 53h6M41 53h6" />
+              <path class="amr-light-glow" d="M22 18h28" />
+              <path class="amr-light" d="M22 18h28" />
+              <text class="amr-id" x="36" y="50" :transform="`rotate(${-amr.heading} 36 44)`">{{ amr.id.slice(-2) }}</text>
+            </g>
+            <g v-if="amr.tone === 'fault'" class="amr-alert" transform="translate(11 -13)">
+              <circle r="5" />
+              <text x="0" y="2.4">!</text>
+            </g>
           </g>
         </g>
       </svg>
