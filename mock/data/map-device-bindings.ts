@@ -35,7 +35,9 @@ export const demoDeviceBindings = demoServiceGroups.flatMap(group => {
     const stationId = `${lane}-${row}`
     const deviceId = existingByStation.get(stationId) ?? `${group.prefix}${String(nextNumber).padStart(2, '0')}`
     if (!existingByStation.has(stationId)) nextNumber += 2
-    return { deviceId, stationId, group: group.prefix, amrIds: sharedDeviceAmrs[deviceId] ?? [...group.amrs] }
+    const direction = lane.endsWith('-L') || lane === 'A8-R' ? 'left' as const : 'right' as const
+    return { deviceId, stationId, group: group.prefix, direction,
+      amrIds: sharedDeviceAmrs[deviceId] ?? [...group.amrs] }
   }))
 })
 

@@ -16,6 +16,7 @@ const stationResources: MapResource[] = demoDeviceBindings.map(binding => {
     connected: true,
     boundPoint: point.id,
     position: { x: point.x, y: point.y },
+    direction: binding.direction,
     state: id === 'E04' ? 'fault' : 'normal',
   }
 })

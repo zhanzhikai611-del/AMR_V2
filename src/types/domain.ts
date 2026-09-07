@@ -82,6 +82,7 @@ export interface MapResource {
   enabled?: boolean
   connected?: boolean
   boundPoint?: string
+  direction?: 'left' | 'right'
 }
 
 export interface MapTopology {

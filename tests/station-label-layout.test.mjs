@@ -8,8 +8,10 @@ const { outputFiles } = await build({
   bundle: true, platform: 'node', format: 'esm', write: false,
 })
 const { layoutStationLabels, twinSnapshot, mapEditorDrafts } = await import(`data:text/javascript;base64,${Buffer.from(outputFiles[0].text).toString('base64')}`)
+const resourceIndex = new Map(twinSnapshot.resources.map(resource => [resource.id, resource]))
 const stations = mapEditorDrafts['MAP-A'].points.filter(p => p.associationType === 'dock').map(p => ({
-  id: p.id, x: p.x, y: p.y, title: p.deviceId,
+  id: p.id, x: p.x, y: p.y, title: p.deviceId, yaw: p.yaw,
+  direction: resourceIndex.get(p.deviceId)?.direction,
   serviceIds: twinSnapshot.amrs.filter(amr => amr.serviceDevices.includes(p.deviceId)).map(amr => amr.id),
 }))
 const overlaps = (a, b) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y
@@ -23,10 +25,7 @@ function validate(input) {
     const station = input.find(p => p.id === label.id)
     assert.equal(label.anchorX, station.x)
     assert.equal(label.anchorY, station.y)
-    assert.equal(label.x + label.width / 2, station.x, 'vertical nameplate stays centered')
-    assert.equal(label.edgeX, station.x)
-    assert.equal(label.edgeY, label.y + label.height)
-    assert.ok(label.edgeY < station.y - 3.5, 'name remains above the station marker')
+    assert.ok(Number.isFinite(label.edgeX) && Number.isFinite(label.edgeY), 'connector reaches a valid label edge')
     for (const other of labels.slice(index + 1)) assert.ok(!overlaps(label, other), `${label.id} overlaps ${other.id}`)
     for (const anchor of input) assert.ok(!overlaps(label, { x: anchor.x - 3.5, y: anchor.y - 3.5, width: 7, height: 7 }), 'do not cover station markers')
   }
@@ -34,7 +33,6 @@ function validate(input) {
 }
 assert.equal(stations.length, 120)
 const current = validate(stations)
-assert.ok(current.every(label => label.anchorY - label.edgeY === 5), 'current map fits short leaders without moving a label')
 assert.deepEqual(current, layoutStationLabels([...stations].reverse()), 'layout does not depend on source array order')
 for (const count of [2, 3, 5, 8, 12]) {
   const variant = structuredClone(stations)
@@ -44,4 +42,10 @@ for (const count of [2, 3, 5, 8, 12]) {
 }
 validate(stations.map(station => ({ ...station, serviceIds: Array.from({ length: 8 }, (_, i) => `AMR-${i + 1}`) })))
 assert.deepEqual(layoutStationLabels([]), [])
+const directionalCollision = layoutStationLabels([
+  { id: 'left', x: 0, y: 0, title: 'D01', yaw: 0, direction: 'left' },
+  { id: 'right', x: 6, y: 0, title: 'D02', yaw: 0, direction: 'right' },
+])
+const displaced = directionalCollision.find(label => label.id === 'right')
+assert.ok(displaced.x > displaced.anchorX, 'overlapping label follows the table direction to the arrow-local right')
 console.log('PASS: 120 equipment labels, no card/marker overlap, stable order, connected anchors, layout independent of service vehicle count')

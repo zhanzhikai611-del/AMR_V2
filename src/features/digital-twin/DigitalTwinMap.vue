@@ -111,14 +111,9 @@ const taskStateByDevice = computed(() => {
 })
 function stationLabel(point: MapStation) { return deviceIndex.value.get(point.deviceId)?.label ?? point.name }
 const labelLayouts = computed(() => layoutStationLabels(deviceStations.value.map(point => ({
-  id: point.id, x: point.x, y: point.y, title: stationLabel(point),
+  id: point.id, x: point.x, y: point.y, title: stationLabel(point), yaw: point.yaw,
+  direction: deviceIndex.value.get(point.deviceId)?.direction,
 }))).map(layout => ({ ...layout, point: pointIndex.value.get(layout.id)! })))
-function stationLabelParts(point: MapStation) {
-  const label = stationLabel(point)
-  const match = label.match(/^([A-Za-z]+)[-_\s]*0*(\d+)$/)
-  return match ? { group: match[1]!.toUpperCase(), number: match[2]!.padStart(2, '0') }
-    : { group: '', number: label }
-}
 function amrCode(amr: Amr) {
   const match = amr.name.match(/_([A-Z])_0*(\d+)$/i)
   return match ? `${match[1]!.toUpperCase()}${match[2]}` : amr.id.replace(/^AMR-0*/i, '')
@@ -246,13 +241,11 @@ onBeforeUnmount(() => {
           <g v-for="layout in labelLayouts" :key="`leader-${layout.id}`" class="monitor-label-connector" :class="stationClasses(layout.point)">
             <path class="label-leader" :d="layout.leader" />
           </g>
-          <g v-for="layout in labelLayouts" :key="layout.id" data-map-interactive class="monitor-device-label monitor-device-label--stacked"
+          <g v-for="layout in labelLayouts" :key="layout.id" data-map-interactive class="monitor-device-label monitor-device-label--horizontal"
             :class="stationClasses(layout.point)" :transform="`translate(${layout.x} ${layout.y})`"
             :aria-label="`设备 ${stationLabel(layout.point)}`" @pointerenter="hoveredStationId = layout.id" @pointerleave="hoveredStationId = null">
             <rect class="device-nameplate" :width="layout.width" :height="layout.height" rx="2.4" />
-            <line class="device-nameplate-divider" x1="1.6" :y1="layout.height * .4" :x2="layout.width - 1.6" :y2="layout.height * .4" />
-            <text v-if="stationLabelParts(layout.point).group" class="device-nameplate-group" :x="layout.width / 2" :y="layout.height * .22" dominant-baseline="central">{{ stationLabelParts(layout.point).group }}</text>
-            <text class="device-nameplate-number" :x="layout.width / 2" :y="layout.height * .7" dominant-baseline="central">{{ stationLabelParts(layout.point).number }}</text>
+            <text class="device-nameplate-code" :x="layout.width / 2" :y="layout.height / 2" dominant-baseline="central">{{ stationLabel(layout.point) }}</text>
             <title>{{ stationTitle(layout.point) }}</title>
           </g>
         </g>

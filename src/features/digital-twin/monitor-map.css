@@ -30,10 +30,8 @@
 .station-card-title { pointer-events: all; cursor: default; }
 .station-title-hit { fill: transparent; stroke: none; }
 .monitor-device-label text { fill: #f7fafc; text-anchor: middle; font: 700 6px var(--font-latin); letter-spacing: .04em; pointer-events: none; }
-.monitor-device-label--stacked .device-nameplate { fill: #34434f; stroke: rgba(255,255,255,.88); stroke-width: .55; }
-.device-nameplate-divider { stroke: rgba(216,229,238,.2); stroke-width: .4; vector-effect: non-scaling-stroke; pointer-events: none; }
-.monitor-device-label--stacked .device-nameplate-group { fill: #b9cad6; font-size: 4px; font-weight: 700; letter-spacing: .03em; }
-.monitor-device-label--stacked .device-nameplate-number { fill: #fff; font-size: 5.2px; font-weight: 500; letter-spacing: .04em; }
+.monitor-device-label--horizontal .device-nameplate { fill: #34434f; stroke: rgba(255,255,255,.88); stroke-width: .55; }
+.monitor-device-label--horizontal .device-nameplate-code { fill: #fff; font-size: 5.2px; font-weight: 600; letter-spacing: .02em; }
 .monitor-device-label.disabled .device-nameplate { fill: #73848c; stroke: #eef2f4; }
 .monitor-device-label.service-highlight .device-nameplate { stroke: rgba(255,255,255,.85); stroke-width: .6; }
 .monitor-device-label.task-active .device-nameplate { fill: url(#station-active-fill); stroke: #c8e4ff; stroke-width: .8; filter: drop-shadow(0 1px 1px rgba(12,72,150,.42)); }
