@@ -3,39 +3,40 @@
 .monitor-canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 .monitor-canvas.is-dragging { cursor: grabbing; }
 .monitor-pointcloud { opacity: .5; pointer-events: none; }
-.monitor-network line { stroke: #46677d; stroke-width: 1.6; stroke-linecap: round; opacity: .76; vector-effect: non-scaling-stroke; }
+.monitor-network line { stroke: #168df3; stroke-width: 1.5; stroke-linecap: round; opacity: .62; vector-effect: non-scaling-stroke; }
 .monitor-network .disabled { stroke: #a7afb7; stroke-dasharray: 3 3; }
 .station-symbol { fill: #52788e; stroke: #f5faff; stroke-width: .65; paint-order: stroke; transition: fill 160ms ease, stroke 160ms ease; }
 .station-hit-target { fill: transparent; stroke: none; }
 .monitor-stations > g { cursor: default; }
 .monitor-stations .disabled .station-symbol { fill: #8192a1; }
-.monitor-stations .service-highlight .station-symbol { fill: #62b3ef; stroke: #fff; stroke-width: .75; filter: url(#station-glow); }
+.monitor-stations .service-highlight .station-symbol { fill: #52788e; stroke: #fff; stroke-width: .75; }
 .monitor-stations .task-active .station-symbol { fill: #b8e5ff; stroke: #fff; stroke-width: .95; filter: url(#station-active-glow); }
 .monitor-stations .task-fault .station-symbol { fill: #e5484d; stroke: #fff; stroke-width: .8; filter: url(#station-fault-glow); }
 .monitor-stations .focused .station-symbol { fill: #9bd8ff; stroke: #fff; stroke-width: .8; filter: url(#station-hover-glow); }
 .monitor-stations > g, .monitor-device-label, .monitor-label-connector { transition: opacity 160ms ease; }
-.monitor-stations .muted, .monitor-device-label.muted { opacity: .48; }
+.monitor-stations .muted, .monitor-device-label.muted, .monitor-label-connector.muted { opacity: .2; }
+.monitor-stations .muted.focused, .monitor-device-label.muted.focused, .monitor-label-connector.muted.focused { opacity: .72; }
 .monitor-other-stations path { fill: #a28c78; stroke: #fff; stroke-width: .4; }
 .monitor-other-stations .parking path { fill: #7a5af8; }
 .monitor-other-stations .charge path { fill: #20a66a; }
 .monitor-other-stations .disabled { opacity: .4; }
 .monitor-other-stations text { fill: #496878; text-anchor: middle; font: 600 5.5px var(--font-latin); paint-order: stroke; stroke: rgba(255,255,255,.96); stroke-width: 2px; stroke-linejoin: round; pointer-events: none; }
 .monitor-device-labels { pointer-events: none; }
-.label-leader { fill: none; stroke: #2386e8; stroke-width: 1.3; stroke-linecap: round; vector-effect: non-scaling-stroke; transition: stroke-width 160ms ease, opacity 160ms ease; opacity: .92; }
-.monitor-label-connector.muted { opacity: .58; }
-.monitor-label-connector.service-highlight .label-leader { stroke: #1677e8; }
+.label-leader { fill: none; stroke: #66727c; stroke-width: 1.15; stroke-linecap: round; vector-effect: non-scaling-stroke; transition: stroke-width 160ms ease, opacity 160ms ease; opacity: .72; }
+.monitor-label-connector.service-highlight .label-leader { stroke: #66727c; }
 .monitor-label-connector.focused .label-leader { stroke-width: 1.65; opacity: 1; }
 .monitor-device-label { pointer-events: all; cursor: default; }
-.device-nameplate { fill: #294553; stroke: #fff; stroke-width: .45; filter: drop-shadow(0 1px .65px rgba(20,40,50,.34)); transition: fill 160ms ease, stroke 160ms ease; }
+.device-nameplate { fill: #3f4850; stroke: rgba(255,255,255,.72); stroke-width: .45; filter: drop-shadow(0 1px .65px rgba(20,30,36,.3)); transition: fill 160ms ease, stroke 160ms ease; }
 .station-card-title { pointer-events: all; cursor: default; }
 .station-title-hit { fill: transparent; stroke: none; }
 .monitor-device-label text { fill: #f7fafc; text-anchor: middle; font: 700 6px var(--font-latin); letter-spacing: .04em; pointer-events: none; }
 .monitor-device-label.disabled .device-nameplate { fill: #73848c; stroke: #eef2f4; }
-.monitor-device-label.service-highlight .device-nameplate { stroke: #2d88d8; stroke-width: .85; filter: url(#station-glow); }
-.monitor-device-label.task-active .device-nameplate { fill: #174f73; stroke: #73c7ff; stroke-width: 1; filter: url(#station-active-glow); }
+.monitor-device-label.service-highlight .device-nameplate { stroke: rgba(255,255,255,.85); stroke-width: .6; }
+.monitor-device-label.task-active .device-nameplate { fill: url(#station-active-fill); stroke: #c8e4ff; stroke-width: .8; filter: drop-shadow(0 1px 1px rgba(12,72,150,.42)); }
 .monitor-device-label.task-fault .device-nameplate { fill: #8f302d; stroke: #ffb4ae; stroke-width: 1; filter: url(#station-fault-glow); }
-.monitor-device-label.focused:not(.task-fault) .device-nameplate { fill: #1e5875; stroke: #78ccff; stroke-width: 1; filter: url(#station-hover-glow); }
-.monitor-device-label:is(.task-active, .selected-destination):not(.task-fault) .device-nameplate { fill: #174f73; stroke: #73c7ff; stroke-width: 1; filter: url(#station-active-glow); }
+.monitor-device-label.focused:not(.task-fault) .device-nameplate { fill: #525d66; stroke: #d7e0e7; stroke-width: 1; filter: url(#station-hover-glow); }
+.monitor-device-label:is(.task-active, .selected-destination):not(.task-fault) .device-nameplate { fill: url(#station-active-fill); stroke: #c8e4ff; stroke-width: .8; filter: drop-shadow(0 1px 1px rgba(12,72,150,.42)); }
+.monitor-device-label.focused:is(.task-active, .selected-destination):not(.task-fault) .device-nameplate { fill: #2b86f4; stroke: #fff; stroke-width: 1; filter: drop-shadow(0 1px 1.2px rgba(12,72,150,.5)); }
 .monitor-device-label:is(.task-active, .selected-destination):not(.task-fault) text { fill: #fff; }
 .monitor-stations .task-fault .station-symbol { fill: #e5484d; filter: url(#station-fault-glow); }
 .monitor-task-routes > g.selected .route-planned,

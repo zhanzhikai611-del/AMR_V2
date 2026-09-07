@@ -39,12 +39,14 @@ const layerOptions = [...baseLayerOptions, ...stationLayerOptions]
 const viewport = ref({ width: 760, height: 520 })
 const fullViewport = ref({ width: 760, height: 520 })
 const center = ref({ x: MAP_FRAME.width / 2, y: MAP_FRAME.height / 2 })
-const zoom = ref(1.25)
+// The former 125% view is the monitoring screen's new 100% baseline.
+const MONITOR_ZOOM_BASE = 1.25
+const zoom = ref(1)
 const dragging = ref(false)
 let dragOrigin = { clientX: 0, clientY: 0, x: 0, y: 0 }
 let resizeObserver: ResizeObserver | undefined
 
-const scale = computed(() => Math.min(fullViewport.value.width / MAP_FRAME.width, fullViewport.value.height / MAP_FRAME.height) * zoom.value)
+const scale = computed(() => Math.min(fullViewport.value.width / MAP_FRAME.width, fullViewport.value.height / MAP_FRAME.height) * MONITOR_ZOOM_BASE * zoom.value)
 const view = computed(() => {
   const width = viewport.value.width / scale.value, height = viewport.value.height / scale.value
   return { x: center.value.x - width / 2, y: center.value.y - height / 2, width, height }
@@ -53,6 +55,7 @@ const viewBox = computed(() => `${view.value.x} ${view.value.y} ${view.value.wid
 const markerScale = computed(() => 1.2 * Math.min(1.15, Math.max(0.4, 1 / scale.value)))
 const scaleBar = computed(() => getMapScaleBar(scale.value, mapMetersPerUnit(props.map?.resolution)))
 const selectedAmr = computed(() => props.amrs.find(amr => amr.id === props.selectedAmrId))
+const selectedServiceDevices = computed(() => new Set(selectedAmr.value?.serviceDevices ?? []))
 const visibleAmrs = computed(() => props.amrs.filter(amr => amr.connectionStatus !== 'offline' && amr.status !== '离线'))
 const pointIndex = computed(() => new Map(props.map?.points.map(point => [point.id, point]) ?? []))
 const deviceIndex = computed(() => new Map(props.resources.map(resource => [resource.id, resource])))
@@ -94,8 +97,12 @@ function stationTitle(point: MapStation) {
 function stationClasses(point: MapStation) {
   const taskState = taskStateByDevice.value.get(point.deviceId)
   const selectedDestination = selectedTaskDestination.value === point.deviceId
+  const serviceScopeVisible = Boolean(selectedAmr.value)
+  const belongsToSelectedAmr = selectedServiceDevices.value.has(point.deviceId)
   return { 'selected-destination': selectedDestination,
     'task-active': taskState === 'active', 'task-fault': taskState === 'fault',
+    'service-highlight': serviceScopeVisible && belongsToSelectedAmr,
+    muted: serviceScopeVisible && !belongsToSelectedAmr,
     focused: hoveredStationId.value === point.id,
     disabled: point.disabled }
 }
@@ -113,10 +120,10 @@ function measure() {
 }
 function setFittedZoom(multiplier: number) {
   const fullScale = Math.min(fullViewport.value.width / MAP_FRAME.width, fullViewport.value.height / MAP_FRAME.height)
-  zoom.value = Math.min(viewport.value.width / MAP_FRAME.width, viewport.value.height / MAP_FRAME.height) / fullScale * multiplier
+  zoom.value = Math.min(viewport.value.width / MAP_FRAME.width, viewport.value.height / MAP_FRAME.height) / fullScale * multiplier / MONITOR_ZOOM_BASE
   center.value = { x: MAP_FRAME.width / 2, y: MAP_FRAME.height / 2 }
 }
-function fitMap() { setFittedZoom(1) }
+function fitMap() { setFittedZoom(MONITOR_ZOOM_BASE) }
 function changeZoom(next: number) { zoom.value = Math.max(0.5, Math.min(4, next)) }
 function wheel(event: WheelEvent) {
   const rect = canvas.value?.getBoundingClientRect()
@@ -181,9 +188,10 @@ onBeforeUnmount(() => {
           <pattern id="monitor-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#dce4ea" stroke-width="0.5" /></pattern>
           <filter id="selection-shadow" x="-100%" y="-100%" width="300%" height="300%"><feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#1677ff" flood-opacity=".32" /></filter>
           <filter id="station-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1" flood-color="#e7bd62" flood-opacity=".42" /></filter>
-          <filter id="station-hover-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.35" flood-color="#e7bd62" flood-opacity=".6" /></filter>
-          <filter id="station-active-glow" x="-150%" y="-150%" width="400%" height="400%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.15" flood-color="#e7bd62" flood-opacity=".55" /><feDropShadow dx="0" dy="0" stdDeviation="2.8" flood-color="#e7bd62" flood-opacity=".18" /></filter>
+          <filter id="station-hover-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.1" flood-color="#d7e0e7" flood-opacity=".42" /></filter>
+          <filter id="station-active-glow" x="-150%" y="-150%" width="400%" height="400%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.1" flood-color="#1677ff" flood-opacity=".28" /><feDropShadow dx="0" dy="0" stdDeviation="2.5" flood-color="#1677ff" flood-opacity=".12" /></filter>
           <filter id="station-fault-glow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.2" flood-color="#e5484d" flood-opacity=".55" /></filter>
+          <linearGradient id="station-active-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b8cff" /><stop offset="1" stop-color="#1267df" /></linearGradient>
         </defs>
         <rect :x="view.x" :y="view.y" :width="view.width" :height="view.height" fill="url(#monitor-grid)" />
         <MapPointcloud v-if="layers.pointcloud" class="monitor-pointcloud" />
