@@ -3,7 +3,7 @@ export interface StationLabelLayout {
   id: string; x: number; y: number; width: number; height: number
   anchorX: number; anchorY: number; leader: string; edgeX: number; edgeY: number
 }
-const LABEL_WIDTH = 8
+const LABEL_WIDTH = 7.5
 const LABEL_HEIGHT = 13
 const GAP = 2
 interface Box { x: number; y: number; width: number; height: number }
