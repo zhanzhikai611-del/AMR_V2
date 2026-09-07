@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } 
 import type { Amr, MapResource, MapStation, RuntimeMap, Task } from '../../types/domain'
 import MapPointcloud from '../maps/MapPointcloud.vue'
 import { getMapScaleBar, mapMetersPerUnit, MAP_FRAME } from '../maps/map-geometry'
+import { layoutStationLabels } from './station-label-layout'
 
 const props = defineProps<{
   amrs: Amr[]
@@ -109,6 +110,15 @@ const taskStateByDevice = computed(() => {
   return states
 })
 function stationLabel(point: MapStation) { return deviceIndex.value.get(point.deviceId)?.label ?? point.name }
+const labelLayouts = computed(() => layoutStationLabels(deviceStations.value.map(point => ({
+  id: point.id, x: point.x, y: point.y, title: stationLabel(point),
+}))).map(layout => ({ ...layout, point: pointIndex.value.get(layout.id)! })))
+function stationLabelParts(point: MapStation) {
+  const label = stationLabel(point)
+  const match = label.match(/^([A-Za-z]+)[-_\s]*0*(\d+)$/)
+  return match ? { group: match[1]!.toUpperCase(), number: match[2]!.padStart(2, '0') }
+    : { group: '', number: label }
+}
 function amrCode(amr: Amr) {
   const match = amr.name.match(/_([A-Z])_0*(\d+)$/i)
   return match ? `${match[1]!.toUpperCase()}${match[2]}` : amr.id.replace(/^AMR-0*/i, '')
@@ -230,6 +240,20 @@ onBeforeUnmount(() => {
           <g v-for="point in deviceStations" :key="point.id" data-map-interactive :data-station-id="point.id" :data-device-id="point.deviceId" :class="stationClasses(point)" :transform="`translate(${point.x} ${point.y})`" :aria-label="`设备站点 ${stationLabel(point)}`" @pointerenter="hoveredStationId = point.id" @pointerleave="hoveredStationId = null">
             <title>{{ stationTitle(point) }}</title><circle class="station-hit-target" r="4" />
             <path class="station-symbol" d="M0-2.5L2.3 2L-2.3 2Z" :transform="`rotate(${point.yaw * 180 / Math.PI})`" />
+          </g>
+        </g>
+        <g v-if="layers.devices" class="monitor-device-labels">
+          <g v-for="layout in labelLayouts" :key="`leader-${layout.id}`" class="monitor-label-connector" :class="stationClasses(layout.point)">
+            <path class="label-leader" :d="layout.leader" />
+          </g>
+          <g v-for="layout in labelLayouts" :key="layout.id" data-map-interactive class="monitor-device-label monitor-device-label--stacked"
+            :class="stationClasses(layout.point)" :transform="`translate(${layout.x} ${layout.y})`"
+            :aria-label="`设备 ${stationLabel(layout.point)}`" @pointerenter="hoveredStationId = layout.id" @pointerleave="hoveredStationId = null">
+            <rect class="device-nameplate" :width="layout.width" :height="layout.height" rx="2.4" />
+            <line class="device-nameplate-divider" x1="1.6" :y1="layout.height * .4" :x2="layout.width - 1.6" :y2="layout.height * .4" />
+            <text v-if="stationLabelParts(layout.point).group" class="device-nameplate-group" :x="layout.width / 2" :y="layout.height * .22" dominant-baseline="central">{{ stationLabelParts(layout.point).group }}</text>
+            <text class="device-nameplate-number" :x="layout.width / 2" :y="layout.height * .7" dominant-baseline="central">{{ stationLabelParts(layout.point).number }}</text>
+            <title>{{ stationTitle(layout.point) }}</title>
           </g>
         </g>
         <g class="amr-layer">
