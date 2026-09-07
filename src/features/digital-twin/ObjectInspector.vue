@@ -7,6 +7,9 @@ const props = defineProps<{ task: Task | null; amr: Amr | null }>()
 const emit = defineEmits<{ close: []; collapse: [] }>()
 const activeTab = ref<'task' | 'vehicle'>('task')
 const visibleSteps = computed(() => props.task?.behaviorSteps ?? [])
+const currentFault = computed(() => props.amr?.faultInfo ?? (props.amr?.status === '异常'
+  ? { code: 'AMR-FAULT', message: '车辆上报异常，请检查诊断日志', reportedAt: '刚刚' }
+  : null))
 
 const tabs = [
   { id: 'task', label: '任务执行' },
@@ -17,13 +20,22 @@ function formatPosition(amr: Amr | null) {
   if (!amr) return '—'
   return `(${amr.position.x.toFixed(2)}, ${amr.position.y.toFixed(2)})`
 }
+function vehicleCode(amr: Amr | null) {
+  if (!amr) return '—'
+  const match = amr.name.match(/_([A-Z])_0*(\d+)$/i)
+  return match ? `${match[1]!.toUpperCase()}${match[2]}` : amr.id.replace(/^AMR-0*/i, '')
+}
 
 </script>
 
 <template>
   <aside class="object-inspector">
-    <header class="inspector-header">
-      <div><h2>{{ amr?.id ?? task?.id }}</h2></div>
+    <header class="inspector-header" :class="{ 'inspector-header--vehicle': amr }">
+      <div v-if="amr" class="inspector-vehicle-heading">
+        <div class="vehicle-mark"><span>{{ vehicleCode(amr) }}</span><i :class="amr.tone"></i></div>
+        <div><h2 :title="amr.name">{{ amr.name }}</h2><span class="type-data">{{ amr.model }} · {{ amr.chassis }}</span></div>
+      </div>
+      <div v-else><h2>{{ task?.id }}</h2></div>
       <div class="inspector-header-actions"><button type="button" aria-label="收起 AMR 详情" @click="emit('collapse')"><AppIcon class="inspector-collapse-icon" name="chevron" :size="16" /></button><button type="button" aria-label="关闭检查面板" @click="emit('close')"><AppIcon name="close" :size="16" /></button></div>
     </header>
     <nav class="inspector-tabs" aria-label="对象详情">
@@ -34,7 +46,7 @@ function formatPosition(amr: Amr | null) {
       <section class="task-overview-card">
         <header>
           <div><span>当前任务</span><strong class="type-data">{{ task?.id ?? '暂无任务' }}</strong></div>
-          <em :class="task?.status">{{ task?.status ?? amr?.status }}</em>
+          <em :class="task?.status">{{ task?.status ?? '无任务' }}</em>
         </header>
         <div class="task-overview-card__facts">
           <div><span>任务类型</span><strong>{{ task?.type ?? '—' }}</strong></div>
@@ -56,9 +68,12 @@ function formatPosition(amr: Amr | null) {
     </div>
 
     <div v-else class="inspector-content vehicle-panel">
-      <section class="vehicle-identity">
-        <div class="vehicle-mark"><span>{{ amr?.id.slice(-2) }}</span><i :class="amr?.tone"></i></div>
-        <div><p>{{ amr?.name }}</p><strong class="type-data">{{ amr?.model }} · {{ amr?.chassis }}</strong><span class="vehicle-rated-load">额定载荷 <b class="type-data">{{ amr?.ratedLoad ?? '—' }}</b></span></div>
+      <section class="vehicle-status-card" :class="amr?.tone">
+        <header><span>当前状态</span><em>{{ amr?.status ?? '—' }}</em></header>
+        <div v-if="currentFault" class="vehicle-fault-detail">
+          <i aria-hidden="true">!</i>
+          <div><strong>{{ currentFault.message }}</strong><span><b class="type-data">{{ currentFault.code }}</b><time class="type-data">{{ currentFault.reportedAt }} 上报</time></span></div>
+        </div>
       </section>
       <div class="vehicle-battery-hero" :class="{ low: (amr?.battery ?? 100) <= 30, critical: (amr?.battery ?? 100) <= 15 }"><span>当前电量</span><strong class="type-data">{{ amr?.battery ?? '—' }}<small>%</small></strong><i><b :style="{ width: `${amr?.battery ?? 0}%` }"></b></i></div>
       <dl class="vehicle-properties">

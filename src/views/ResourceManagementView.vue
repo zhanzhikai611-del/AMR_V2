@@ -17,7 +17,11 @@ const meta = computed(() => props.section === 'amrs'
   ? { eyebrow: 'AMR ASSETS', title: 'AMR 管理', description: '基础资料来自设备台账，在此维护服务设备关系。', action: '导入 AMR' }
   : { eyebrow: 'DEVICE ASSETS', title: '设备管理', description: '基础资料来自设备台账，在此维护服务 AMR 关系。', action: '导入设备' })
 const includesQuery = (values: unknown[]) => values.join(' ').toLowerCase().includes(query.value.trim().toLowerCase())
-const amrs = computed(() => (catalog.value?.amrs ?? []).filter((item) => includesQuery([item.id, item.name, item.ip, item.model])))
+const amrCode = (item: ResourceCatalog['amrs'][number]) => {
+  const match = item.name.match(/_([A-Z])_0*(\d+)$/i)
+  return match ? `${match[1]!.toUpperCase()}${match[2]}` : item.id.replace(/^AMR-0*/i, '')
+}
+const amrs = computed(() => (catalog.value?.amrs ?? []).filter((item) => includesQuery([item.id, amrCode(item), item.name, item.ip, item.model])))
 const deviceTypeLabels: Record<string, string> = { machine: '生产设备', buffer: '中转台', charge: '充电站', door: '自动门', recycle: '回收站' }
 const deviceTypeOptions = computed(() => [...new Set((catalog.value?.devices ?? []).map((item) => item.type))])
 const deviceTypeLabel = (type: string) => deviceTypeLabels[type] ?? type
@@ -80,8 +84,8 @@ onMounted(async () => {
     <div v-if="loading" class="resource-loading">正在读取资源数据</div>
     <div v-else class="resource-table-wrap">
       <table v-if="section === 'amrs'" class="resource-table">
-        <thead><tr><th>AMR 编号</th><th>名称</th><th>IP 地址</th><th>型号</th><th>服务设备</th><th>运行状态</th><th>电量</th><th>操作</th></tr></thead>
-        <tbody><tr v-for="item in amrs" :key="item.id"><td class="resource-id">{{ item.id }}</td><td><strong>{{ item.name }}</strong><small>{{ item.initialPoint }}</small></td><td class="type-data">{{ item.ip }}</td><td>{{ item.model }}</td><td><div class="resource-chip-list"><i v-for="id in servicePreview(item.serviceDevices)" :key="id">{{ id }}</i><i v-if="item.serviceDevices.length > 4" class="resource-chip-more">+{{ item.serviceDevices.length - 4 }}</i></div></td><td><span class="asset-status" :class="item.tone">{{ item.status }}</span></td><td class="type-data">{{ item.battery }}%</td><td><div class="row-actions"><button class="table-action" @click="router.push(`/resources/amrs/${item.id}`)">查看</button><button class="table-action" @click="openEdit(item.id)">编辑</button></div></td></tr></tbody>
+        <thead><tr><th>车辆编号</th><th>AMR 名称</th><th>IP 地址</th><th>型号</th><th>服务设备</th><th>上下线状态</th><th>操作</th></tr></thead>
+        <tbody><tr v-for="item in amrs" :key="item.id"><td class="resource-id">{{ amrCode(item) }}</td><td><strong>{{ item.name }}</strong><small>{{ item.initialPoint }}</small></td><td class="type-data">{{ item.ip }}</td><td>{{ item.model }}</td><td><div class="resource-chip-list"><i v-for="id in servicePreview(item.serviceDevices)" :key="id">{{ id }}</i><i v-if="item.serviceDevices.length > 4" class="resource-chip-more">+{{ item.serviceDevices.length - 4 }}</i></div></td><td><span class="asset-status" :class="item.connectionStatus === 'offline' ? 'offline' : 'success'">{{ item.connectionStatus === 'offline' ? '离线' : '在线' }}</span></td><td><div class="row-actions"><button class="table-action" @click="router.push(`/resources/amrs/${item.id}`)">查看</button><button class="table-action" @click="openEdit(item.id)">编辑</button></div></td></tr></tbody>
       </table>
       <table v-else class="resource-table">
         <thead><tr><th>设备编号</th><th>设备名称</th><th>类型</th><th>连接状态</th><th>绑定点位</th><th>设备组</th><th>服务 AMR</th><th>操作</th></tr></thead>
@@ -104,7 +108,7 @@ onMounted(async () => {
         <div class="amr-binding-list">
           <label v-for="option in section === 'amrs' ? devices : amrs" :key="option.id" :class="{ selected: selectedRelations.includes(option.id) }">
             <input type="checkbox" :checked="selectedRelations.includes(option.id)" @change="toggleRelation(option.id)">
-            <span><strong>{{ option.id }}</strong><small>{{ 'ip' in option ? option.name : option.name || option.label }}</small></span>
+            <span><strong>{{ 'ip' in option ? amrCode(option) : option.id }}</strong><small>{{ 'ip' in option ? option.name : option.name || option.label }}</small></span>
             <em>{{ selectedRelations.includes(option.id) ? '已服务' : '未服务' }}</em>
           </label>
         </div>

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 84 118" role="img" aria-labelledby="title desc">
+  <title id="title">长车身 AMR 俯视图标</title>
+  <desc id="desc">纵向长方形自主移动机器人，带车头和车尾双状态灯、左右驱动轮及中央车辆编号</desc>
+  <defs>
+    <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f9fcfd"/>
+      <stop offset=".5" stop-color="#e9f1f4"/>
+      <stop offset="1" stop-color="#d8e4e9"/>
+    </linearGradient>
+    <linearGradient id="deck" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9e5ea"/>
+      <stop offset="1" stop-color="#b9cbd3"/>
+    </linearGradient>
+    <filter id="shadow" x="-40%" y="-30%" width="180%" height="180%">
+      <feDropShadow dx="1.5" dy="3" stdDeviation="2.4" flood-color="#173746" flood-opacity=".3"/>
+    </filter>
+    <filter id="lamp-glow" x="-80%" y="-300%" width="260%" height="700%">
+      <feGaussianBlur stdDeviation="1.8"/>
+    </filter>
+  </defs>
+
+  <!-- Direction indicator remains outside the chassis at map scale. -->
+  <path d="M42 2 48 11H36Z" fill="#1677ff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+
+  <g filter="url(#shadow)">
+    <!-- Long exposed wheels reinforce the rectangular vehicle proportion. -->
+    <rect x="7" y="35" width="8" height="38" rx="3.5" fill="#293f4a" stroke="#fff" stroke-width="2"/>
+    <rect x="69" y="35" width="8" height="38" rx="3.5" fill="#293f4a" stroke="#fff" stroke-width="2"/>
+
+    <!-- Dark lower skirt gives the icon a clear silhouette over the map. -->
+    <path d="M20 17h44c6 0 10 5 10 11v62c0 10-7 17-17 17H27c-10 0-17-7-17-17V28c0-6 4-11 10-11Z"
+      fill="#32566b" stroke="#fff" stroke-width="2.5"/>
+
+    <!-- Main upper shell: intentionally longer than the previous near-square body. -->
+    <path d="M21 12h42c6 0 10 5 10 11v62c0 10-7 16-16 16H27c-9 0-16-6-16-16V23c0-6 4-11 10-11Z"
+      fill="url(#shell)" stroke="#496775" stroke-width="2"/>
+
+    <!-- Front bumper and paired sensors make the nose unmistakable. -->
+    <path d="M22 12h40c5 0 9 3 11 8l-9 8H20l-9-8c2-5 6-8 11-8Z"
+      fill="#fff" stroke="#78919d" stroke-width="1.5"/>
+    <circle cx="20" cy="20" r="2.6" fill="#294753"/>
+    <circle cx="64" cy="20" r="2.6" fill="#294753"/>
+
+    <!-- Central service hatch keeps the number readable without squaring the silhouette. -->
+    <rect x="18" y="33" width="48" height="50" rx="7" fill="url(#deck)" stroke="#fff" stroke-width="2"/>
+    <path d="M24 40h8M52 40h8M24 76h8M52 76h8" stroke="#829ba7" stroke-width="1.5" stroke-linecap="round"/>
+    <rect x="23" y="45" width="38" height="27" rx="5" fill="#eef4f6" stroke="#9eb4be" stroke-width="1"/>
+    <text x="42" y="64" fill="#213e4c" stroke="#fff" stroke-width="1" paint-order="stroke"
+      font-family="Arial, sans-serif" font-size="18" font-weight="900" text-anchor="middle">D1</text>
+
+    <!-- Front lamp is brighter and wider to preserve directionality. -->
+    <path d="M25 19h34" stroke="#1677ff" stroke-width="8" stroke-linecap="round" opacity=".22" filter="url(#lamp-glow)"/>
+    <path d="M25 19h34" stroke="#1677ff" stroke-width="3.5" stroke-linecap="round"/>
+
+    <!-- Status light is integrated into the rear bumper instead of floating above it. -->
+    <path d="M26 96h32" stroke="#1677ff" stroke-width="7" stroke-linecap="round" opacity=".14" filter="url(#lamp-glow)"/>
+    <path d="M26 96h32" stroke="#1677ff" stroke-width="3" stroke-linecap="round" opacity=".76"/>
+  </g>
+</svg>

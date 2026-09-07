@@ -3,7 +3,6 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } 
 import type { Amr, MapResource, MapStation, RuntimeMap, Task } from '../../types/domain'
 import MapPointcloud from '../maps/MapPointcloud.vue'
 import { getMapScaleBar, mapMetersPerUnit, MAP_FRAME } from '../maps/map-geometry'
-import { layoutStationLabels } from './station-label-layout'
 
 const props = defineProps<{
   amrs: Amr[]
@@ -22,18 +21,17 @@ const controls = ref<HTMLElement | null>(null)
 const layerButton = ref<HTMLButtonElement | null>(null)
 const layersOpen = ref(false)
 const hoveredStationId = ref<string | null>(null)
-const defaultLayers = { pointcloud: true, network: true, devices: true, navigation: false, parking: false, charging: false,
-  deviceLabels: true, navigationLabels: false, parkingLabels: false, chargingLabels: false }
+const defaultLayers = { pointcloud: true, network: true, devices: true, navigation: false, parking: false, charging: false }
 const layers = reactive({ ...defaultLayers })
 const baseLayerOptions = [
   { key: 'pointcloud', label: '点云地图', icon: 'cloud' },
   { key: 'network', label: '路线', icon: 'network' },
 ] as const
 const stationLayerOptions = [
-  { key: 'devices', labelKey: 'deviceLabels', label: '设备站点', icon: 'station' },
-  { key: 'navigation', labelKey: 'navigationLabels', label: '一般站点', icon: 'other' },
-  { key: 'parking', labelKey: 'parkingLabels', label: '停车点', icon: 'parking' },
-  { key: 'charging', labelKey: 'chargingLabels', label: '充电点', icon: 'charge' },
+  { key: 'devices', label: '设备站点', icon: 'station' },
+  { key: 'navigation', label: '一般站点', icon: 'other' },
+  { key: 'parking', label: '停车点', icon: 'parking' },
+  { key: 'charging', label: '充电点', icon: 'charge' },
 ] as const
 const layerOptions = [...baseLayerOptions, ...stationLayerOptions]
 const viewport = ref({ width: 760, height: 520 })
@@ -69,8 +67,33 @@ const otherStations = computed(() => props.map?.points.filter(point =>
   (point.associationType === 'parking' && layers.parking) ||
   (point.associationType === 'charge' && layers.charging),
 ) ?? [])
-const visibleRouteTasks = computed(() => props.selectedTaskId
-  ? props.tasks.filter(task => task.id === props.selectedTaskId && task.amrId && task.plannedPath) : [])
+function pathPoints(path: string) {
+  return [...path.matchAll(/[ML]\s*(-?[\d.]+)[ ,]+(-?[\d.]+)/gi)].map(match => ({ x: Number(match[1]), y: Number(match[2]) }))
+}
+function pathData(points: Array<{ x: number; y: number }>) {
+  return points.map((point, index) => `${index ? 'L' : 'M'}${point.x} ${point.y}`).join('')
+}
+function splitRouteAtVehicle(task: Task) {
+  const points = pathPoints(task.plannedPath)
+  const vehicle = props.amrs.find(amr => amr.id === task.amrId)
+  if (!vehicle || points.length < 2) return { traveledPath: task.traveledPath, remainingPath: task.plannedPath }
+  let nearest = { segment: 0, t: 0, distance: Infinity, point: points[0]! }
+  for (let index = 0; index < points.length - 1; index++) {
+    const start = points[index]!, end = points[index + 1]!
+    const dx = end.x - start.x, dy = end.y - start.y
+    const lengthSquared = dx * dx + dy * dy
+    const t = lengthSquared ? Math.max(0, Math.min(1, ((vehicle.position.x - start.x) * dx + (vehicle.position.y - start.y) * dy) / lengthSquared)) : 0
+    const point = { x: start.x + dx * t, y: start.y + dy * t }
+    const distance = Math.hypot(vehicle.position.x - point.x, vehicle.position.y - point.y)
+    if (distance < nearest.distance) nearest = { segment: index, t, distance, point }
+  }
+  const traveled = [...points.slice(0, nearest.segment + 1), nearest.point]
+  const remaining = [nearest.point, ...points.slice(nearest.segment + 1)]
+  return { traveledPath: pathData(traveled), remainingPath: pathData(remaining) }
+}
+const visibleRouteTasks = computed(() => props.tasks.filter(task =>
+  task.amrId && task.plannedPath && (task.status === '执行中' || task.status === '异常'))
+  .map(task => ({ ...task, ...splitRouteAtVehicle(task) })))
 const isServiceActive = (amr: Pick<Amr, 'connectionStatus' | 'status'>) => amr.connectionStatus !== 'offline' && amr.status !== '离线' && amr.status !== '停用'
 const selectedTaskDestination = computed(() => {
   const amr = selectedAmr.value
@@ -85,12 +108,11 @@ const taskStateByDevice = computed(() => {
   }
   return states
 })
-// Names and fixed station geometry determine layout; vehicle motion and service
-// membership do not change the label footprint or cause positions to jump.
-const labelLayouts = computed(() => layoutStationLabels(deviceStations.value.map(point => ({
-  id: point.id, x: point.x, y: point.y, title: stationLabel(point),
-}))).map(layout => ({ ...layout, point: pointIndex.value.get(layout.id)! })))
 function stationLabel(point: MapStation) { return deviceIndex.value.get(point.deviceId)?.label ?? point.name }
+function amrCode(amr: Amr) {
+  const match = amr.name.match(/_([A-Z])_0*(\d+)$/i)
+  return match ? `${match[1]!.toUpperCase()}${match[2]}` : amr.id.replace(/^AMR-0*/i, '')
+}
 function stationTitle(point: MapStation) {
   return `${point.name} · ${point.deviceId ? stationLabel(point) : '未关联设备'}${point.disabled ? ' · 已禁用' : ''}`
 }
@@ -105,11 +127,6 @@ function stationClasses(point: MapStation) {
     muted: serviceScopeVisible && !belongsToSelectedAmr,
     focused: hoveredStationId.value === point.id,
     disabled: point.disabled }
-}
-function otherStationLabelVisible(point: MapStation) {
-  return (point.associationType === 'none' && layers.navigationLabels) ||
-    (point.associationType === 'parking' && layers.parkingLabels) ||
-    (point.associationType === 'charge' && layers.chargingLabels)
 }
 function chooseAmr(id: string) { emit('selectAmr', id) }
 function measure() {
@@ -198,10 +215,15 @@ onBeforeUnmount(() => {
         <g v-if="layers.network" class="monitor-network">
           <line v-for="route in mapRoutes" :key="route.id" :x1="route.start.x" :y1="route.start.y" :x2="route.end.x" :y2="route.end.y" :class="{ disabled: route.disabled }" />
         </g>
+        <g class="selected-route-layer simulation-route-layer monitor-task-routes">
+          <g v-for="task in visibleRouteTasks" :key="task.id" :class="{ selected: selectedTaskId === task.id, muted: selectedTaskId && selectedTaskId !== task.id }">
+            <path class="route-planned" :d="task.remainingPath" />
+            <path v-if="task.traveledPath" class="route-traveled" :d="task.traveledPath" />
+          </g>
+        </g>
         <g class="monitor-other-stations">
           <g v-for="point in otherStations" :key="point.id" :transform="`translate(${point.x} ${point.y})`" :class="[point.associationType, { disabled: point.disabled }]">
             <title>{{ point.name }}</title><path d="M0-2.5L2.3 2L-2.3 2Z" :transform="`rotate(${point.yaw * 180 / Math.PI})`" />
-            <text v-if="otherStationLabelVisible(point)" x="0" y="-4.5">{{ point.name }}</text>
           </g>
         </g>
         <g v-if="layers.devices" class="monitor-stations">
@@ -210,57 +232,38 @@ onBeforeUnmount(() => {
             <path class="station-symbol" d="M0-2.5L2.3 2L-2.3 2Z" :transform="`rotate(${point.yaw * 180 / Math.PI})`" />
           </g>
         </g>
-        <g class="selected-route-layer simulation-route-layer monitor-task-routes">
-          <g v-for="task in visibleRouteTasks" :key="task.id" class="selected">
-            <path class="route-planned" :d="task.plannedPath" />
-            <!-- Keep progress in map coordinates; compensate only the stroke width
-                 so zoom cannot change the traveled distance relative to the AMR. -->
-            <path v-if="simulation && task.status === '执行中'" class="route-traveled route-traveled-simulated" :d="task.plannedPath" pathLength="1" :style="{ strokeDasharray: `${routeProgress[task.id] ?? 0} 1`, strokeWidth: 3 / scale }" />
-            <path v-else-if="task.traveledPath" class="route-traveled route-traveled-static" :d="task.traveledPath" />
-          </g>
-        </g>
-        <g v-if="layers.devices && layers.deviceLabels" class="monitor-device-labels">
-          <g v-for="layout in labelLayouts" :key="`leader-${layout.id}`" class="monitor-label-connector" :class="stationClasses(layout.point)" :data-leader-station-id="layout.id">
-            <path class="label-leader" :d="layout.leader" />
-          </g>
-          <g v-for="layout in labelLayouts" :key="layout.id" data-map-interactive class="monitor-device-label" :data-label-station-id="layout.id" :class="stationClasses(layout.point)" :transform="`translate(${layout.x} ${layout.y})`" @pointerenter="hoveredStationId = layout.id" @pointerleave="hoveredStationId = null">
-            <rect class="device-nameplate" :width="layout.width" :height="layout.height" rx="3" />
-            <g data-map-interactive class="station-card-title" :aria-label="`设备 ${stationLabel(layout.point)}`">
-              <rect class="station-title-hit" :width="layout.width" :height="layout.height" rx="3" />
-              <text :x="layout.width / 2" :y="layout.height / 2" dominant-baseline="central">{{ stationLabel(layout.point) }}</text>
-            </g>
-            <title>{{ stationTitle(layout.point) }}</title>
-          </g>
-        </g>
         <g class="amr-layer">
           <g v-for="amr in visibleAmrs" :key="amr.id" data-map-interactive :transform="`translate(${amr.position.x} ${amr.position.y}) scale(${markerScale})`" :class="['map-amr', amr.tone, { selected: selectedAmrId === amr.id, muted: selectedAmrId && selectedAmrId !== amr.id, 'dispatch-paused': amr.status === '停用' }]" role="button" tabindex="0" :aria-label="`${amr.id}，${amr.status}`" @click="chooseAmr(amr.id)" @keydown.enter.stop.prevent="chooseAmr(amr.id)" @keydown.space.stop.prevent="chooseAmr(amr.id)">
-            <rect class="amr-hit-target" x="-22" y="-20" width="44" height="40" rx="10" />
+            <rect class="amr-hit-target" x="-21" y="-27" width="42" height="54" rx="10" />
             <circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-one" r="18" /><circle v-if="amr.tone === 'fault'" class="fault-pulse fault-pulse-two" r="18" />
-            <circle class="selection-ring" r="18" />
-            <g class="amr-chassis" :transform="`rotate(${amr.heading}) scale(.42) translate(-36 -44)`">
-              <ellipse class="amr-floor-shadow" cx="39" cy="48" rx="28" ry="34" />
-              <path class="amr-direction" d="M36 3 42 11H30Z" />
-              <rect class="amr-wheel" x="7" y="29" width="8" height="25" rx="3" />
-              <rect class="amr-wheel" x="57" y="29" width="8" height="25" rx="3" />
-              <path class="amr-side" d="M17 18h38c5 0 8 4 8 9v35c0 7-5 12-12 12H21c-7 0-12-5-12-12V27c0-5 3-9 8-9Z" />
-              <path class="amr-body" d="M19 13h34c5 0 9 4 9 9v34c0 7-5 12-12 12H22c-7 0-12-5-12-12V22c0-5 4-9 9-9Z" />
-              <path class="amr-front" d="M20 13h32c4 0 7 2 9 6l-7 7H18l-7-7c2-4 5-6 9-6Z" />
-              <circle class="amr-sensor" cx="18" cy="20" r="2.4" />
-              <circle class="amr-sensor" cx="54" cy="20" r="2.4" />
-              <rect class="amr-deck" x="20" y="30" width="32" height="28" rx="5" />
-              <path class="amr-deck-detail" d="M25 35h6M41 35h6M25 53h6M41 53h6" />
-              <path class="amr-light-glow" d="M22 18h28" />
-              <path class="amr-light" d="M22 18h28" />
-              <text class="amr-id" x="36" y="50" :transform="`rotate(${-amr.heading} 36 44)`">{{ amr.id.slice(-2) }}</text>
+            <rect class="selection-ring" x="-17" y="-24" width="34" height="48" rx="10" />
+            <g class="amr-chassis" :transform="`rotate(${amr.heading}) scale(.34) translate(-42 -59)`">
+              <ellipse class="amr-floor-shadow" cx="42" cy="62" rx="31" ry="48" />
+              <path class="amr-direction" d="M42 2 48 11H36Z" />
+              <rect class="amr-wheel" x="7" y="35" width="8" height="38" rx="3.5" />
+              <rect class="amr-wheel" x="69" y="35" width="8" height="38" rx="3.5" />
+              <path class="amr-side" d="M20 17h44c6 0 10 5 10 11v62c0 10-7 17-17 17H27c-10 0-17-7-17-17V28c0-6 4-11 10-11Z" />
+              <path class="amr-body" d="M21 12h42c6 0 10 5 10 11v62c0 10-7 16-16 16H27c-9 0-16-6-16-16V23c0-6 4-11 10-11Z" />
+              <path class="amr-front" d="M22 12h40c5 0 9 3 11 8l-9 8H20l-9-8c2-5 6-8 11-8Z" />
+              <circle class="amr-sensor" cx="20" cy="20" r="2.6" />
+              <circle class="amr-sensor" cx="64" cy="20" r="2.6" />
+              <rect class="amr-deck" x="18" y="33" width="48" height="50" rx="7" />
+              <path class="amr-deck-detail" d="M24 40h8M52 40h8M24 76h8M52 76h8" />
+              <rect class="amr-id-plate" x="23" y="45" width="38" height="27" rx="5" />
+              <path class="amr-light-glow" d="M25 19h34" />
+              <path class="amr-light" d="M25 19h34" />
+              <path class="amr-light-glow amr-tail-light-glow" d="M26 96h32" />
+              <path class="amr-light amr-tail-light" d="M26 96h32" />
+              <text class="amr-id" x="42" y="64" :transform="`rotate(${-amr.heading} 42 59)`">{{ amrCode(amr) }}</text>
             </g>
-            <g v-if="amr.tone === 'fault'" class="amr-alert" transform="translate(11 -13)">
+            <g v-if="amr.tone === 'fault'" class="amr-alert" transform="translate(12 -18)">
               <circle r="5" />
               <text x="0" y="2.4">!</text>
             </g>
           </g>
         </g>
       </svg>
-      <div class="map-route-legend monitor-route-legend"><span :class="{ muted: !selectedTaskId }"><i class="planned"></i>规划路径</span><span :class="{ muted: !selectedTaskId }"><i class="traveled"></i>已走路径</span></div>
+      <div class="map-route-legend monitor-route-legend"><span><i class="planned"></i>规划路径</span><span><i class="traveled"></i>已走路径</span></div>
       <div ref="controls" class="monitor-layer-control">
         <button ref="layerButton" type="button" class="monitor-tool-button layer-trigger" :class="{ active: layersOpen }" :aria-expanded="layersOpen" aria-controls="monitor-layer-panel" @click="layersOpen = !layersOpen">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m10 3 7 4-7 4-7-4 7-4Zm-7 8 7 4 7-4M3 15l7 4 7-4" /></svg><span>图层</span><span class="layer-count">{{ layerOptions.length }}</span>
@@ -271,11 +274,10 @@ onBeforeUnmount(() => {
             <i class="layer-swatch" :class="option.icon" aria-hidden="true"></i><strong>{{ option.label }}</strong><input v-model="layers[option.key]" type="checkbox" :aria-label="option.label" />
           </label>
           <div class="station-layer-group">
-            <div class="station-layer-heading"><strong>站点</strong><span>站点</span><span>标签</span></div>
+            <div class="station-layer-heading"><strong>站点图层</strong><span>显示</span></div>
             <div v-for="option in stationLayerOptions" :key="option.key" class="monitor-layer-row station-layer-row">
               <i class="layer-swatch" :class="option.icon" aria-hidden="true"></i><strong>{{ option.label }}</strong>
               <label class="layer-cell-check"><input v-model="layers[option.key]" type="checkbox" :aria-label="`显示${option.label}`" /></label>
-              <label class="layer-cell-check" :class="{ disabled: !layers[option.key] }"><input v-model="layers[option.labelKey]" type="checkbox" :disabled="!layers[option.key]" :aria-label="`显示${option.label}标签`" /></label>
             </div>
           </div>
         </section>

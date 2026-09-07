@@ -64,6 +64,11 @@ export interface Amr {
   ratedLoad: string
   connectedAt: string
   dispatchStatus?: 'enabled' | 'paused'
+  faultInfo?: {
+    code: string
+    message: string
+    reportedAt: string
+  }
 }
 
 export interface MapResource {

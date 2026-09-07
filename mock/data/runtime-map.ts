@@ -63,6 +63,15 @@ function samplePath(points: Point[], progress: number) {
 
 export function withRuntimeMap(source: TwinSnapshot): TwinSnapshot {
   const snapshot = structuredClone(source)
+  const demoAmrNames: Record<string, string> = {
+    'AMR-01': 'WuHu_AMR_GL_C06_4F_D_01',
+    'AMR-02': 'WuHu_AMR_GL_C06_4F_D_02',
+    'AMR-03': 'WuHu_AMR_GL_C06_4F_C_01',
+    'AMR-04': 'WuHu_AMR_GL_C06_4F_C_02',
+    'AMR-05': 'WuHu_AMR_GL_C06_4F_E_01',
+    'AMR-06': 'WuHu_AMR_GL_C06_4F_E_02',
+  }
+  for (const amr of snapshot.amrs) amr.name = demoAmrNames[amr.id] ?? amr.name
   const definition = mapDefinitions.find(map => map.current && map.status === '已发布')
   if (!definition || !mapEditorDrafts[definition.id]) throw new Error('没有可用的已发布运行地图')
   const map = structuredClone(mapEditorDrafts[definition.id]!)
