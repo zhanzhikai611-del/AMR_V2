@@ -602,7 +602,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, [tabindex]:focus-vis
 .behavior-action-group.collapsed .behavior-group-toggle > i { transform: rotate(0); }
 .behavior-palette-items { display: grid; gap: 4px; }
 .behavior-action-group .behavior-palette-items { padding: 5px 9px 8px; }
-.behavior-palette-items > button { min-height: 48px; display: grid; grid-template-columns: 32px minmax(0,1fr); align-items: center; gap: 9px; padding: 7px 8px; color: var(--ink-700); text-align: left; background: #fff; border: 1px solid transparent; border-radius: 5px; cursor: grab; }
+.behavior-palette-items > button { min-height: 42px; display: grid; grid-template-columns: 32px minmax(0,1fr); align-items: center; gap: 9px; padding: 5px 8px; color: var(--ink-700); text-align: left; background: #fff; border: 1px solid transparent; border-radius: 5px; cursor: grab; }
 .behavior-palette-items > button:hover { background: #f6faff; border-color: #cbdff4; }
 .behavior-palette-items > button > i { width: 30px; height: 30px; display: grid; place-items: center; color: var(--running-dark); background: var(--running-soft); border-radius: 4px; font: 700 9px/12px var(--font-latin); font-style: normal; }
 .behavior-palette-items > button > i.sequence { color: #6248b5; background: #eeeafd; }

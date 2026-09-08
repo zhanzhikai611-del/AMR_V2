@@ -5,7 +5,7 @@ import { getBehaviorTree, getBehaviorTrees } from '../api/modules/behaviors'
 import type { BehaviorTreeDefinition } from '../types/domain'
 
 type NodeKind = BehaviorTreeDefinition['nodes'][number]['kind']
-type PaletteItem = { code: string; name: string; detail: string; kind: NodeKind }
+type PaletteItem = { code: string; name: string; detail?: string; kind: NodeKind }
 type ActionGroup = { id: string; label: string; items: PaletteItem[] }
 
 const route = useRoute()
@@ -21,41 +21,19 @@ const draggedItem = ref<PaletteItem | null>(null)
 const statusMessage = ref('结构已加载')
 const validationTone = ref<'normal' | 'success' | 'fault'>('normal')
 const nodeSettings = ref<Record<string, { timeout: number; failure: string }>>({})
-const expandedActionGroups = ref<Record<string, boolean>>({ movement: true, forklift: true, roller: true, manipulator: true })
+const expandedActionGroups = ref<Record<string, boolean>>({ forklift: true, roller: true, manipulator: true })
 
-const controlNodes: PaletteItem[] = [
-  { code: 'SEQ', name: '顺序节点', detail: 'Sequence', kind: 'sequence' },
-]
-
+const makeItems = (prefix: string, names: string[], kind: NodeKind = 'action'): PaletteItem[] => names.map((name) => ({ code: prefix, name, kind }))
+const controlNodes: PaletteItem[] = [{ code: '控', name: '順序', kind: 'sequence' }, { code: '控', name: '並行', kind: 'sequence' }, { code: '控', name: '選擇', kind: 'sequence' }]
+const conditionNodes = makeItems('條', ['上料位無佔用','安全門已打開','拍照定位','治具壓爪已鬆開','物料已到位'], 'condition')
+const movementNodes = makeItems('移', ['移動至上料位','移動至下料位','移動至前置點','移動至等待位'])
+const perceptionNodes = makeItems('感', ['換料位置無干涉','掃碼','感應到物料','拍照定位'], 'condition')
 const actionGroups: ActionGroup[] = [
-  { id: 'movement', label: '通用移动', items: [
-    { code: 'N', name: '导航至点位', detail: 'Navigate', kind: 'action' },
-    { code: 'F', name: '跟随路径', detail: 'Follow path', kind: 'action' },
-    { code: 'D', name: '对接站点', detail: 'Dock', kind: 'action' },
-  ] },
-  { id: 'forklift', label: '叉车', items: [
-    { code: 'FP', name: '货叉取货', detail: 'Fork pickup', kind: 'action' },
-    { code: 'FD', name: '货叉卸货', detail: 'Fork dropoff', kind: 'action' },
-    { code: 'FL', name: '调整货叉高度', detail: 'Fork lift', kind: 'action' },
-  ] },
-  { id: 'roller', label: '滚筒', items: [
-    { code: 'RI', name: '滚筒接料', detail: 'Roller intake', kind: 'action' },
-    { code: 'RO', name: '滚筒出料', detail: 'Roller output', kind: 'action' },
-    { code: 'RS', name: '停止滚筒', detail: 'Roller stop', kind: 'action' },
-  ] },
-  { id: 'manipulator', label: '复合机械手', items: [
-    { code: 'MP', name: '机械手抓取', detail: 'Arm pickup', kind: 'action' },
-    { code: 'MD', name: '机械手放置', detail: 'Arm place', kind: 'action' },
-    { code: 'MR', name: '机械手复位', detail: 'Arm reset', kind: 'action' },
-  ] },
+  { id: 'forklift', label: '叉車', items: makeItems('叉', ['下降至貨叉默認位','貨叉上升取料','貨叉下降至默認位','貨叉下降放料','貨叉升至上料高度','貨叉升至取料高度','機台已準備就緒','啟動托盤阻擋','解鎖托盤阻擋']) },
+  { id: 'roller', label: '滾筒', items: makeItems('滾', ['AMR滾筒停止','AMR滾筒轉動','AMR識別到物料','上料位已準備就緒','上料位滾筒轉動','上料位識別到物料','上報完成','下料位已準備就緒','下料位滾筒停止','下料位滾筒轉動','滾筒反轉','滾筒正轉','啟動托盤阻擋','解鎖托盤阻擋']) },
+  { id: 'manipulator', label: '機械手', items: makeItems('機', ['AMR滾筒停止','AMR滾筒轉動','AMR識別到物料','二次定位','上料位已準備就緒','上料位滾筒轉動','上料位識別到物料','上報完成','下料位已準備就緒','下料位滾筒停止','下料位滾筒轉動','手爪空閒','生料庫取料','向上移動并移出機台','向上移動旋轉手爪','向下移動取熟料','向下移動放生料','熟料庫放料','機台已準備就緒','機械手臂移入機台']) },
 ]
-
-const conditionNodes: PaletteItem[] = [
-  { code: 'C', name: '检查机台状态', detail: 'Check device', kind: 'condition' },
-  { code: 'B', name: '检查剩余电量', detail: 'Check battery', kind: 'condition' },
-]
-
-const paletteItemCount = computed(() => controlNodes.length + conditionNodes.length + actionGroups.reduce((sum, group) => sum + group.items.length, 0))
+const paletteItemCount = computed(() => controlNodes.length + conditionNodes.length + movementNodes.length + perceptionNodes.length + actionGroups.reduce((sum, group) => sum + group.items.length, 0))
 const subtreePaletteItems = computed<PaletteItem[]>(() => availableSubtrees.value
   .filter((item) => item.id !== tree.value?.id)
   .map((item) => ({ code: 'ST', name: item.name, detail: item.summary, kind: 'subtree' })))
@@ -187,26 +165,25 @@ onMounted(async () => {
         </nav>
         <div v-if="libraryMode === 'nodes'" class="behavior-library-scroll">
           <section class="behavior-library-section">
-            <h2>控制节点</h2>
-            <div class="behavior-palette-items"><button v-for="item in controlNodes" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong><small>{{ item.detail }}</small></span></button></div>
+            <h2>控制節點</h2>
+            <div class="behavior-palette-items"><button v-for="item in controlNodes" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong></span></button></div>
           </section>
+          <section class="behavior-library-section"><h2>條件判斷</h2><div class="behavior-palette-items"><button v-for="item in conditionNodes" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong></span></button></div></section>
+          <section class="behavior-library-section"><h2>移動類</h2><div class="behavior-palette-items"><button v-for="item in movementNodes" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong></span></button></div></section>
+          <section class="behavior-library-section"><h2>感知類</h2><div class="behavior-palette-items"><button v-for="item in perceptionNodes" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong></span></button></div></section>
 
           <section class="behavior-library-section behavior-action-section">
-            <h2>AMR 动作</h2>
+            <h2>動作類</h2>
             <div v-for="group in actionGroups" :key="group.id" class="behavior-action-group" :class="{ collapsed: !expandedActionGroups[group.id] }">
               <button class="behavior-group-toggle" type="button" :aria-expanded="expandedActionGroups[group.id]" :aria-controls="`action-group-${group.id}`" @click="toggleActionGroup(group.id)">
                 <span>{{ group.label }}</span><small>{{ group.items.length }}</small><i aria-hidden="true">›</i>
               </button>
               <div v-show="expandedActionGroups[group.id]" :id="`action-group-${group.id}`" class="behavior-palette-items">
-                <button v-for="item in group.items" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong><small>{{ item.detail }}</small></span></button>
+                <button v-for="item in group.items" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong></span></button>
               </div>
             </div>
           </section>
 
-          <section class="behavior-library-section">
-            <h2>条件判断</h2>
-            <div class="behavior-palette-items"><button v-for="item in conditionNodes" :key="item.name" draggable="true" @dragstart="startPaletteDrag(item)"><i :class="item.kind">{{ item.code }}</i><span><strong>{{ item.name }}</strong><small>{{ item.detail }}</small></span></button></div>
-          </section>
         </div>
         <div v-else class="behavior-library-scroll subtree-library-scroll">
           <section class="behavior-palette-group">
@@ -222,7 +199,7 @@ onMounted(async () => {
         <div class="canvas-tools"><button :class="{ active: canvasMode === 'select' }" @click="setMode('select')">选择</button><button :class="{ active: canvasMode === 'connect' }" @click="setMode('connect')">连线</button><button @click="zoom = Math.max(60, zoom - 10)">−</button><button>{{ zoom }}%</button><button @click="zoom = Math.min(160, zoom + 10)">＋</button></div>
         <svg viewBox="0 0 900 560" :style="{ transform: `scale(${zoom / 100})` }">
           <g class="tree-connectors"><path v-for="line in connections" :key="line.id" :d="`M${line.from.x} ${line.from.y + 29}V${(line.from.y + line.to.y) / 2}H${line.to.x}V${line.to.y - 29}`"/></g>
-          <g v-for="node in tree.nodes" :key="node.id" :class="['editor-node', node.kind, { selected: selectedId === node.id, 'connection-source': connectionSourceId === node.id }]" :transform="`translate(${node.x} ${node.y})`" @click.stop="selectNode(node.id)"><rect x="-78" y="-29" width="156" height="58" rx="5"/><text class="node-title" y="1">{{ node.name }}</text><text class="node-kind" y="17">{{ node.kind }}</text></g>
+          <g v-for="node in tree.nodes" :key="node.id" :class="['editor-node', node.kind, { selected: selectedId === node.id, 'connection-source': connectionSourceId === node.id }]" :transform="`translate(${node.x} ${node.y})`" @click.stop="selectNode(node.id)"><rect x="-78" y="-29" width="156" height="58" rx="5"/><text class="node-title" y="5">{{ node.name }}</text></g>
         </svg>
         <footer class="editor-validation" :class="validationTone"><strong>{{ statusMessage }}</strong><span>{{ tree.nodes.length }} 个节点</span><span>{{ connections.length }} 条连接</span><span>拖动左侧节点到画布添加</span></footer>
       </main>
