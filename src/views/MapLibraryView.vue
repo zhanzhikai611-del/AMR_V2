@@ -68,7 +68,7 @@ function setCurrentMap(){ if(!runtimeTarget.value)return; maps.value.forEach(map
           <div class="map-card-title">
             <span><h2>{{ map.mapVersion }} · {{ map.name }}</h2><small>{{ map.id }} · {{ map.owner }} · {{ map.updatedAt }}</small></span>
             <span v-if="map.current" class="map-current-label"><i></i>当前地图</span>
-            <button v-else class="map-runtime-action" :disabled="map.status!=='已发布'" :title="map.status!=='已发布'?'地图发布后才能设为当前运行地图':''" @click.stop="requestSetCurrent(map)">{{ map.status==='已发布'?'设置为当前地图':'未发布' }}</button>
+            <button v-else class="map-runtime-action" :disabled="map.status!=='已发布'" :title="map.status!=='已发布'?'路网发布后才能设为当前运行地图':''" @click.stop="requestSetCurrent(map)">{{ map.status==='已发布'?'设置为当前地图':'未发布' }}</button>
           </div>
           <dl>
             <div><dt>上传来源</dt><dd>{{ map.source }}</dd></div><div><dt>逻辑对象</dt><dd>{{ previews[map.id] ? `${previews[map.id]!.routes.length} 路线 · ${previews[map.id]!.points.length} 站点` : map.objectSummary }}</dd></div>

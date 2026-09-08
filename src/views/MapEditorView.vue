@@ -195,7 +195,7 @@ function confirmDelete(){
   deleteRequest.value=null; selected.value=null; dirty.value=true; notice.value='对象已删除'
 }
 async function save(){ if(!draft.value)return; saving.value=true; await saveMapDraft(mapId,draft.value); saving.value=false; dirty.value=false; notice.value='草稿已保存' }
-async function finishPublish(){ await publishMapDraft(mapId); publishConfirm.value=false; notice.value='地图已发布' }
+async function finishPublish(){ await publishMapDraft(mapId); publishConfirm.value=false; notice.value='路网已发布' }
 async function publish(){
   if(dirty.value) await save()
   publishConfirm.value=true
@@ -206,7 +206,7 @@ onUnmounted(()=>{ window.removeEventListener('keydown',handleShortcut); stageObs
 
 <template>
   <section class="editor-page map-editor-workbench">
-    <header class="editor-topbar"><div><button aria-label="返回地图管理" @click="router.push('/maps')">←</button><span>地图管理 / <strong>{{ mapId }} · {{ mapInfo?.name || '地图编辑器' }}</strong></span><em>{{ notice || `${draft?.version} 草稿 · ${dirty?'未保存':'已保存'}` }}</em></div><div><button class="editor-undo-button" :disabled="!history.length" title="撤销上一步（Ctrl / Cmd + Z）" @click="undo"><span>↶</span> 撤销</button><button class="primary" @click="save">{{ saving?'保存中…':'保存草稿' }}</button><button @click="publish">发布地图</button></div></header>
+    <header class="editor-topbar"><div><button aria-label="返回地图管理" @click="router.push('/maps')">←</button><span>地图管理 / <strong>{{ mapId }} · {{ mapInfo?.name || '地图编辑器' }}</strong></span><em>{{ notice || `${draft?.version} 草稿 · ${dirty?'未保存':'已保存'}` }}</em></div><div><button class="editor-undo-button" :disabled="!history.length" title="撤销上一步（Ctrl / Cmd + Z）" @click="undo"><span>↶</span> 撤销</button><button class="primary" @click="save">{{ saving?'保存中…':'保存草稿' }}</button><button @click="publish">发布路网</button></div></header>
     <div class="map-editor-shell" :class="{ 'property-collapsed': propertyCollapsed }">
       <aside class="map-toolrail"><nav><button v-for="item in tools" :key="item.id" :class="{active:tool===item.id}" @click="chooseTool(item.id)"><svg viewBox="0 0 20 20" aria-hidden="true"><path v-if="item.id==='select'" d="M4 3l10 7-4.5 1.2L7 16z"/><path v-else-if="item.id==='point'" d="M10 3v14M3 10h14"/><path v-else-if="item.id==='route'" d="M4 15L9 5l7 9M4 15h3M14 14h3"/><path v-else d="M4 5h12v10H4z"/></svg><span>{{ item.label }}</span></button></nav><p v-if="tool!=='select'"><b>{{ toolLabel }}</b><span>{{ toolHint }}　按 Esc 取消</span></p><div class="map-zoom-tools"><button aria-label="缩小地图" @click="setZoom(zoom-20)">−</button><span>{{ zoom }}%</span><button aria-label="放大地图" @click="setZoom(zoom+20)">＋</button><button @click="setZoom(100)">适应</button></div></aside>
       <main class="map-editor-canvas">
@@ -259,9 +259,9 @@ onUnmounted(()=>{ window.removeEventListener('keydown',handleShortcut); stageObs
     </div>
     <div v-if="publishConfirm" class="map-publish-dialog-backdrop" @click.self="publishConfirm=false">
       <section class="map-publish-dialog" role="dialog" aria-modal="true" aria-labelledby="map-publish-title">
-        <header><div><small>发布确认</small><strong id="map-publish-title">确定要发布当前地图吗？</strong></div><button aria-label="关闭" @click="publishConfirm=false">×</button></header>
-        <div><p>发布后地图将以最新草稿生效。请确认所有改动已保存完毕。</p><p class="map-publish-note warning">发布操作不可撤销，如需回退请基于已发布版本重新编辑。</p></div>
-        <footer><button @click="publishConfirm=false">取消</button><button class="primary" @click="finishPublish">确认发布</button></footer>
+        <header><div><small>路网发布确认</small><strong id="map-publish-title">确定要发布当前路网吗？</strong></div><button aria-label="关闭" @click="publishConfirm=false">×</button></header>
+        <div><p>发布后路网将以最新草稿生效。请确认所有改动已保存完毕。</p><p class="map-publish-note warning">路网发布操作不可撤销，如需回退请基于已发布版本重新编辑。</p></div>
+        <footer><button @click="publishConfirm=false">取消</button><button class="primary" @click="finishPublish">确认发布路网</button></footer>
       </section>
     </div>
     <div v-if="deleteRequest" class="map-publish-dialog-backdrop" @click.self="deleteRequest=null">
