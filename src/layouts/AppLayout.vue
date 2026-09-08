@@ -14,8 +14,8 @@ const navigation = [
   { id: 'behavior', label: '行为树管理', icon: 'behavior', route: '/behaviors' },
   { id: 'maps', label: '地图管理', icon: 'layers', route: '/maps' },
   { id: 'resources', label: '资源管理', icon: 'resources', children: [
-    { id: 'amrs', label: 'AMR 管理', route: '/resources/amrs' },
     { id: 'devices', label: '设备管理', route: '/resources/devices' },
+    { id: 'device-relations', label: '设备关联管理', route: '/resources/device-relations' },
   ] },
   { id: 'settings', label: '系统设置', icon: 'settings', children: [
     { id: 'users', label: '用户管理', route: '/settings/users' },

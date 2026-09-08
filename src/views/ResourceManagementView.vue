@@ -1,118 +1,169 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, reactive, ref, watch, watchEffect } from 'vue'
 import { getResourceCatalog } from '../api/modules/resources'
-import type { ResourceCatalog } from '../types/domain'
 
-const props = defineProps<{ section: 'amrs' | 'devices' }>()
-const router = useRouter()
-const catalog = ref<ResourceCatalog | null>(null)
+type DeviceType = 'AMR' | '一拖二机械臂' | '辅助设备'
+type DeviceSource = '设备台账' | '维保系统' | '手动录入'
+type DeviceRow = { sn: string; name: string; vendor: string; ip: string; type: DeviceType; site: string; updatedAt: string; source: DeviceSource }
+
 const loading = ref(true)
+const deviceRows = ref<DeviceRow[]>([])
 const query = ref('')
-const selectedDeviceType = ref('全部')
+const selectedType = ref('全部设备')
+const selectedSource = ref('全部来源')
+const selectedSns = ref<string[]>([])
+const selectAllRef = ref<HTMLInputElement | null>(null)
+const currentPage = ref(1)
+const pageSize = 10
+const editorOpen = ref(false)
+const editorMode = ref<'create' | 'edit'>('create')
+const editorError = ref('')
 const importOpen = ref(false)
-const editingId = ref<string | null>(null)
-const selectedRelations = ref<string[]>([])
-const meta = computed(() => props.section === 'amrs'
-  ? { eyebrow: 'AMR ASSETS', title: 'AMR 管理', description: '基础资料来自设备台账，在此维护服务设备关系。', action: '导入 AMR' }
-  : { eyebrow: 'DEVICE ASSETS', title: '设备管理', description: '基础资料来自设备台账，在此维护服务 AMR 关系。', action: '导入设备' })
-const includesQuery = (values: unknown[]) => values.join(' ').toLowerCase().includes(query.value.trim().toLowerCase())
-const amrCode = (item: ResourceCatalog['amrs'][number]) => {
-  const match = item.name.match(/_([A-Z])_0*(\d+)$/i)
-  return match ? `${match[1]!.toUpperCase()}${match[2]}` : item.id.replace(/^AMR-0*/i, '')
-}
-const amrs = computed(() => (catalog.value?.amrs ?? []).filter((item) => includesQuery([item.id, amrCode(item), item.name, item.ip, item.model])))
-const deviceTypeLabels: Record<string, string> = { machine: '生产设备', buffer: '中转台', charge: '充电站', door: '自动门', recycle: '回收站' }
-const deviceTypeOptions = computed(() => [...new Set((catalog.value?.devices ?? []).map((item) => item.type))])
-const deviceTypeLabel = (type: string) => deviceTypeLabels[type] ?? type
-const devices = computed(() => (catalog.value?.devices ?? []).filter((item) => {
-  const matchesType = selectedDeviceType.value === '全部' || item.type === selectedDeviceType.value
-  return matchesType && includesQuery([item.id, item.label, item.name, item.group, deviceTypeLabel(item.type)])
-}))
-const serviceAmrs = (deviceId: string) => catalog.value?.amrs.filter((item) => item.serviceDevices.includes(deviceId)).map((item) => item.id) ?? []
-const servicePreview = (ids: string[]) => ids.slice(0, 4)
-const editingAmr = computed(() => props.section === 'amrs' ? catalog.value?.amrs.find((item) => item.id === editingId.value) : undefined)
-const editingDevice = computed(() => props.section === 'devices' ? catalog.value?.devices.find((item) => item.id === editingId.value) : undefined)
+const selectedImportSns = ref<string[]>([])
+const importMessage = ref('')
+const lastPulledAt = ref('2026-09-06 18:30')
+const pulledCandidates = ref<(DeviceRow & { action: '新增' | '更新' })[]>([])
 
-function openEdit(id: string) {
-  editingId.value = id
-  selectedRelations.value = props.section === 'amrs'
-    ? [...(catalog.value?.amrs.find((item) => item.id === id)?.serviceDevices ?? [])]
-    : serviceAmrs(id)
+const emptyForm = (): DeviceRow => ({ sn: '', name: '', vendor: '', ip: '', type: 'AMR', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:00', source: '手动录入' })
+const form = reactive<DeviceRow>(emptyForm())
+
+const incrementalCandidates = computed<(DeviceRow & { action: '新增' | '更新' })[]>(() => [
+  { sn: 'SN-AMR-0001', name: '一号线搬运车 01', vendor: '仙工智能', ip: '10.197.137.31', type: 'AMR', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:16', source: '维保系统', action: '更新' },
+  { sn: 'SN-AMR-0009', name: '备用搬运车 04', vendor: '海康机器人', ip: '10.197.137.39', type: 'AMR', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:12', source: '设备台账', action: '新增' },
+  { sn: 'SN-ARM-C20-121', name: 'C20 一拖二机械手臂', vendor: '新松机器人', ip: '10.197.138.121', type: '一拖二机械臂', site: 'GL-C06-4F', updatedAt: '2026-09-07 09:58', source: '设备台账', action: '新增' },
+  { sn: 'SN-AUX-D-03', name: '自动门 D-03', vendor: '厂务自动化', ip: '10.197.138.122', type: '辅助设备', site: 'GL-C06-4F', updatedAt: '2026-09-07 09:44', source: '维保系统', action: '新增' },
+])
+
+const filteredRows = computed(() => {
+  const keyword = query.value.trim().toLowerCase()
+  return deviceRows.value.filter((item) => {
+    const matchesType = selectedType.value === '全部设备' || item.type === selectedType.value
+    const matchesSource = selectedSource.value === '全部来源' || item.source === selectedSource.value
+    return matchesType && matchesSource && (!keyword || [item.sn, item.name, item.vendor, item.ip, item.site].join(' ').toLowerCase().includes(keyword))
+  })
+})
+const pageCount = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / pageSize)))
+const paginatedRows = computed(() => filteredRows.value.slice((currentPage.value - 1) * pageSize, currentPage.value * pageSize))
+const paginationItems = computed<(number | string)[]>(() => {
+  const total = pageCount.value
+  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1)
+  const pages = new Set([1, total, currentPage.value - 1, currentPage.value, currentPage.value + 1])
+  const visible = [...pages].filter((page) => page >= 1 && page <= total).sort((a, b) => a - b)
+  const items: (number | string)[] = []
+  visible.forEach((page, index) => {
+    if (index > 0 && page - visible[index - 1]! > 1) items.push(`ellipsis-${page}`)
+    items.push(page)
+  })
+  return items
+})
+const allVisibleSelected = computed(() => paginatedRows.value.length > 0 && paginatedRows.value.every((item) => selectedSns.value.includes(item.sn)))
+const someVisibleSelected = computed(() => paginatedRows.value.some((item) => selectedSns.value.includes(item.sn)) && !allVisibleSelected.value)
+
+function toggleAllVisible() {
+  const visibleSns = paginatedRows.value.map((item) => item.sn)
+  selectedSns.value = allVisibleSelected.value ? selectedSns.value.filter((sn) => !visibleSns.includes(sn)) : [...new Set([...selectedSns.value, ...visibleSns])]
+}
+function openCreate() {
+  editorMode.value = 'create'; editorError.value = ''; Object.assign(form, emptyForm()); editorOpen.value = true
+}
+function openEdit(item: DeviceRow) {
+  editorMode.value = 'edit'; editorError.value = ''; Object.assign(form, item); editorOpen.value = true
+}
+function saveDevice() {
+  editorError.value = ''
+  if (!form.sn.trim() || !form.name.trim() || !form.vendor.trim() || !form.ip.trim() || !form.site.trim()) { editorError.value = '请填写所有设备字段。'; return }
+  if (!/^(?:\d{1,3}\.){3}\d{1,3}$/.test(form.ip)) { editorError.value = 'IP 地址格式不正确，请输入 IPv4 地址。'; return }
+  const index = deviceRows.value.findIndex((item) => item.sn === form.sn)
+  if (editorMode.value === 'create' && index >= 0) { editorError.value = `设备 SN ${form.sn} 已存在，请确认设备资料。`; return }
+  const saved = { ...form, source: editorMode.value === 'create' ? '手动录入' as const : form.source }
+  if (index >= 0) deviceRows.value[index] = saved
+  else deviceRows.value.unshift(saved)
+  editorOpen.value = false
+}
+function openImport() {
+  selectedImportSns.value = []; pulledCandidates.value = []; importMessage.value = ''; importOpen.value = true
+}
+function pullLatestDevices() {
+  if (selectedSns.value.length) {
+    pulledCandidates.value = deviceRows.value.filter((item) => selectedSns.value.includes(item.sn)).map((item, index) => ({ ...item, updatedAt: `2026-09-07 10:${String(24 + index).padStart(2, '0')}`, source: index % 2 ? '维保系统' : '设备台账', action: '更新' }))
+  } else pulledCandidates.value = incrementalCandidates.value
+  selectedImportSns.value = pulledCandidates.value.map((item) => item.sn)
+  importMessage.value = ''
+}
+function writeImportedDevices() {
+  const selected = pulledCandidates.value.filter((item) => selectedImportSns.value.includes(item.sn))
+  selected.forEach(({ action: _action, ...item }) => {
+    const index = deviceRows.value.findIndex((existing) => existing.sn === item.sn)
+    if (index >= 0) deviceRows.value[index] = item
+    else deviceRows.value.unshift(item)
+  })
+  lastPulledAt.value = '2026-09-07 10:20'
+  importMessage.value = `已写入 ${selected.length} 台设备，其中新增 ${selected.filter((item) => item.action === '新增').length} 台、更新 ${selected.filter((item) => item.action === '更新').length} 台。`
+  selectedImportSns.value = []
 }
 
-function toggleRelation(id: string) {
-  selectedRelations.value = selectedRelations.value.includes(id)
-    ? selectedRelations.value.filter((item) => item !== id)
-    : [...selectedRelations.value, id]
-}
-
-function saveRelations() {
-  if (!catalog.value || !editingId.value) return
-  if (props.section === 'amrs') {
-    const amr = catalog.value.amrs.find((item) => item.id === editingId.value)
-    if (amr) amr.serviceDevices = [...selectedRelations.value]
-  } else {
-    catalog.value.amrs.forEach((amr) => {
-      const shouldServe = selectedRelations.value.includes(amr.id)
-      const servesNow = amr.serviceDevices.includes(editingId.value!)
-      if (shouldServe && !servesNow) amr.serviceDevices.push(editingId.value!)
-      if (!shouldServe && servesNow) amr.serviceDevices = amr.serviceDevices.filter((id) => id !== editingId.value)
-    })
-  }
-  editingId.value = null
-}
+watchEffect(() => { if (selectAllRef.value) selectAllRef.value.indeterminate = someVisibleSelected.value })
+watch([query, selectedType, selectedSource], () => { currentPage.value = 1 })
+watch(pageCount, (count) => { if (currentPage.value > count) currentPage.value = count })
 
 onMounted(async () => {
-  try { catalog.value = await getResourceCatalog() } finally { loading.value = false }
+  try {
+    const catalog = await getResourceCatalog()
+    const amrs: DeviceRow[] = catalog.amrs.map((item, index) => ({ sn: `SN-AMR-${String(index + 1).padStart(4, '0')}`, name: item.name, vendor: index % 3 === 2 ? '海康机器人' : '仙工智能', ip: item.ip, type: 'AMR', site: 'GL-C06-4F', updatedAt: `2026-09-07 ${String(9 + Math.floor(index / 3)).padStart(2, '0')}:${String(12 + index * 4).padStart(2, '0')}`, source: index === 7 ? '手动录入' : '设备台账' }))
+    const devices: DeviceRow[] = catalog.devices.map((item, index) => ({ sn: item.type === 'machine' ? `SN-ARM-${item.id}-${String(index + 1).padStart(3, '0')}` : `SN-AUX-${item.id}`, name: item.name || item.label, vendor: item.type === 'machine' ? '新松机器人' : '厂务自动化', ip: `10.197.138.${41 + index}`, type: item.type === 'machine' ? '一拖二机械臂' : '辅助设备', site: 'GL-C06-4F', updatedAt: `2026-09-06 ${String(13 + (index % 5)).padStart(2, '0')}:${String(8 + (index * 3) % 50).padStart(2, '0')}`, source: index % 6 === 0 ? '手动录入' : '设备台账' }))
+    deviceRows.value = [...amrs, ...devices]
+  } finally { loading.value = false }
 })
 </script>
 
 <template>
-  <section class="resource-page">
-    <header class="resource-page__header">
-      <div><p class="page-eyebrow">{{ meta.eyebrow }}</p><h1>{{ meta.title }}</h1><p>{{ meta.description }}</p></div>
-      <button class="resource-primary-action" type="button" @click="importOpen = true">⇩ {{ meta.action }}</button>
+  <section class="resource-page device-ledger-page">
+    <header class="resource-page__header device-ledger-header">
+      <div><p class="page-eyebrow">DEVICE LEDGER</p><h1>设备管理</h1></div>
+      <div class="device-header-actions"><button class="device-secondary-action" type="button" @click="openImport">⇩ {{ selectedSns.length ? `更新已选设备（${selectedSns.length}）` : '导入设备' }}</button><button class="resource-primary-action" type="button" @click="openCreate">＋ 新增设备</button></div>
     </header>
-    <div class="resource-toolbar">
-      <label><span>⌕</span><input v-model="query" :placeholder="`搜索${meta.title.replace('管理', '')}编号或名称`"></label>
-      <div v-if="section === 'devices'" class="resource-filter-group">
-        <span>设备类型</span>
-        <select v-model="selectedDeviceType" aria-label="设备类型"><option>全部</option><option v-for="type in deviceTypeOptions" :key="type" :value="type">{{ deviceTypeLabel(type) }}</option></select>
-      </div>
+    <div class="resource-toolbar device-ledger-toolbar">
+      <label><span>⌕</span><input v-model="query" placeholder="搜索设备 SN、名称、厂商或 IP"></label>
+      <div class="device-filter-field"><span>设备类型</span><select v-model="selectedType" aria-label="设备类型"><option>全部设备</option><option>AMR</option><option>一拖二机械臂</option><option>辅助设备</option></select></div>
+      <div class="device-filter-field"><span>设备来源</span><select v-model="selectedSource" aria-label="设备来源"><option>全部来源</option><option>设备台账</option><option>维保系统</option><option>手动录入</option></select></div>
+      <b class="device-result-count">{{ filteredRows.length }} 台设备</b>
     </div>
-    <div v-if="loading" class="resource-loading">正在读取资源数据</div>
-    <div v-else class="resource-table-wrap">
-      <table v-if="section === 'amrs'" class="resource-table">
-        <thead><tr><th>车辆编号</th><th>AMR 名称</th><th>IP 地址</th><th>型号</th><th>服务设备</th><th>上下线状态</th><th>操作</th></tr></thead>
-        <tbody><tr v-for="item in amrs" :key="item.id"><td class="resource-id">{{ amrCode(item) }}</td><td><strong>{{ item.name }}</strong><small>{{ item.initialPoint }}</small></td><td class="type-data">{{ item.ip }}</td><td>{{ item.model }}</td><td><div class="resource-chip-list"><i v-for="id in servicePreview(item.serviceDevices)" :key="id">{{ id }}</i><i v-if="item.serviceDevices.length > 4" class="resource-chip-more">+{{ item.serviceDevices.length - 4 }}</i></div></td><td><span class="asset-status" :class="item.connectionStatus === 'offline' ? 'offline' : 'success'">{{ item.connectionStatus === 'offline' ? '离线' : '在线' }}</span></td><td><div class="row-actions"><button class="table-action" @click="router.push(`/resources/amrs/${item.id}`)">查看</button><button class="table-action" @click="openEdit(item.id)">编辑</button></div></td></tr></tbody>
-      </table>
-      <table v-else class="resource-table">
-        <thead><tr><th>设备编号</th><th>设备名称</th><th>类型</th><th>连接状态</th><th>绑定点位</th><th>设备组</th><th>服务 AMR</th><th>操作</th></tr></thead>
-        <tbody><tr v-for="item in devices" :key="item.id"><td class="resource-id">{{ item.id }}</td><td><strong>{{ item.name || item.label }}</strong></td><td>{{ deviceTypeLabel(item.type) }}</td><td><span class="asset-status" :class="item.connected === false ? 'offline' : 'success'">{{ item.connected === false ? '离线' : '在线' }}</span></td><td class="resource-link">{{ item.boundPoint || '—' }}</td><td>{{ item.group || '—' }}</td><td><div class="resource-chip-list"><i v-for="id in serviceAmrs(item.id)" :key="id">{{ id }}</i></div></td><td><div class="row-actions"><button class="table-action" @click="router.push(`/resources/devices/${item.id}`)">查看</button><button class="table-action" @click="openEdit(item.id)">编辑</button></div></td></tr></tbody>
+    <div v-if="loading" class="resource-loading">正在读取设备数据</div>
+    <div v-else class="resource-table-wrap device-ledger-table-wrap">
+      <table class="resource-table device-ledger-table">
+        <colgroup><col class="col-check"><col class="col-sn"><col class="col-name"><col class="col-type"><col class="col-vendor"><col class="col-ip"><col class="col-location"><col class="col-updated"><col class="col-source"><col class="col-action"></colgroup>
+        <thead><tr><th class="device-check-cell"><input ref="selectAllRef" type="checkbox" :checked="allVisibleSelected" aria-label="选择当前页全部设备" @change="toggleAllVisible"></th><th>设备 SN</th><th>设备名称</th><th>设备类型</th><th>厂商</th><th>IP 地址</th><th>厂区 / 楼栋 / 楼层</th><th>更新时间</th><th>来源</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr v-for="item in paginatedRows" :key="item.sn" :class="{ selected: selectedSns.includes(item.sn) }"><td class="device-check-cell"><input v-model="selectedSns" type="checkbox" :value="item.sn"></td><td class="resource-id type-data">{{ item.sn }}</td><td><strong>{{ item.name }}</strong></td><td><span class="device-type-tag" :class="item.type === 'AMR' ? 'amr' : item.type === '一拖二机械臂' ? 'arm' : 'aux'">{{ item.type }}</span></td><td>{{ item.vendor }}</td><td class="type-data">{{ item.ip }}</td><td>{{ item.site }}</td><td class="type-data device-updated-at">{{ item.updatedAt }}</td><td><span class="device-source" :class="{ manual: item.source === '手动录入' }">{{ item.source }}</span></td><td><button class="table-action" type="button" @click="openEdit(item)">编辑</button></td></tr>
+          <tr v-if="filteredRows.length === 0"><td class="device-empty" colspan="10">没有符合当前条件的设备</td></tr>
+        </tbody>
       </table>
     </div>
+    <footer v-if="!loading" class="task-pagination device-ledger-pagination"><span>共 {{ filteredRows.length }} 条 · 每页 {{ pageSize }} 条<span v-if="selectedSns.length"> · 已选择 {{ selectedSns.length }} 条</span></span><nav aria-label="设备列表分页"><button :disabled="currentPage === 1" aria-label="上一页" @click="currentPage--">‹</button><template v-for="item in paginationItems" :key="item"><button v-if="typeof item === 'number'" :class="{ active: currentPage === item }" :aria-label="`第 ${item} 页`" @click="currentPage = item">{{ item }}</button><span v-else class="device-pagination-ellipsis">…</span></template><button :disabled="currentPage === pageCount" aria-label="下一页" @click="currentPage++">›</button></nav></footer>
 
-    <div v-if="importOpen" class="modal-backdrop" @click.self="importOpen = false">
-      <section class="create-dialog ledger-import-dialog">
-        <header><div><span>DEVICE LEDGER</span><strong>从设备台账导入{{ section === 'amrs' ? ' AMR' : '设备' }}</strong></div><button aria-label="关闭" @click="importOpen = false">×</button></header>
-        <div class="ledger-import-note"><b>数据来源</b><strong>现有设备台账</strong><p>编号、名称、型号、网络信息及设备属性将以台账资料为准。导入后，可在列表中编辑服务关系。</p></div>
-        <footer><button @click="importOpen = false">取消</button><button class="primary" @click="importOpen = false">开始导入</button></footer>
+    <div v-if="editorOpen" class="modal-backdrop" @click.self="editorOpen = false">
+      <section class="create-dialog device-editor-dialog">
+        <header><div><span>{{ editorMode === 'create' ? 'CREATE DEVICE' : 'EDIT DEVICE' }}</span><strong>{{ editorMode === 'create' ? '新增设备' : '编辑设备' }}</strong></div><button aria-label="关闭" @click="editorOpen = false">×</button></header>
+        <form class="device-editor-form" @submit.prevent="saveDevice">
+          <p v-if="editorError" class="device-form-error">{{ editorError }}</p>
+          <label><span>设备 SN</span><input v-model.trim="form.sn" :disabled="editorMode === 'edit'" placeholder="例如 SN-AMR-0010"></label>
+          <label><span>设备名称</span><input v-model.trim="form.name" placeholder="请输入设备名称"></label>
+          <label><span>设备类型</span><select v-model="form.type"><option>AMR</option><option>一拖二机械臂</option><option>辅助设备</option></select></label>
+          <label><span>厂商</span><input v-model.trim="form.vendor" placeholder="请输入厂商"></label>
+          <label><span>IP 地址</span><input v-model.trim="form.ip" placeholder="例如 10.197.138.100"></label>
+          <label><span>厂区 / 楼栋 / 楼层</span><input v-model.trim="form.site" placeholder="例如 GL-C06-4F"></label>
+        </form>
+        <footer><button type="button" @click="editorOpen = false">取消</button><button class="primary" type="button" @click="saveDevice">保存</button></footer>
       </section>
     </div>
 
-    <div v-if="editingId" class="modal-backdrop" @click.self="editingId = null">
-      <section class="binding-dialog resource-relation-dialog">
-        <header><div><span>EDIT SERVICE RELATION</span><strong>编辑{{ section === 'amrs' ? '服务设备' : '服务 AMR' }}</strong><small>{{ editingId }} · 基础资料由设备台账同步，不可在此修改</small></div><button aria-label="关闭" @click="editingId = null">×</button></header>
-        <div class="resource-ledger-summary"><span>台账名称</span><strong>{{ editingAmr?.name || editingDevice?.name || editingDevice?.label }}</strong><span>{{ section === 'amrs' ? editingAmr?.model : editingDevice?.type }}</span></div>
-        <div class="amr-binding-list">
-          <label v-for="option in section === 'amrs' ? devices : amrs" :key="option.id" :class="{ selected: selectedRelations.includes(option.id) }">
-            <input type="checkbox" :checked="selectedRelations.includes(option.id)" @change="toggleRelation(option.id)">
-            <span><strong>{{ 'ip' in option ? amrCode(option) : option.id }}</strong><small>{{ 'ip' in option ? option.name : option.name || option.label }}</small></span>
-            <em>{{ selectedRelations.includes(option.id) ? '已服务' : '未服务' }}</em>
-          </label>
-        </div>
-        <footer><button @click="editingId = null">取消</button><button class="primary" @click="saveRelations">保存关系</button></footer>
+    <div v-if="importOpen" class="modal-backdrop" @click.self="importOpen = false">
+      <section class="create-dialog device-import-dialog">
+        <header><div><span>IMPORT DEVICE</span><strong>{{ selectedSns.length ? '更新已选设备' : '导入设备' }}</strong><small>{{ selectedSns.length ? `按照主列表勾选的 ${selectedSns.length} 个 SN 获取最新资料` : '从设备台账及维保系统检查新增与更新资料' }}</small></div><button aria-label="关闭" @click="importOpen = false">×</button></header>
+        <div class="device-import-meta"><div class="device-sync-status"><span>上次拉取</span><strong>{{ lastPulledAt }}</strong><i v-if="pulledCandidates.length">已发现 {{ pulledCandidates.length }} 条变更</i></div><button class="device-refresh-button" type="button" @click="pullLatestDevices"><b>↻</b>获取最新资料</button></div>
+        <p v-if="importMessage" class="device-import-success">{{ importMessage }}</p>
+        <div class="device-import-list"><div v-if="pulledCandidates.length === 0" class="device-import-empty"><i>↻</i><strong>等待获取设备资料</strong><span>从设备台账和维保系统检查新增或更新。</span></div><label v-for="item in pulledCandidates" :key="item.sn" :class="{ selected: selectedImportSns.includes(item.sn) }"><input v-model="selectedImportSns" type="checkbox" :value="item.sn"><span><strong>{{ item.name }}</strong><small>{{ item.sn }} · {{ item.ip }} · {{ item.source }}</small></span><em :class="item.action">{{ item.action }}</em></label></div>
+        <footer><button type="button" @click="importOpen = false">取消</button><button class="primary" type="button" :disabled="selectedImportSns.length === 0" @click="writeImportedDevices">写入设备（{{ selectedImportSns.length }}）</button></footer>
       </section>
     </div>
   </section>
