@@ -1,45 +1,37 @@
-// Prototype bindings only. Replace with surveyed mappings before connecting a fleet.
-// Keep existing device identities used by tasks; fill every remaining dock station.
-const demoColumns = [
-  { aisle: 'A1-R', devices: ['D02', 'D04', 'D06', 'D08', 'D10', 'D12'] },
-  { aisle: 'A2-R', devices: ['D14', 'D16', 'D18', 'D20', 'D22', 'D24'] },
-  { aisle: 'A3-R', devices: ['C02', 'C04', 'C06', 'C08', 'C10', 'C12'] },
-  { aisle: 'A5-R', devices: ['C14', 'C16', 'C18', 'C20', 'C22', 'C24'] },
-  { aisle: 'A6-R', devices: ['E02', 'E04', 'E06', 'E08', 'E10', 'E12'] },
-  { aisle: 'A7-R', devices: ['E14', 'E16', 'E18', 'E20', 'E22', 'E24'] },
-]
-const demoRows = [96, 145, 193, 319, 360, 400]
+// Prototype bindings only. Physical aisles are named from right to left A-H.
+// Line A is the single, wall-side lane; B-H each have a left and right lane.
+const serviceRows = [96, 145, 193, 226, 309, 350, 390, 417]
+const lineByAisle = ['H', 'G', 'F', 'E', 'D', 'C', 'B', 'A'] as const
 
-const existingBindings = demoColumns.flatMap(column =>
-  column.devices.map((deviceId, index) => ({ deviceId, stationId: `${column.aisle}-${demoRows[index]}` })),
-)
-
-export const demoServiceGroups = [
-  { prefix: 'D', lanes: ['A1-L', 'A1-R', 'A2-L', 'A2-R', 'A3-L'], amrs: ['AMR-01', 'AMR-02'] },
-  { prefix: 'C', lanes: ['A3-R', 'A4-L', 'A4-R', 'A5-L', 'A5-R'], amrs: ['AMR-03', 'AMR-04'] },
-  { prefix: 'E', lanes: ['A6-L', 'A6-R', 'A7-L', 'A7-R', 'A8-R'], amrs: ['AMR-05', 'AMR-06'] },
-] as const
-const serviceRows = [96, 145, 193, 226, 319, 360, 400, 425]
-const existingByStation = new Map(existingBindings.map(binding => [binding.stationId, binding.deviceId]))
-export const manualLoadingDevices = new Set(['E08', 'E10'])
-// A few shared devices exercise 3/5/6-AMR cards with the existing six-vehicle
-// demo fleet. These are UI sample relationships, not dispatch assignments.
-const sharedDeviceAmrs: Record<string, string[]> = {
-  D04: ['AMR-01', 'AMR-02', 'AMR-03'],
-  C04: ['AMR-01', 'AMR-02', 'AMR-03', 'AMR-04', 'AMR-05'],
-  E04: ['AMR-01', 'AMR-02', 'AMR-03', 'AMR-04', 'AMR-05', 'AMR-06'],
+const serviceAmrsByLine: Record<string, string[]> = {
+  H: ['AMR-01'],
+  G: ['AMR-01', 'AMR-02'],
+  F: ['AMR-02', 'AMR-03'],
+  E: ['AMR-03', 'AMR-04'],
+  D: ['AMR-04'],
+  C: ['AMR-05'],
+  B: ['AMR-05', 'AMR-06'],
+  A: ['AMR-06'],
 }
-export const demoDeviceBindings = demoServiceGroups.flatMap(group => {
-  let nextNumber = 26
-  return group.lanes.flatMap(lane => serviceRows.map(row => {
-    const stationId = `${lane}-${row}`
-    const deviceId = existingByStation.get(stationId) ?? `${group.prefix}${String(nextNumber).padStart(2, '0')}`
-    if (!existingByStation.has(stationId)) nextNumber += 2
-    const direction = lane.endsWith('-L') || lane === 'A8-R' ? 'left' as const : 'right' as const
-    return { deviceId, stationId, group: group.prefix, direction,
-      amrIds: sharedDeviceAmrs[deviceId] ?? [...group.amrs] }
+
+export const demoDeviceBindings = lineByAisle.flatMap((line, aisleIndex) => {
+  const aisle = `A${aisleIndex + 1}`
+  const lanes = line === 'A' ? ['R'] as const : ['L', 'R'] as const
+  return lanes.flatMap(side => serviceRows.map((row, index) => {
+    const number = side === 'R' ? 2 + index * 2 : 18 + index * 2
+    const deviceId = `${line}${String(number).padStart(2, '0')}`
+    return {
+      deviceId,
+      stationId: `${aisle}-${side}-${row}`,
+      group: line,
+      direction: line === 'A' || side === 'L' ? 'left' as const : 'right' as const,
+      amrIds: serviceAmrsByLine[line]!,
+    }
   }))
 })
+
+export const demoServiceGroups = Object.entries(serviceAmrsByLine).map(([prefix, amrs]) => ({ prefix, amrs }))
+export const manualLoadingDevices = new Set(['C08', 'C10'])
 
 export function serviceDevicesForAmr(amrId: string, includeManual = false): string[] {
   return demoDeviceBindings.filter(binding => binding.amrIds.some(id => id === amrId)

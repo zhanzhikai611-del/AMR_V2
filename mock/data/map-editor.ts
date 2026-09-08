@@ -66,8 +66,8 @@ function addPolyline(prefix: string, coordinates: Array<[number, number]>, speed
 // 点云轮廓的通行带整体略偏右，统一平移可保持双线间距及换道关系不变。
 const aisleCenters = [176, 233, 293, 359, 416, 475, 535, 589]
 const laneOffset = 4
-const verticalRows = [80, 96, 125, 145, 171, 193, 215, 226, 254, 270, 274, 278, 314, 319, 358, 360, 396, 400, 425, 431, 435, 439]
-const serviceRows = new Set([96, 145, 193, 226, 319, 360, 400, 425])
+const verticalRows = [80, 96, 125, 145, 171, 193, 215, 226, 254, 270, 274, 278, 309, 314, 350, 358, 390, 396, 417, 431, 435, 439]
+const serviceRows = new Set([96, 145, 193, 226, 309, 350, 390, 417])
 const aisleLaneIds: string[][][] = []
 
 aisleCenters.forEach((centerX, aisleIndex) => {
@@ -93,7 +93,7 @@ aisleCenters.forEach((centerX, aisleIndex) => {
 
   // X 形路线由左右两侧相邻站点交叉相连，每个端点都是可导航站点。
   if (lanes.length === 2) {
-    ;[[96, 145], [145, 193], [193, 226], [319, 360], [360, 400], [400, 425]].forEach(([fromY, toY]) => {
+    ;[[96, 145], [145, 193], [193, 226], [309, 350], [350, 390], [390, 417]].forEach(([fromY, toY]) => {
       const fromIndex = verticalRows.indexOf(fromY)
       const toIndex = verticalRows.indexOf(toY)
       connect(lanes[0][fromIndex], lanes[1][toIndex], 0.8)

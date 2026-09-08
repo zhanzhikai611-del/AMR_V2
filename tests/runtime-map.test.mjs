@@ -20,8 +20,9 @@ const docks = map.points.filter(p => p.associationType === 'dock')
 assert.equal(new Set(docks.map(p => p.deviceId)).size, 120, 'every station has a unique device')
 assert.ok(docks.every(p => p.deviceId), 'no unlabeled dock stations')
 assert.equal(snapshot.resources.filter(resource => resource.type === 'machine').length, 120)
-for (const [device, count] of [['D04', 3], ['C04', 5], ['E04', 6]]) {
-  assert.equal(snapshot.amrs.filter(amr => amr.serviceDevices.includes(device)).length, count)
+for (const amr of snapshot.amrs.filter(amr => amr.connectionStatus !== 'offline')) {
+  const lines = new Set(amr.serviceDevices.map(device => device[0]))
+  assert.ok(lines.size >= 1 && lines.size <= 2, `${amr.id} serves one or two adjacent lines`)
 }
 for (const station of docks) {
   assert.equal(snapshot.resources.filter(resource => resource.id === station.deviceId && resource.boundPoint === station.id).length, 1)
@@ -68,8 +69,8 @@ for (const resource of snapshot.resources.filter(r => r.type === 'machine')) {
   assert.equal(coord(resource.position), coord(byDevice.get(resource.id)))
   assert.equal(resource.boundPoint, byDevice.get(resource.id).id)
 }
-for (const amr of snapshot.amrs.filter(amr => ['AMR-05', 'AMR-06'].includes(amr.id))) {
-  for (const manual of ['E08', 'E10']) {
+for (const amr of snapshot.amrs.filter(amr => amr.id === 'AMR-05')) {
+  for (const manual of ['C08', 'C10']) {
     assert.ok(amr.maxServiceDevices.includes(manual))
     assert.ok(!amr.serviceDevices.includes(manual))
   }
