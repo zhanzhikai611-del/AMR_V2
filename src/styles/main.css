@@ -689,3 +689,24 @@ button:focus-visible, a:focus-visible, input:focus-visible, [tabindex]:focus-vis
 /* Keep large import batches inside the dialog; only the device results scroll. */
 .create-dialog.device-import-dialog{width:min(760px,calc(100vw - 40px));height:min(680px,calc(100vh - 40px));max-height:none;display:grid;grid-template-rows:auto auto auto minmax(0,1fr) 60px;overflow:hidden}.device-import-dialog>header{grid-row:1}.device-import-dialog>.device-import-meta{grid-row:2}.device-import-dialog>.device-import-success{grid-row:3}.device-import-dialog>.device-import-list{grid-row:4;min-height:0;overflow-y:auto;overscroll-behavior:contain}.device-import-dialog>footer{grid-row:5;min-height:60px;margin-top:0;align-items:center;padding:10px 18px}.device-import-dialog>.device-import-list label{box-sizing:border-box}
 @media(max-width:620px){.create-dialog.device-import-dialog{width:calc(100vw - 24px);height:calc(100vh - 24px);grid-template-rows:auto auto auto minmax(0,1fr) auto}.device-import-dialog>footer{min-height:58px}}
+.create-dialog.relation-setting-dialog{width:min(1040px,calc(100vw - 40px));height:min(700px,calc(100vh - 40px));border:1px solid #cbd6df;box-shadow:0 24px 70px rgba(10,29,42,.3)}
+.relation-setting-dialog>header{min-height:76px;padding:13px 18px 12px}
+.relation-setting-dialog>header strong{font-size:18px;letter-spacing:.4px}
+.relation-setting-layout{grid-template-columns:292px minmax(0,1fr);background:#fff}
+.relation-amr-list{padding:12px 14px;background:#f3f7f9}
+.relation-search-field{box-sizing:border-box!important;display:grid!important;grid-template-columns:18px minmax(0,1fr)!important;gap:8px!important;width:100%!important;height:38px!important;padding:0 10px!important;overflow:hidden;background:#fff!important;border:1px solid #bdccd7!important;border-radius:4px!important}
+.relation-search-field:focus-within{border-color:var(--running)!important;box-shadow:0 0 0 2px var(--running-soft)}
+.relation-search-field>span{width:18px;display:grid;place-items:center;color:#7290a4;background:transparent!important;font-size:14px;line-height:1}
+.create-dialog .relation-search-field>input{min-width:0!important;width:100%!important;height:36px!important;padding:0!important;color:var(--ink-700)!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important;font:var(--type-compact)}
+.relation-search-field>input::-webkit-search-cancel-button{display:none}
+.relation-amr-list>div{margin-top:8px;padding-right:4px}
+.relation-amr-list>div>button{min-height:58px;padding:9px 11px}
+.relation-selected-amr{min-height:50px;padding:8px 16px;grid-template-columns:auto minmax(0,1fr) auto;column-gap:12px}
+.relation-selected-amr strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.relation-modal-toolbar{grid-template-columns:minmax(320px,1fr) 160px;gap:10px;padding:10px 16px}
+.relation-modal-toolbar select{height:38px}
+.relation-select-all{min-height:40px;padding:7px 17px}
+.relation-modal-devices{padding:2px 16px 10px}
+.relation-modal-devices>label{min-height:54px;padding:7px 10px}
+.relation-setting-dialog>footer{min-height:58px;padding:10px 18px;background:#f4f7f9}
+@media(max-width:760px){.create-dialog.relation-setting-dialog{width:calc(100vw - 24px);height:calc(100vh - 24px)}.relation-setting-layout{grid-template-columns:1fr;grid-template-rows:190px minmax(0,1fr)}.relation-selected-amr{grid-template-columns:auto minmax(0,1fr)}.relation-selected-amr small{grid-column:2}.relation-modal-toolbar{grid-template-columns:1fr}}
