@@ -22,17 +22,18 @@ const controls = ref<HTMLElement | null>(null)
 const layerButton = ref<HTMLButtonElement | null>(null)
 const layersOpen = ref(false)
 const hoveredStationId = ref<string | null>(null)
-const defaultLayers = { pointcloud: true, network: true, devices: true, navigation: false, parking: false, charging: false }
+const defaultLayers = { pointcloud: true, network: true, devices: true, navigation: false, parking: false, charging: false,
+  deviceLabels: true, navigationLabels: false, parkingLabels: false, chargingLabels: false }
 const layers = reactive({ ...defaultLayers })
 const baseLayerOptions = [
   { key: 'pointcloud', label: '点云地图', icon: 'cloud' },
   { key: 'network', label: '路线', icon: 'network' },
 ] as const
 const stationLayerOptions = [
-  { key: 'devices', label: '设备站点', icon: 'station' },
-  { key: 'navigation', label: '一般站点', icon: 'other' },
-  { key: 'parking', label: '停车点', icon: 'parking' },
-  { key: 'charging', label: '充电点', icon: 'charge' },
+  { key: 'devices', labelKey: 'deviceLabels', label: '设备站点', icon: 'station' },
+  { key: 'navigation', labelKey: 'navigationLabels', label: '一般站点', icon: 'other' },
+  { key: 'parking', labelKey: 'parkingLabels', label: '停车点', icon: 'parking' },
+  { key: 'charging', labelKey: 'chargingLabels', label: '充电点', icon: 'charge' },
 ] as const
 const layerOptions = [...baseLayerOptions, ...stationLayerOptions]
 const viewport = ref({ width: 760, height: 520 })
@@ -133,6 +134,11 @@ function stationClasses(point: MapStation) {
     focused: hoveredStationId.value === point.id,
     disabled: point.disabled }
 }
+function otherStationLabelVisible(point: MapStation) {
+  return (point.associationType === 'none' && layers.navigationLabels) ||
+    (point.associationType === 'parking' && layers.parkingLabels) ||
+    (point.associationType === 'charge' && layers.chargingLabels)
+}
 function chooseAmr(id: string) { emit('selectAmr', id) }
 function measure() {
   const rect = canvas.value?.getBoundingClientRect()
@@ -229,6 +235,7 @@ onBeforeUnmount(() => {
         <g class="monitor-other-stations">
           <g v-for="point in otherStations" :key="point.id" :transform="`translate(${point.x} ${point.y})`" :class="[point.associationType, { disabled: point.disabled }]">
             <title>{{ point.name }}</title><path d="M0-2.5L2.3 2L-2.3 2Z" :transform="`rotate(${point.yaw * 180 / Math.PI})`" />
+            <text v-if="otherStationLabelVisible(point)" x="0" y="-4.5">{{ point.name }}</text>
           </g>
         </g>
         <g v-if="layers.devices" class="monitor-stations">
@@ -237,7 +244,7 @@ onBeforeUnmount(() => {
             <path class="station-symbol" d="M0-2.5L2.3 2L-2.3 2Z" :transform="`rotate(${point.yaw * 180 / Math.PI})`" />
           </g>
         </g>
-        <g v-if="layers.devices" class="monitor-device-labels">
+        <g v-if="layers.devices && layers.deviceLabels" class="monitor-device-labels">
           <g v-for="layout in labelLayouts" :key="`leader-${layout.id}`" class="monitor-label-connector" :class="stationClasses(layout.point)">
             <path class="label-leader" :d="layout.leader" />
           </g>
@@ -291,10 +298,11 @@ onBeforeUnmount(() => {
             <i class="layer-swatch" :class="option.icon" aria-hidden="true"></i><strong>{{ option.label }}</strong><input v-model="layers[option.key]" type="checkbox" :aria-label="option.label" />
           </label>
           <div class="station-layer-group">
-            <div class="station-layer-heading"><strong>站点图层</strong><span>显示</span></div>
+            <div class="station-layer-heading"><strong>站点</strong><span>站点</span><span>标签</span></div>
             <div v-for="option in stationLayerOptions" :key="option.key" class="monitor-layer-row station-layer-row">
               <i class="layer-swatch" :class="option.icon" aria-hidden="true"></i><strong>{{ option.label }}</strong>
               <label class="layer-cell-check"><input v-model="layers[option.key]" type="checkbox" :aria-label="`显示${option.label}`" /></label>
+              <label class="layer-cell-check" :class="{ disabled: !layers[option.key] }"><input v-model="layers[option.labelKey]" type="checkbox" :disabled="!layers[option.key]" :aria-label="`显示${option.label}标签`" /></label>
             </div>
           </div>
         </section>

@@ -69,10 +69,10 @@
 .monitor-layer-row strong { font: var(--type-compact); color: #405364; }
 .monitor-layer-row input { width: 15px; height: 15px; margin: 0; accent-color: #1677ff; cursor: pointer; }
 .station-layer-group { margin-top: 2px; padding-bottom: 2px; border-top: 1px solid #e8edf1; background: #fff; }
-.station-layer-heading { min-height: 38px; display: grid; grid-template-columns: 28px 1fr 38px; gap: 10px; align-items: center; padding: 6px 14px 2px; }
+.station-layer-heading { min-height: 38px; display: grid; grid-template-columns: 28px 1fr 38px 38px; gap: 10px; align-items: center; padding: 6px 14px 2px; }
 .station-layer-heading>strong { grid-column: 1 / 3; color: #405364; font: var(--type-compact); }
 .station-layer-heading>span { color: #8192a1; font: var(--type-caption); text-align: center; }
-.station-layer-row { min-height: 48px; grid-template-columns: 28px 1fr 38px; padding: 7px 14px; background: #fff; cursor: default; }
+.station-layer-row { min-height: 48px; grid-template-columns: 28px 1fr 38px 38px; padding: 7px 14px; background: #fff; cursor: default; }
 .station-layer-row:hover { background: #f6f9fc; }
 .layer-cell-check { width: 38px; height: 32px; display: grid; place-items: center; border-radius: 4px; cursor: pointer; }
 .layer-cell-check:hover { background: #eaf3ff; }

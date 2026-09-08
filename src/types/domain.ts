@@ -44,6 +44,7 @@ export interface Amr {
   id: string
   name: string
   ip: string
+  vendor?: string
   model: string
   chassis: string
   initialPoint: string

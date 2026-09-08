@@ -33,7 +33,7 @@ function vehicleCode(amr: Amr | null) {
     <header class="inspector-header" :class="{ 'inspector-header--vehicle': amr }">
       <div v-if="amr" class="inspector-vehicle-heading">
         <div class="vehicle-mark"><span>{{ vehicleCode(amr) }}</span><i :class="amr.tone"></i></div>
-        <div><h2 :title="amr.name">{{ amr.name }}</h2><span class="type-data">{{ amr.model }} · {{ amr.chassis }}</span></div>
+        <div><h2 :title="amr.name">{{ amr.name }}</h2><div class="inspector-vehicle-meta"><span>{{ amr.vendor ?? 'Moying' }} · {{ amr.model }}</span><span class="type-data">{{ amr.ip }}</span></div></div>
       </div>
       <div v-else><h2>{{ task?.id }}</h2></div>
       <div class="inspector-header-actions"><button type="button" aria-label="收起 AMR 详情" @click="emit('collapse')"><AppIcon class="inspector-collapse-icon" name="chevron" :size="16" /></button><button type="button" aria-label="关闭检查面板" @click="emit('close')"><AppIcon name="close" :size="16" /></button></div>
