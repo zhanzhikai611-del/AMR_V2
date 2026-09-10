@@ -8,6 +8,7 @@ const amrs = ref<Amr[]>([])
 const devices = ref<MapResource[]>([])
 const querySn = ref('')
 const queryName = ref('')
+const overviewType = ref('全部设备')
 const currentPage = ref(1)
 const pageSize = 10
 const relationOpen = ref(false)
@@ -30,9 +31,10 @@ const amrSite = () => 'GL-C06-4F'
 const filteredAmrs = computed(() => {
   const sn = querySn.value.trim().toLowerCase()
   const name = queryName.value.trim().toLowerCase()
-  if (!sn && !name) return amrs.value
   return amrs.value.filter((amr) => {
-    return (!sn || amrSn(amr).toLowerCase().includes(sn)) && (!name || amr.name.toLowerCase().includes(name))
+    return (overviewType.value === '全部设备' || overviewType.value === 'AMR')
+      && (!sn || amrSn(amr).toLowerCase().includes(sn))
+      && (!name || amr.name.toLowerCase().includes(name))
   })
 })
 const pageCount = computed(() => Math.max(1, Math.ceil(filteredAmrs.value.length / pageSize)))
@@ -91,7 +93,7 @@ function saveRelations() {
   relationOpen.value = false
 }
 
-watch([querySn, queryName], () => { currentPage.value = 1 })
+watch([querySn, queryName, overviewType], () => { currentPage.value = 1 })
 watch(pageCount, (count) => { if (currentPage.value > count) currentPage.value = count })
 watchEffect(() => { if (selectAllRef.value) selectAllRef.value.indeterminate = someFilteredSelected.value })
 onMounted(async () => { try { const catalog = await getResourceCatalog(); amrs.value = catalog.amrs; devices.value = catalog.devices } finally { loading.value = false } })
@@ -101,7 +103,7 @@ onMounted(async () => { try { const catalog = await getResourceCatalog(); amrs.v
   <section class="resource-page relation-overview-page">
     <header class="resource-page__header"><div><p class="page-eyebrow">DEVICE RELATIONS</p><h1>设备关联管理</h1></div><button class="resource-primary-action" type="button" @click="openRelation()">＋ 关联设备</button></header>
 
-    <div class="resource-toolbar relation-overview-toolbar"><label><span>⌕</span><input v-model="querySn" placeholder="设备 SN"></label><label><span>⌕</span><input v-model="queryName" placeholder="设备名称"></label><b>{{ filteredAmrs.length }} 台 AMR</b></div>
+    <div class="resource-toolbar relation-overview-toolbar"><div class="relation-overview-searches"><label><span>⌕</span><input v-model="querySn" placeholder="设备 SN"></label><label><span>⌕</span><input v-model="queryName" placeholder="设备名称"></label></div><div class="relation-overview-filters"><div class="device-filter-field"><span>设备类型</span><select v-model="overviewType" aria-label="设备类型"><option>全部设备</option><option>AMR</option><option>一拖二机械臂</option><option>辅助设备</option></select></div><b>{{ filteredAmrs.length }} 台设备</b></div></div>
     <div v-if="loading" class="resource-loading">正在读取设备关联</div>
     <div v-else class="resource-table-wrap relation-overview-table-wrap">
       <table class="resource-table relation-overview-table">
