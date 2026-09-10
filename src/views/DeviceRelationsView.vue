@@ -98,7 +98,7 @@ onMounted(async () => { try { const catalog = await getResourceCatalog(); amrs.v
 
 <template>
   <section class="resource-page relation-overview-page">
-    <header class="resource-page__header"><div><p class="page-eyebrow">DEVICE RELATIONS</p><h1>设备关联管理</h1></div><button class="resource-primary-action" type="button" @click="openRelation()">＋ 设置关联关系</button></header>
+    <header class="resource-page__header"><div><p class="page-eyebrow">DEVICE RELATIONS</p><h1>设备关联管理</h1></div><button class="resource-primary-action" type="button" @click="openRelation()">＋ 关联设备</button></header>
 
     <div class="resource-toolbar relation-overview-toolbar"><label><span>⌕</span><input v-model="query" placeholder="搜索设备 SN、名称、类型、位置或关联设备"></label><b>{{ filteredAmrs.length }} 台 AMR</b></div>
     <div v-if="loading" class="resource-loading">正在读取设备关联</div>
@@ -107,7 +107,13 @@ onMounted(async () => { try { const catalog = await getResourceCatalog(); amrs.v
         <colgroup><col class="col-amr-sn"><col class="col-amr-name"><col class="col-amr-type"><col class="col-location"><col class="col-devices"></colgroup>
         <thead><tr><th>设备 SN</th><th>设备名称</th><th>设备类型</th><th>厂区 / 楼栋 / 楼层</th><th>关联设备</th></tr></thead>
         <tbody>
-          <tr v-for="amr in paginatedAmrs" :key="amr.id"><td class="resource-id type-data">{{ amrSn(amr) }}</td><td class="relation-device-name" :title="amr.name"><strong>{{ amr.name }}</strong></td><td><span class="device-type-tag amr">AMR</span></td><td>{{ amrSite() }}</td><td><div v-if="relatedDevices(amr).length" class="relation-device-chips"><span v-for="device in relatedDevices(amr).slice(0, 4)" :key="device.id" :title="`${device.name || device.label} · ${deviceIp(device)}`">{{ device.name || device.label }}</span><em v-if="relatedDevices(amr).length > 4">+{{ relatedDevices(amr).length - 4 }}</em></div><span v-else class="relation-none">尚未关联</span></td></tr>
+          <tr v-for="amr in paginatedAmrs" :key="amr.id">
+            <td class="resource-id type-data">{{ amrSn(amr) }}</td>
+            <td class="relation-device-name" :title="amr.name"><strong>{{ amr.name }}</strong></td>
+            <td><span class="device-type-tag amr">AMR</span></td>
+            <td>{{ amrSite() }}</td>
+            <td><div v-if="relatedDevices(amr).length" class="relation-device-chips"><span v-for="device in relatedDevices(amr).slice(0, 6)" :key="device.id" :title="`${device.name || device.label} · ${deviceIp(device)}`">{{ device.name || device.label }}</span><em v-if="relatedDevices(amr).length > 6">+{{ relatedDevices(amr).length - 6 }}</em></div><span v-else class="relation-none">尚未关联</span></td>
+          </tr>
           <tr v-if="filteredAmrs.length === 0"><td colspan="5" class="device-empty">没有符合条件的关联关系</td></tr>
         </tbody>
       </table>
