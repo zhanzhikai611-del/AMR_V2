@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import { useLayoutStore } from '../stores/layout'
+import { useRuntimeScopeStore } from '../stores/runtimeScope'
 
 const layout = useLayoutStore()
 const route = useRoute()
+const runtimeScope = useRuntimeScopeStore()
+const scopeOpen = ref(false)
+const accountOpen = ref(false)
+const logoutConfirming = ref(false)
+const scopeEntry = ref<HTMLElement | null>(null)
 
 const navigation = [
   { id: 'twin', label: '实时监控', icon: 'twin', route: '/' },
@@ -31,7 +37,24 @@ onMounted(() => {
   if (activeGroup.value === 'resources' || activeGroup.value === 'settings') {
     layout.expandedGroup = activeGroup.value
   }
+  document.addEventListener('pointerdown', closeScopeOutside)
+  document.addEventListener('keydown', closeScopeOnEscape)
 })
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', closeScopeOutside)
+  document.removeEventListener('keydown', closeScopeOnEscape)
+})
+function closeScopeOutside(event: PointerEvent) { if (scopeEntry.value && !scopeEntry.value.contains(event.target as Node)) scopeOpen.value = false }
+function closeScopeOnEscape(event: KeyboardEvent) {
+  if (event.key !== 'Escape') return
+  scopeOpen.value = false
+  accountOpen.value = false
+  logoutConfirming.value = false
+}
+function selectScope(id: string) { runtimeScope.select(id); scopeOpen.value = false }
+function openAccount() { scopeOpen.value = false; logoutConfirming.value = false; accountOpen.value = true }
+function closeAccount() { accountOpen.value = false; logoutConfirming.value = false }
+function logout() { accountOpen.value = false; logoutConfirming.value = false }
 </script>
 
 <template>
@@ -75,11 +98,45 @@ onMounted(() => {
       </nav>
 
       <div class="navigation-footer">
-        <button type="button" class="operator-entry" title="当前用户：研发管理员">
+        <div ref="scopeEntry" class="navigation-scope">
+          <button type="button" class="navigation-scope__trigger" :class="{ active: scopeOpen }" :title="`当前工作范围：${runtimeScope.current.label}`" :aria-expanded="scopeOpen" @click="scopeOpen = !scopeOpen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7l8-4 8 4v14M8 10h2m4 0h2M8 14h2m4 0h2M9 21v-3h6v3"/></svg>
+            <span><small>当前楼层</small><strong>{{ runtimeScope.current.label }}</strong></span>
+            <AppIcon class="navigation-scope__chevron" name="chevron" :size="14" />
+          </button>
+          <Transition name="scope-flyout">
+            <div v-if="scopeOpen" class="navigation-scope__modal" @click.self="scopeOpen = false">
+            <section class="navigation-scope__panel" role="dialog" aria-modal="true" aria-label="选择当前楼层">
+              <header><div><span>FLOOR SCOPE</span><strong>选择当前楼层</strong></div><button type="button" aria-label="关闭楼层选择" @click="scopeOpen = false">×</button></header>
+              <div class="scope-current-summary"><small>当前楼层</small><strong>{{ runtimeScope.current.label }}</strong><span>厂区 GL · 楼栋 {{ runtimeScope.current.area }} · {{ runtimeScope.current.floor }}</span></div>
+              <div class="scope-option-heading"><span>可用楼层</span><b>{{ runtimeScope.available.length }}</b></div>
+              <div class="scope-option-list"><button v-for="scope in runtimeScope.available" :key="scope.id" :class="{ current: scope.id === runtimeScope.current.id }" @click="selectScope(scope.id)"><b>{{ scope.floor }}</b><span><strong>{{ scope.label }}</strong><small>厂区 GL · 楼栋 {{ scope.area }}</small></span><i>{{ scope.id === runtimeScope.current.id ? '✓' : '›' }}</i></button></div>
+              <footer>切换后，当前页面将使用所选楼层数据</footer>
+            </section>
+            </div>
+          </Transition>
+        </div>
+        <button type="button" class="operator-entry" :class="{ active: accountOpen }" title="当前用户：研发管理员" :aria-expanded="accountOpen" @click="openAccount">
           <span class="operator-entry__avatar">研</span>
           <span class="operator-entry__copy"><strong>研发管理员</strong><small>账号与退出</small></span>
           <AppIcon class="operator-entry__chevron" name="chevron" :size="14" />
         </button>
+        <Transition name="scope-flyout">
+          <div v-if="accountOpen" class="account-modal" @click.self="closeAccount">
+            <section class="account-panel" role="dialog" aria-modal="true" aria-label="账号与退出">
+              <header><div><span>ACCOUNT</span><strong>{{ logoutConfirming ? '确认退出登录' : '账号与退出' }}</strong></div><button type="button" aria-label="关闭账号弹窗" @click="closeAccount">×</button></header>
+              <template v-if="!logoutConfirming">
+                <div class="account-identity"><span class="account-identity__avatar">研</span><div><small>当前登录账号</small><strong>研发管理员</strong><span><i></i>账号在线</span></div></div>
+                <dl class="account-details"><div><dt>账号</dt><dd>rd_admin</dd></div><div><dt>角色</dt><dd>系统管理员</dd></div><div><dt>当前楼层</dt><dd>{{ runtimeScope.current.label }}</dd></div></dl>
+                <footer><button type="button" class="account-logout" @click="logoutConfirming = true"><span>退出登录</span><small>结束当前账号会话</small><b>›</b></button></footer>
+              </template>
+              <template v-else>
+                <div class="logout-confirm"><span class="logout-confirm__icon">↪</span><strong>确定要退出当前账号吗？</strong><p>退出后将返回登录页面，未保存的页面操作不会保留。</p></div>
+                <footer class="logout-actions"><button type="button" @click="logoutConfirming = false">取消</button><button type="button" class="danger" @click="logout">退出登录</button></footer>
+              </template>
+            </section>
+          </div>
+        </Transition>
         <button type="button" class="collapse-button" @click="layout.toggleNavigation">
           <AppIcon name="panel" />
           <span>{{ layout.navigationCollapsed ? '展开导航' : '收起导航' }}</span>

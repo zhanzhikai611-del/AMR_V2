@@ -6,7 +6,8 @@ import type { Amr, MapResource } from '../types/domain'
 const loading = ref(true)
 const amrs = ref<Amr[]>([])
 const devices = ref<MapResource[]>([])
-const query = ref('')
+const querySn = ref('')
+const queryName = ref('')
 const currentPage = ref(1)
 const pageSize = 10
 const relationOpen = ref(false)
@@ -27,11 +28,11 @@ const amrSn = (amr: Amr) => `SN-AMR-${String(amrs.value.indexOf(amr) + 1).padSta
 const amrSite = () => 'GL-C06-4F'
 
 const filteredAmrs = computed(() => {
-  const keyword = query.value.trim().toLowerCase()
-  if (!keyword) return amrs.value
+  const sn = querySn.value.trim().toLowerCase()
+  const name = queryName.value.trim().toLowerCase()
+  if (!sn && !name) return amrs.value
   return amrs.value.filter((amr) => {
-    const relations = relatedDevices(amr).flatMap((item) => [item.id, item.name || item.label])
-    return [amrSn(amr), amr.name, 'AMR', amrSite(), ...relations].join(' ').toLowerCase().includes(keyword)
+    return (!sn || amrSn(amr).toLowerCase().includes(sn)) && (!name || amr.name.toLowerCase().includes(name))
   })
 })
 const pageCount = computed(() => Math.max(1, Math.ceil(filteredAmrs.value.length / pageSize)))
@@ -90,7 +91,7 @@ function saveRelations() {
   relationOpen.value = false
 }
 
-watch(query, () => { currentPage.value = 1 })
+watch([querySn, queryName], () => { currentPage.value = 1 })
 watch(pageCount, (count) => { if (currentPage.value > count) currentPage.value = count })
 watchEffect(() => { if (selectAllRef.value) selectAllRef.value.indeterminate = someFilteredSelected.value })
 onMounted(async () => { try { const catalog = await getResourceCatalog(); amrs.value = catalog.amrs; devices.value = catalog.devices } finally { loading.value = false } })
@@ -100,7 +101,7 @@ onMounted(async () => { try { const catalog = await getResourceCatalog(); amrs.v
   <section class="resource-page relation-overview-page">
     <header class="resource-page__header"><div><p class="page-eyebrow">DEVICE RELATIONS</p><h1>设备关联管理</h1></div><button class="resource-primary-action" type="button" @click="openRelation()">＋ 关联设备</button></header>
 
-    <div class="resource-toolbar relation-overview-toolbar"><label><span>⌕</span><input v-model="query" placeholder="搜索设备 SN、名称、类型、位置或关联设备"></label><b>{{ filteredAmrs.length }} 台 AMR</b></div>
+    <div class="resource-toolbar relation-overview-toolbar"><label><span>⌕</span><input v-model="querySn" placeholder="设备 SN"></label><label><span>⌕</span><input v-model="queryName" placeholder="设备名称"></label><b>{{ filteredAmrs.length }} 台 AMR</b></div>
     <div v-if="loading" class="resource-loading">正在读取设备关联</div>
     <div v-else class="resource-table-wrap relation-overview-table-wrap">
       <table class="resource-table relation-overview-table">

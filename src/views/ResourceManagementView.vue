@@ -8,7 +8,10 @@ type DeviceRow = { sn: string; name: string; vendor: string; ip: string; type: D
 
 const loading = ref(true)
 const deviceRows = ref<DeviceRow[]>([])
-const query = ref('')
+const querySn = ref('')
+const queryName = ref('')
+const queryVendor = ref('')
+const queryIp = ref('')
 const selectedType = ref('全部设备')
 const selectedSource = ref('全部来源')
 const selectedSns = ref<string[]>([])
@@ -35,11 +38,18 @@ const incrementalCandidates = computed<(DeviceRow & { action: '新增' | '更新
 ])
 
 const filteredRows = computed(() => {
-  const keyword = query.value.trim().toLowerCase()
+  const sn = querySn.value.trim().toLowerCase()
+  const name = queryName.value.trim().toLowerCase()
+  const vendor = queryVendor.value.trim().toLowerCase()
+  const ip = queryIp.value.trim().toLowerCase()
   return deviceRows.value.filter((item) => {
     const matchesType = selectedType.value === '全部设备' || item.type === selectedType.value
     const matchesSource = selectedSource.value === '全部来源' || item.source === selectedSource.value
-    return matchesType && matchesSource && (!keyword || [item.sn, item.name, item.vendor, item.ip, item.site].join(' ').toLowerCase().includes(keyword))
+    return matchesType && matchesSource
+      && (!sn || item.sn.toLowerCase().includes(sn))
+      && (!name || item.name.toLowerCase().includes(name))
+      && (!vendor || item.vendor.toLowerCase().includes(vendor))
+      && (!ip || item.ip.toLowerCase().includes(ip))
   })
 })
 const pageCount = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / pageSize)))
@@ -103,7 +113,7 @@ function writeImportedDevices() {
 }
 
 watchEffect(() => { if (selectAllRef.value) selectAllRef.value.indeterminate = someVisibleSelected.value })
-watch([query, selectedType, selectedSource], () => { currentPage.value = 1 })
+watch([querySn, queryName, queryVendor, queryIp, selectedType, selectedSource], () => { currentPage.value = 1 })
 watch(pageCount, (count) => { if (currentPage.value > count) currentPage.value = count })
 
 onMounted(async () => {
@@ -123,7 +133,10 @@ onMounted(async () => {
       <div class="device-header-actions"><button class="device-secondary-action" type="button" @click="openImport">⇩ {{ selectedSns.length ? `更新已选设备（${selectedSns.length}）` : '导入设备' }}</button><button class="resource-primary-action" type="button" @click="openCreate">＋ 新增设备</button></div>
     </header>
     <div class="resource-toolbar device-ledger-toolbar">
-      <label><span>⌕</span><input v-model="query" placeholder="搜索设备 SN、名称、厂商或 IP"></label>
+      <label><span>⌕</span><input v-model="querySn" placeholder="设备 SN"></label>
+      <label><span>⌕</span><input v-model="queryName" placeholder="设备名称"></label>
+      <label><span>⌕</span><input v-model="queryVendor" placeholder="厂商"></label>
+      <label><span>⌕</span><input v-model="queryIp" placeholder="IP 地址"></label>
       <div class="device-filter-field"><span>设备类型</span><select v-model="selectedType" aria-label="设备类型"><option>全部设备</option><option>AMR</option><option>一拖二机械臂</option><option>辅助设备</option></select></div>
       <div class="device-filter-field"><span>设备来源</span><select v-model="selectedSource" aria-label="设备来源"><option>全部来源</option><option>设备台账</option><option>维保系统</option><option>手动录入</option></select></div>
       <b class="device-result-count">{{ filteredRows.length }} 台设备</b>
