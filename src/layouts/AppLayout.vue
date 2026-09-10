@@ -98,6 +98,7 @@ function logout() { accountOpen.value = false; logoutConfirming.value = false }
       </nav>
 
       <div class="navigation-footer">
+        <div class="footer-utility-group">
         <div ref="scopeEntry" class="navigation-scope">
           <button type="button" class="navigation-scope__trigger" :class="{ active: scopeOpen }" :title="`当前工作范围：${runtimeScope.current.label}`" :aria-expanded="scopeOpen" @click="scopeOpen = !scopeOpen">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7l8-4 8 4v14M8 10h2m4 0h2M8 14h2m4 0h2M9 21v-3h6v3"/></svg>
@@ -108,10 +109,9 @@ function logout() { accountOpen.value = false; logoutConfirming.value = false }
             <div v-if="scopeOpen" class="navigation-scope__modal" @click.self="scopeOpen = false">
             <section class="navigation-scope__panel" role="dialog" aria-modal="true" aria-label="选择当前楼层">
               <header><div><span>FLOOR SCOPE</span><strong>选择当前楼层</strong></div><button type="button" aria-label="关闭楼层选择" @click="scopeOpen = false">×</button></header>
-              <div class="scope-current-summary"><small>当前楼层</small><strong>{{ runtimeScope.current.label }}</strong><span>厂区 GL · 楼栋 {{ runtimeScope.current.area }} · {{ runtimeScope.current.floor }}</span></div>
-              <div class="scope-option-heading"><span>可用楼层</span><b>{{ runtimeScope.available.length }}</b></div>
-              <div class="scope-option-list"><button v-for="scope in runtimeScope.available" :key="scope.id" :class="{ current: scope.id === runtimeScope.current.id }" @click="selectScope(scope.id)"><b>{{ scope.floor }}</b><span><strong>{{ scope.label }}</strong><small>厂区 GL · 楼栋 {{ scope.area }}</small></span><i>{{ scope.id === runtimeScope.current.id ? '✓' : '›' }}</i></button></div>
-              <footer>切换后，当前页面将使用所选楼层数据</footer>
+              <div class="scope-current-summary"><small>当前楼层</small><strong>{{ runtimeScope.current.label }}</strong></div>
+              <div class="scope-option-heading"><span>可用楼层</span></div>
+              <div class="scope-option-list"><button v-for="scope in runtimeScope.available" :key="scope.id" :class="{ current: scope.id === runtimeScope.current.id }" @click="selectScope(scope.id)"><span><strong>{{ scope.label }}</strong></span><i>{{ scope.id === runtimeScope.current.id ? '✓' : '›' }}</i></button></div>
             </section>
             </div>
           </Transition>
@@ -126,8 +126,8 @@ function logout() { accountOpen.value = false; logoutConfirming.value = false }
             <section class="account-panel" role="dialog" aria-modal="true" aria-label="账号与退出">
               <header><div><span>ACCOUNT</span><strong>{{ logoutConfirming ? '确认退出登录' : '账号与退出' }}</strong></div><button type="button" aria-label="关闭账号弹窗" @click="closeAccount">×</button></header>
               <template v-if="!logoutConfirming">
-                <div class="account-identity"><span class="account-identity__avatar">研</span><div><small>当前登录账号</small><strong>研发管理员</strong><span><i></i>账号在线</span></div></div>
-                <dl class="account-details"><div><dt>账号</dt><dd>rd_admin</dd></div><div><dt>角色</dt><dd>系统管理员</dd></div><div><dt>当前楼层</dt><dd>{{ runtimeScope.current.label }}</dd></div></dl>
+                <div class="account-identity"><span class="account-identity__avatar">研</span><div><small>当前登录账号</small><strong>研发管理员</strong></div></div>
+                <dl class="account-details"><div><dt>账号</dt><dd>rd_admin</dd></div><div><dt>角色</dt><dd>系统管理员</dd></div></dl>
                 <footer><button type="button" class="account-logout" @click="logoutConfirming = true"><span>退出登录</span><small>结束当前账号会话</small><b>›</b></button></footer>
               </template>
               <template v-else>
@@ -137,6 +137,7 @@ function logout() { accountOpen.value = false; logoutConfirming.value = false }
             </section>
           </div>
         </Transition>
+        </div>
         <button type="button" class="collapse-button" @click="layout.toggleNavigation">
           <AppIcon name="panel" />
           <span>{{ layout.navigationCollapsed ? '展开导航' : '收起导航' }}</span>

@@ -8,32 +8,36 @@ const amrs = ref<Amr[]>([])
 const devices = ref<MapResource[]>([])
 const querySn = ref('')
 const queryName = ref('')
-const overviewType = ref('全部设备')
+const queryType = ref('')
+const appliedOverviewQuery = ref({ sn: '', name: '', type: '' })
 const currentPage = ref(1)
 const pageSize = 10
 const relationOpen = ref(false)
 const selectedAmrId = ref('')
 const amrPickerQuery = ref('')
-const deviceQuery = ref('')
-const selectedType = ref('全部设备')
+const appliedAmrPickerQuery = ref('')
+const deviceSnQuery = ref('')
+const deviceNameQuery = ref('')
+const deviceTypeQuery = ref('')
+const appliedDeviceQuery = ref({ sn: '', name: '', type: '' })
 const selectedDeviceIds = ref<string[]>([])
 const savedDeviceIds = ref<string[]>([])
 const selectAllRef = ref<HTMLInputElement | null>(null)
 
 const selectedAmr = computed(() => amrs.value.find((item) => item.id === selectedAmrId.value))
 const deviceIndex = computed(() => new Map(devices.value.map((item) => [item.id, item])))
-const deviceTypeLabel = (item: MapResource) => item.type === 'machine' ? '一拖二机械臂' : '辅助设备'
+const deviceTypeLabel = (_item: MapResource) => '上下料'
 const deviceIp = (item: MapResource) => `10.197.138.${41 + devices.value.indexOf(item)}`
 const relatedDevices = (amr: Amr) => amr.serviceDevices.map((id) => deviceIndex.value.get(id)).filter((item): item is MapResource => Boolean(item))
 const amrSn = (amr: Amr) => `SN-AMR-${String(amrs.value.indexOf(amr) + 1).padStart(4, '0')}`
 const amrSite = () => 'GL-C06-4F'
 
 const filteredAmrs = computed(() => {
-  const sn = querySn.value.trim().toLowerCase()
-  const name = queryName.value.trim().toLowerCase()
+  const sn = appliedOverviewQuery.value.sn.toLowerCase()
+  const name = appliedOverviewQuery.value.name.toLowerCase()
+  const type = appliedOverviewQuery.value.type.toLowerCase()
   return amrs.value.filter((amr) => {
-    return (overviewType.value === '全部设备' || overviewType.value === 'AMR')
-      && (!sn || amrSn(amr).toLowerCase().includes(sn))
+    return (!type || '复合机器人'.includes(type)) && (!sn || amrSn(amr).toLowerCase().includes(sn))
       && (!name || amr.name.toLowerCase().includes(name))
   })
 })
@@ -49,16 +53,18 @@ const paginationItems = computed<(number | string)[]>(() => {
 })
 
 const matchedAmrs = computed(() => {
-  const keyword = amrPickerQuery.value.trim().toLowerCase()
+  const keyword = appliedAmrPickerQuery.value.toLowerCase()
   if (!keyword) return amrs.value
-  return amrs.value.filter((item) => [amrSn(item), item.name, item.ip].join(' ').toLowerCase().includes(keyword))
+  return amrs.value.filter((item) => item.name.toLowerCase().includes(keyword))
 })
 const filteredDevices = computed(() => {
-  const keyword = deviceQuery.value.trim().toLowerCase()
+  const sn = appliedDeviceQuery.value.sn.toLowerCase()
+  const name = appliedDeviceQuery.value.name.toLowerCase()
+  const type = appliedDeviceQuery.value.type.toLowerCase()
   return devices.value.filter((item) => {
-    const type = deviceTypeLabel(item)
-    return (selectedType.value === '全部设备' || selectedType.value === type)
-      && (!keyword || [item.id, item.name || item.label, deviceIp(item)].join(' ').toLowerCase().includes(keyword))
+    return (!sn || item.id.toLowerCase().includes(sn))
+      && (!name || (item.name || item.label).toLowerCase().includes(name))
+      && (!type || deviceTypeLabel(item).toLowerCase().includes(type))
   })
 })
 const allFilteredSelected = computed(() => filteredDevices.value.length > 0 && filteredDevices.value.every((item) => selectedDeviceIds.value.includes(item.id)))
@@ -78,10 +84,14 @@ function selectAmr(id: string) {
   const relations = amrs.value.find((item) => item.id === id)?.serviceDevices ?? []
   savedDeviceIds.value = [...relations]
   selectedDeviceIds.value = [...relations]
-  deviceQuery.value = ''
-  selectedType.value = '全部设备'
+  deviceSnQuery.value = ''; deviceNameQuery.value = ''; deviceTypeQuery.value = ''
+  appliedDeviceQuery.value = { sn: '', name: '', type: '' }
   amrPickerQuery.value = ''
+  appliedAmrPickerQuery.value = ''
 }
+function searchOverview() { appliedOverviewQuery.value = { sn: querySn.value.trim(), name: queryName.value.trim(), type: queryType.value.trim() }; currentPage.value = 1 }
+function searchAmrs() { appliedAmrPickerQuery.value = amrPickerQuery.value.trim() }
+function searchRelationDevices() { appliedDeviceQuery.value = { sn: deviceSnQuery.value.trim(), name: deviceNameQuery.value.trim(), type: deviceTypeQuery.value.trim() } }
 function toggleAllFiltered() {
   const ids = filteredDevices.value.map((item) => item.id)
   selectedDeviceIds.value = allFilteredSelected.value ? selectedDeviceIds.value.filter((id) => !ids.includes(id)) : [...new Set([...selectedDeviceIds.value, ...ids])]
@@ -93,7 +103,6 @@ function saveRelations() {
   relationOpen.value = false
 }
 
-watch([querySn, queryName, overviewType], () => { currentPage.value = 1 })
 watch(pageCount, (count) => { if (currentPage.value > count) currentPage.value = count })
 watchEffect(() => { if (selectAllRef.value) selectAllRef.value.indeterminate = someFilteredSelected.value })
 onMounted(async () => { try { const catalog = await getResourceCatalog(); amrs.value = catalog.amrs; devices.value = catalog.devices } finally { loading.value = false } })
@@ -103,21 +112,21 @@ onMounted(async () => { try { const catalog = await getResourceCatalog(); amrs.v
   <section class="resource-page relation-overview-page">
     <header class="resource-page__header"><div><p class="page-eyebrow">DEVICE RELATIONS</p><h1>设备关联管理</h1></div><button class="resource-primary-action" type="button" @click="openRelation()">＋ 关联设备</button></header>
 
-    <div class="resource-toolbar relation-overview-toolbar"><div class="relation-overview-searches"><label><span>⌕</span><input v-model="querySn" placeholder="设备 SN"></label><label><span>⌕</span><input v-model="queryName" placeholder="设备名称"></label></div><div class="relation-overview-filters"><div class="device-filter-field"><span>设备类型</span><select v-model="overviewType" aria-label="设备类型"><option>全部设备</option><option>AMR</option><option>一拖二机械臂</option><option>辅助设备</option></select></div><b>{{ filteredAmrs.length }} 台设备</b></div></div>
+    <div class="resource-toolbar relation-overview-toolbar"><div class="relation-overview-searches"><label><span>⌕</span><input v-model="querySn" placeholder="设备 SN"></label><label><span>⌕</span><input v-model="queryName" placeholder="设备名称"></label><label><span>⌕</span><input v-model="queryType" placeholder="设备类型" @keyup.enter="searchOverview"></label></div><button class="device-query-button" type="button" @click="searchOverview">查询</button></div>
     <div v-if="loading" class="resource-loading">正在读取设备关联</div>
     <div v-else class="resource-table-wrap relation-overview-table-wrap">
       <table class="resource-table relation-overview-table">
-        <colgroup><col class="col-amr-sn"><col class="col-amr-name"><col class="col-amr-type"><col class="col-location"><col class="col-devices"></colgroup>
-        <thead><tr><th>设备 SN</th><th>设备名称</th><th>设备类型</th><th>厂区 / 楼栋 / 楼层</th><th>关联设备</th></tr></thead>
+        <colgroup><col class="col-amr-sn"><col class="col-amr-name"><col class="col-amr-type"><col class="col-location"><col class="col-devices"><col class="col-action"></colgroup>
+        <thead><tr><th>设备 SN</th><th>设备名称</th><th>设备类型</th><th>厂区 / 楼栋 / 楼层</th><th>关联设备</th><th>操作</th></tr></thead>
         <tbody>
           <tr v-for="amr in paginatedAmrs" :key="amr.id">
             <td class="resource-id type-data">{{ amrSn(amr) }}</td>
             <td class="relation-device-name" :title="amr.name"><strong>{{ amr.name }}</strong></td>
-            <td><span class="device-type-tag amr">AMR</span></td>
+            <td><span class="device-type-tag amr">复合机器人</span></td>
             <td>{{ amrSite() }}</td>
-            <td><div v-if="relatedDevices(amr).length" class="relation-device-chips"><span v-for="device in relatedDevices(amr).slice(0, 6)" :key="device.id" :title="`${device.name || device.label} · ${deviceIp(device)}`">{{ device.name || device.label }}</span><em v-if="relatedDevices(amr).length > 6">+{{ relatedDevices(amr).length - 6 }}</em></div><span v-else class="relation-none">尚未关联</span></td>
+            <td><div v-if="relatedDevices(amr).length" class="relation-device-chips"><span v-for="device in relatedDevices(amr).slice(0, 4)" :key="device.id" :title="`${device.name || device.label} · ${deviceIp(device)}`">{{ device.name || device.label }}</span><em v-if="relatedDevices(amr).length > 4">+{{ relatedDevices(amr).length - 4 }}</em></div><span v-else class="relation-none">尚未关联</span></td><td><button class="table-action" type="button" @click="openRelation(amr)">编辑</button></td>
           </tr>
-          <tr v-if="filteredAmrs.length === 0"><td colspan="5" class="device-empty">没有符合条件的关联关系</td></tr>
+          <tr v-if="filteredAmrs.length === 0"><td colspan="6" class="device-empty">没有符合条件的关联关系</td></tr>
         </tbody>
       </table>
     </div>
@@ -127,8 +136,8 @@ onMounted(async () => { try { const catalog = await getResourceCatalog(); amrs.v
       <section class="create-dialog relation-setting-dialog">
         <header><div><span>EDIT RELATIONS</span><strong>设置设备关联关系</strong><small>选择 AMR，并配置该 AMR 可以服务的设备</small></div><button aria-label="关闭" @click="relationOpen = false">×</button></header>
         <div class="relation-setting-layout">
-          <aside class="relation-amr-list"><label class="relation-search-field"><span aria-hidden="true">⌕</span><input v-model="amrPickerQuery" type="search" aria-label="筛选 AMR" placeholder="输入 AMR 名称、SN 或 IP"></label><div><button v-for="amr in matchedAmrs" :key="amr.id" type="button" :class="{ active: selectedAmrId === amr.id }" @click="selectAmr(amr.id)"><strong>{{ amr.name }}</strong><small>{{ amrSn(amr) }} · {{ amr.ip }}</small></button></div></aside>
-          <main class="relation-device-selector"><div class="relation-selected-amr"><span>当前 AMR</span><strong>{{ selectedAmr?.name }}</strong><small>设备 SN：{{ selectedAmr?.id }} · IP：{{ selectedAmr?.ip }}</small></div><div class="relation-modal-toolbar"><label class="relation-search-field"><span aria-hidden="true">⌕</span><input v-model="deviceQuery" type="search" aria-label="筛选设备" placeholder="按设备名称或 IP 模糊筛选"></label><select v-model="selectedType" aria-label="筛选设备类型"><option>全部设备</option><option>一拖二机械臂</option><option>辅助设备</option></select></div><div class="relation-select-all"><label><input ref="selectAllRef" type="checkbox" :checked="allFilteredSelected" @change="toggleAllFiltered"><span>选择当前筛选结果</span></label><b>已选择 {{ selectedDeviceIds.length }} 台</b></div><div class="relation-modal-devices"><label v-for="device in filteredDevices" :key="device.id" :class="{ selected: selectedDeviceIds.includes(device.id) }"><input v-model="selectedDeviceIds" type="checkbox" :value="device.id"><span><strong>{{ device.name || device.label }}</strong><small>设备 SN：{{ device.id }} · IP：{{ deviceIp(device) }}</small></span><em>{{ deviceTypeLabel(device) }}</em></label></div></main>
+          <aside class="relation-amr-list"><div class="relation-amr-query"><label class="relation-search-field"><span aria-hidden="true">⌕</span><input v-model="amrPickerQuery" type="search" aria-label="按名称筛选 AMR" placeholder="AMR 名称" @keyup.enter="searchAmrs"></label><button type="button" @click="searchAmrs">查询</button></div><div><button v-for="amr in matchedAmrs" :key="amr.id" type="button" :class="{ active: selectedAmrId === amr.id }" @click="selectAmr(amr.id)"><strong>{{ amr.name }}</strong><small>{{ amrSn(amr) }} · {{ amr.ip }}</small></button></div></aside>
+          <main class="relation-device-selector"><div class="relation-selected-amr"><span>当前 AMR</span><strong>{{ selectedAmr?.name }}</strong><small>设备 SN：{{ selectedAmr?.id }} · IP：{{ selectedAmr?.ip }}</small></div><div class="relation-modal-toolbar relation-modal-toolbar--split"><label class="relation-search-field"><span aria-hidden="true">⌕</span><input v-model="deviceSnQuery" type="search" placeholder="设备 SN"></label><label class="relation-search-field"><span aria-hidden="true">⌕</span><input v-model="deviceNameQuery" type="search" placeholder="设备名称"></label><label class="relation-search-field"><span aria-hidden="true">⌕</span><input v-model="deviceTypeQuery" type="search" placeholder="设备类型" @keyup.enter="searchRelationDevices"></label><button type="button" @click="searchRelationDevices">查询</button></div><div class="relation-select-all"><label><input ref="selectAllRef" type="checkbox" :checked="allFilteredSelected" @change="toggleAllFiltered"><span>选择当前筛选结果</span></label><b>已选择 {{ selectedDeviceIds.length }} 台</b></div><div class="relation-modal-devices"><label v-for="device in filteredDevices" :key="device.id" :class="{ selected: selectedDeviceIds.includes(device.id) }"><input v-model="selectedDeviceIds" type="checkbox" :value="device.id"><span><strong>{{ device.name || device.label }}</strong><small>设备 SN：{{ device.id }} · IP：{{ deviceIp(device) }}</small></span><em>{{ deviceTypeLabel(device) }}</em></label></div></main>
         </div>
         <footer><span class="relation-dialog-change">{{ hasChanges ? `新增 ${addedCount} 项，解除 ${removedCount} 项` : '关联关系没有变化' }}</span><button type="button" @click="relationOpen = false">取消</button><button class="primary" type="button" :disabled="!hasChanges" @click="saveRelations">保存关联</button></footer>
       </section>

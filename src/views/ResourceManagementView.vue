@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref, watch, watchEffect } from 'vue'
 import { getResourceCatalog } from '../api/modules/resources'
 
-type DeviceType = 'AMR' | '一拖二机械臂' | '辅助设备'
+type DeviceType = '复合机器人' | '上下料'
 type DeviceSource = '设备台账' | '维保系统' | '手动录入'
 type DeviceRow = { sn: string; name: string; vendor: string; ip: string; type: DeviceType; site: string; updatedAt: string; source: DeviceSource }
 
@@ -12,8 +12,8 @@ const querySn = ref('')
 const queryName = ref('')
 const queryVendor = ref('')
 const queryIp = ref('')
-const selectedType = ref('全部设备')
-const selectedSource = ref('全部来源')
+const queryType = ref('')
+const appliedQuery = reactive({ sn: '', name: '', vendor: '', ip: '', type: '' })
 const selectedSns = ref<string[]>([])
 const selectAllRef = ref<HTMLInputElement | null>(null)
 const currentPage = ref(1)
@@ -27,29 +27,28 @@ const importMessage = ref('')
 const lastPulledAt = ref('2026-09-06 18:30')
 const pulledCandidates = ref<(DeviceRow & { action: '新增' | '更新' })[]>([])
 
-const emptyForm = (): DeviceRow => ({ sn: '', name: '', vendor: '', ip: '', type: 'AMR', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:00', source: '手动录入' })
+const emptyForm = (): DeviceRow => ({ sn: '', name: '', vendor: '', ip: '', type: '复合机器人', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:00', source: '手动录入' })
 const form = reactive<DeviceRow>(emptyForm())
 
 const incrementalCandidates = computed<(DeviceRow & { action: '新增' | '更新' })[]>(() => [
-  { sn: 'SN-AMR-0001', name: '一号线搬运车 01', vendor: '仙工智能', ip: '10.197.137.31', type: 'AMR', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:16', source: '维保系统', action: '更新' },
-  { sn: 'SN-AMR-0009', name: '备用搬运车 04', vendor: '海康机器人', ip: '10.197.137.39', type: 'AMR', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:12', source: '设备台账', action: '新增' },
-  { sn: 'SN-ARM-C20-121', name: 'C20 一拖二机械手臂', vendor: '新松机器人', ip: '10.197.138.121', type: '一拖二机械臂', site: 'GL-C06-4F', updatedAt: '2026-09-07 09:58', source: '设备台账', action: '新增' },
-  { sn: 'SN-AUX-D-03', name: '自动门 D-03', vendor: '厂务自动化', ip: '10.197.138.122', type: '辅助设备', site: 'GL-C06-4F', updatedAt: '2026-09-07 09:44', source: '维保系统', action: '新增' },
+  { sn: 'SN-AMR-0001', name: '一号线搬运车 01', vendor: '仙工智能', ip: '10.197.137.31', type: '复合机器人', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:16', source: '维保系统', action: '更新' },
+  { sn: 'SN-AMR-0009', name: '备用搬运车 04', vendor: '海康机器人', ip: '10.197.137.39', type: '复合机器人', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:12', source: '设备台账', action: '新增' },
+  { sn: 'SN-ARM-C20-121', name: 'C20 一拖二机械手臂', vendor: '新松机器人', ip: '10.197.138.121', type: '上下料', site: 'GL-C06-4F', updatedAt: '2026-09-07 09:58', source: '设备台账', action: '新增' },
+  { sn: 'SN-AUX-D-03', name: '自动门 D-03', vendor: '厂务自动化', ip: '10.197.138.122', type: '上下料', site: 'GL-C06-4F', updatedAt: '2026-09-07 09:44', source: '维保系统', action: '新增' },
 ])
 
 const filteredRows = computed(() => {
-  const sn = querySn.value.trim().toLowerCase()
-  const name = queryName.value.trim().toLowerCase()
-  const vendor = queryVendor.value.trim().toLowerCase()
-  const ip = queryIp.value.trim().toLowerCase()
+  const sn = appliedQuery.sn.toLowerCase()
+  const name = appliedQuery.name.toLowerCase()
+  const vendor = appliedQuery.vendor.toLowerCase()
+  const ip = appliedQuery.ip.toLowerCase()
+  const type = appliedQuery.type.toLowerCase()
   return deviceRows.value.filter((item) => {
-    const matchesType = selectedType.value === '全部设备' || item.type === selectedType.value
-    const matchesSource = selectedSource.value === '全部来源' || item.source === selectedSource.value
-    return matchesType && matchesSource
-      && (!sn || item.sn.toLowerCase().includes(sn))
+    return (!sn || item.sn.toLowerCase().includes(sn))
       && (!name || item.name.toLowerCase().includes(name))
       && (!vendor || item.vendor.toLowerCase().includes(vendor))
       && (!ip || item.ip.toLowerCase().includes(ip))
+      && (!type || item.type.toLowerCase().includes(type))
   })
 })
 const pageCount = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / pageSize)))
@@ -72,6 +71,10 @@ const someVisibleSelected = computed(() => paginatedRows.value.some((item) => se
 function toggleAllVisible() {
   const visibleSns = paginatedRows.value.map((item) => item.sn)
   selectedSns.value = allVisibleSelected.value ? selectedSns.value.filter((sn) => !visibleSns.includes(sn)) : [...new Set([...selectedSns.value, ...visibleSns])]
+}
+function searchDevices() {
+  Object.assign(appliedQuery, { sn: querySn.value.trim(), name: queryName.value.trim(), vendor: queryVendor.value.trim(), ip: queryIp.value.trim(), type: queryType.value.trim() })
+  currentPage.value = 1
 }
 function openCreate() {
   editorMode.value = 'create'; editorError.value = ''; Object.assign(form, emptyForm()); editorOpen.value = true
@@ -113,14 +116,13 @@ function writeImportedDevices() {
 }
 
 watchEffect(() => { if (selectAllRef.value) selectAllRef.value.indeterminate = someVisibleSelected.value })
-watch([querySn, queryName, queryVendor, queryIp, selectedType, selectedSource], () => { currentPage.value = 1 })
 watch(pageCount, (count) => { if (currentPage.value > count) currentPage.value = count })
 
 onMounted(async () => {
   try {
     const catalog = await getResourceCatalog()
-    const amrs: DeviceRow[] = catalog.amrs.map((item, index) => ({ sn: `SN-AMR-${String(index + 1).padStart(4, '0')}`, name: item.name, vendor: index % 3 === 2 ? '海康机器人' : '仙工智能', ip: item.ip, type: 'AMR', site: 'GL-C06-4F', updatedAt: `2026-09-07 ${String(9 + Math.floor(index / 3)).padStart(2, '0')}:${String(12 + index * 4).padStart(2, '0')}`, source: index === 7 ? '手动录入' : '设备台账' }))
-    const devices: DeviceRow[] = catalog.devices.map((item, index) => ({ sn: item.type === 'machine' ? `SN-ARM-${item.id}-${String(index + 1).padStart(3, '0')}` : `SN-AUX-${item.id}`, name: item.name || item.label, vendor: item.type === 'machine' ? '新松机器人' : '厂务自动化', ip: `10.197.138.${41 + index}`, type: item.type === 'machine' ? '一拖二机械臂' : '辅助设备', site: 'GL-C06-4F', updatedAt: `2026-09-06 ${String(13 + (index % 5)).padStart(2, '0')}:${String(8 + (index * 3) % 50).padStart(2, '0')}`, source: index % 6 === 0 ? '手动录入' : '设备台账' }))
+    const amrs: DeviceRow[] = catalog.amrs.map((item, index) => ({ sn: `SN-AMR-${String(index + 1).padStart(4, '0')}`, name: item.name, vendor: index % 3 === 2 ? '海康机器人' : '仙工智能', ip: item.ip, type: '复合机器人', site: 'GL-C06-4F', updatedAt: `2026-09-07 ${String(9 + Math.floor(index / 3)).padStart(2, '0')}:${String(12 + index * 4).padStart(2, '0')}`, source: index === 7 ? '手动录入' : '设备台账' }))
+    const devices: DeviceRow[] = catalog.devices.map((item, index) => ({ sn: item.type === 'machine' ? `SN-ARM-${item.id}-${String(index + 1).padStart(3, '0')}` : `SN-AUX-${item.id}`, name: item.name || item.label, vendor: item.type === 'machine' ? '新松机器人' : '厂务自动化', ip: `10.197.138.${41 + index}`, type: '上下料', site: 'GL-C06-4F', updatedAt: `2026-09-06 ${String(13 + (index % 5)).padStart(2, '0')}:${String(8 + (index * 3) % 50).padStart(2, '0')}`, source: index % 6 === 0 ? '手动录入' : '设备台账' }))
     deviceRows.value = [...amrs, ...devices]
   } finally { loading.value = false }
 })
@@ -130,25 +132,24 @@ onMounted(async () => {
   <section class="resource-page device-ledger-page">
     <header class="resource-page__header device-ledger-header">
       <div><p class="page-eyebrow">DEVICE LEDGER</p><h1>设备管理</h1></div>
-      <div class="device-header-actions"><button class="device-secondary-action" type="button" @click="openImport">⇩ {{ selectedSns.length ? `更新已选设备（${selectedSns.length}）` : '导入设备' }}</button><button class="resource-primary-action" type="button" @click="openCreate">＋ 新增设备</button></div>
+      <div class="device-header-actions"><button class="device-secondary-action" type="button" @click="openImport">⇩ {{ selectedSns.length ? `更新已选设备（${selectedSns.length}）` : '导入设备' }}</button></div>
     </header>
     <div class="resource-toolbar device-ledger-toolbar">
       <label><span>⌕</span><input v-model="querySn" placeholder="设备 SN"></label>
       <label><span>⌕</span><input v-model="queryName" placeholder="设备名称"></label>
       <label><span>⌕</span><input v-model="queryVendor" placeholder="厂商"></label>
       <label><span>⌕</span><input v-model="queryIp" placeholder="IP 地址"></label>
-      <div class="device-filter-field"><span>设备类型</span><select v-model="selectedType" aria-label="设备类型"><option>全部设备</option><option>AMR</option><option>一拖二机械臂</option><option>辅助设备</option></select></div>
-      <div class="device-filter-field"><span>设备来源</span><select v-model="selectedSource" aria-label="设备来源"><option>全部来源</option><option>设备台账</option><option>维保系统</option><option>手动录入</option></select></div>
-      <b class="device-result-count">{{ filteredRows.length }} 台设备</b>
+      <label><span>⌕</span><input v-model="queryType" placeholder="设备类型" @keyup.enter="searchDevices"></label>
+      <button class="device-query-button" type="button" @click="searchDevices">查询</button>
     </div>
     <div v-if="loading" class="resource-loading">正在读取设备数据</div>
     <div v-else class="resource-table-wrap device-ledger-table-wrap">
       <table class="resource-table device-ledger-table">
-        <colgroup><col class="col-check"><col class="col-sn"><col class="col-name"><col class="col-type"><col class="col-vendor"><col class="col-ip"><col class="col-location"><col class="col-updated"><col class="col-source"><col class="col-action"></colgroup>
-        <thead><tr><th class="device-check-cell"><input ref="selectAllRef" type="checkbox" :checked="allVisibleSelected" aria-label="选择当前页全部设备" @change="toggleAllVisible"></th><th>设备 SN</th><th>设备名称</th><th>设备类型</th><th>厂商</th><th>IP 地址</th><th>厂区 / 楼栋 / 楼层</th><th>更新时间</th><th>来源</th><th>操作</th></tr></thead>
+        <colgroup><col class="col-check"><col class="col-sn"><col class="col-name"><col class="col-type"><col class="col-vendor"><col class="col-ip"><col class="col-location"><col class="col-updated"><col class="col-action"></colgroup>
+        <thead><tr><th class="device-check-cell"><input ref="selectAllRef" type="checkbox" :checked="allVisibleSelected" aria-label="选择当前页全部设备" @change="toggleAllVisible"></th><th>设备 SN</th><th>设备名称</th><th>设备类型</th><th>厂商</th><th>IP 地址</th><th>厂区 / 楼栋 / 楼层</th><th>更新时间</th><th>操作</th></tr></thead>
         <tbody>
-          <tr v-for="item in paginatedRows" :key="item.sn" :class="{ selected: selectedSns.includes(item.sn) }"><td class="device-check-cell"><input v-model="selectedSns" type="checkbox" :value="item.sn"></td><td class="resource-id type-data">{{ item.sn }}</td><td><strong>{{ item.name }}</strong></td><td><span class="device-type-tag" :class="item.type === 'AMR' ? 'amr' : item.type === '一拖二机械臂' ? 'arm' : 'aux'">{{ item.type }}</span></td><td>{{ item.vendor }}</td><td class="type-data">{{ item.ip }}</td><td>{{ item.site }}</td><td class="type-data device-updated-at">{{ item.updatedAt }}</td><td><span class="device-source" :class="{ manual: item.source === '手动录入' }">{{ item.source }}</span></td><td><button class="table-action" type="button" @click="openEdit(item)">编辑</button></td></tr>
-          <tr v-if="filteredRows.length === 0"><td class="device-empty" colspan="10">没有符合当前条件的设备</td></tr>
+          <tr v-for="item in paginatedRows" :key="item.sn" :class="{ selected: selectedSns.includes(item.sn) }"><td class="device-check-cell"><input v-model="selectedSns" type="checkbox" :value="item.sn"></td><td class="resource-id type-data">{{ item.sn }}</td><td><strong>{{ item.name }}</strong></td><td><span class="device-type-tag" :class="item.type === '复合机器人' ? 'amr' : 'arm'">{{ item.type }}</span></td><td>{{ item.vendor }}</td><td class="type-data">{{ item.ip }}</td><td>{{ item.site }}</td><td class="type-data device-updated-at">{{ item.updatedAt }}</td><td><button class="table-action" type="button" @click="openEdit(item)">编辑</button></td></tr>
+          <tr v-if="filteredRows.length === 0"><td class="device-empty" colspan="9">没有符合当前条件的设备</td></tr>
         </tbody>
       </table>
     </div>
@@ -161,7 +162,7 @@ onMounted(async () => {
           <p v-if="editorError" class="device-form-error">{{ editorError }}</p>
           <label><span>设备 SN</span><input v-model.trim="form.sn" :disabled="editorMode === 'edit'" placeholder="例如 SN-AMR-0010"></label>
           <label><span>设备名称</span><input v-model.trim="form.name" placeholder="请输入设备名称"></label>
-          <label><span>设备类型</span><select v-model="form.type"><option>AMR</option><option>一拖二机械臂</option><option>辅助设备</option></select></label>
+          <label><span>设备类型</span><select v-model="form.type"><option>复合机器人</option><option>上下料</option></select></label>
           <label><span>厂商</span><input v-model.trim="form.vendor" placeholder="请输入厂商"></label>
           <label><span>IP 地址</span><input v-model.trim="form.ip" placeholder="例如 10.197.138.100"></label>
           <label><span>厂区 / 楼栋 / 楼层</span><input v-model.trim="form.site" placeholder="例如 GL-C06-4F"></label>
