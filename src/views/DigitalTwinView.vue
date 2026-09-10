@@ -32,7 +32,7 @@ onMounted(() => { if (!monitor.snapshot) void monitor.loadSnapshot() })
     <div v-if="monitor.loading" class="page-state"><span class="loading-mark"></span><strong>正在读取运行态势</strong></div>
     <div v-else-if="monitor.error" class="page-state error"><strong>{{ monitor.error }}</strong><button type="button" @click="monitor.loadSnapshot">重新加载</button></div>
     <template v-else-if="monitor.snapshot">
-      <FleetStatusRail :snapshot="monitor.snapshot" />
+      <FleetStatusRail :snapshot="monitor.snapshot" @select-amr="selectAmr" />
       <div class="twin-stage" :class="{ inspecting: monitor.selectedAmrId || monitor.selectedTaskId, 'inspector-collapsed': inspectorCollapsed }">
         <DigitalTwinMap
           :amrs="displayAmrs"
