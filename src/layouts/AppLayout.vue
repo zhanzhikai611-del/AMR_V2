@@ -10,7 +10,7 @@ const route = useRoute()
 const runtimeScope = useRuntimeScopeStore()
 const scopeOpen = ref(false)
 const accountOpen = ref(false)
-const logoutConfirming = ref(false)
+const pendingScopeId = ref(runtimeScope.current.id)
 const scopeEntry = ref<HTMLElement | null>(null)
 
 const navigation = [
@@ -49,12 +49,12 @@ function closeScopeOnEscape(event: KeyboardEvent) {
   if (event.key !== 'Escape') return
   scopeOpen.value = false
   accountOpen.value = false
-  logoutConfirming.value = false
 }
-function selectScope(id: string) { runtimeScope.select(id); scopeOpen.value = false }
-function openAccount() { scopeOpen.value = false; logoutConfirming.value = false; accountOpen.value = true }
-function closeAccount() { accountOpen.value = false; logoutConfirming.value = false }
-function logout() { accountOpen.value = false; logoutConfirming.value = false }
+function openScope() { pendingScopeId.value = runtimeScope.current.id; accountOpen.value = false; scopeOpen.value = true }
+function confirmScope() { runtimeScope.select(pendingScopeId.value); scopeOpen.value = false }
+function openAccount() { scopeOpen.value = false; accountOpen.value = true }
+function closeAccount() { accountOpen.value = false }
+function logout() { accountOpen.value = false }
 </script>
 
 <template>
@@ -98,42 +98,38 @@ function logout() { accountOpen.value = false; logoutConfirming.value = false }
       </nav>
 
       <div class="navigation-footer">
-        <div class="footer-utility-group">
+        <div class="footer-utility-group footer-utility-group--separate">
         <div ref="scopeEntry" class="navigation-scope">
-          <button type="button" class="navigation-scope__trigger" :class="{ active: scopeOpen }" :title="`当前工作范围：${runtimeScope.current.label}`" :aria-expanded="scopeOpen" @click="scopeOpen = !scopeOpen">
+          <button type="button" class="navigation-scope__trigger" :class="{ active: scopeOpen }" :title="`当前工作范围：${runtimeScope.current.label}`" :aria-expanded="scopeOpen" @click="openScope">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7l8-4 8 4v14M8 10h2m4 0h2M8 14h2m4 0h2M9 21v-3h6v3"/></svg>
             <span><small>当前楼层</small><strong>{{ runtimeScope.current.label }}</strong></span>
             <AppIcon class="navigation-scope__chevron" name="chevron" :size="14" />
           </button>
           <Transition name="scope-flyout">
             <div v-if="scopeOpen" class="navigation-scope__modal" @click.self="scopeOpen = false">
-            <section class="navigation-scope__panel" role="dialog" aria-modal="true" aria-label="选择当前楼层">
-              <header><div><span>FLOOR SCOPE</span><strong>选择当前楼层</strong></div><button type="button" aria-label="关闭楼层选择" @click="scopeOpen = false">×</button></header>
-              <div class="scope-current-summary"><small>当前楼层</small><strong>{{ runtimeScope.current.label }}</strong></div>
-              <div class="scope-option-heading"><span>可用楼层</span></div>
-              <div class="scope-option-list"><button v-for="scope in runtimeScope.available" :key="scope.id" :class="{ current: scope.id === runtimeScope.current.id }" @click="selectScope(scope.id)"><span><strong>{{ scope.label }}</strong></span><i>{{ scope.id === runtimeScope.current.id ? '✓' : '›' }}</i></button></div>
+            <section class="utility-dialog" role="dialog" aria-modal="true" aria-labelledby="floor-title">
+              <header><h2 id="floor-title">切换楼层</h2><button type="button" aria-label="关闭" @click="scopeOpen = false">×</button></header>
+              <div class="utility-dialog__body">
+                <label for="floor-select">当前楼层</label>
+                <select id="floor-select" v-model="pendingScopeId"><option v-for="scope in runtimeScope.available" :key="scope.id" :value="scope.id">{{ scope.label }}</option></select>
+                <p>切换后，系统各页面将统一显示所选楼层的数据。</p>
+              </div>
+              <footer><button type="button" @click="scopeOpen = false">取消</button><button type="button" class="primary" :disabled="pendingScopeId === runtimeScope.current.id" @click="confirmScope">确认切换</button></footer>
             </section>
             </div>
           </Transition>
         </div>
         <button type="button" class="operator-entry" :class="{ active: accountOpen }" title="当前用户：研发管理员" :aria-expanded="accountOpen" @click="openAccount">
           <span class="operator-entry__avatar">研</span>
-          <span class="operator-entry__copy"><strong>研发管理员</strong><small>账号与退出</small></span>
+          <span class="operator-entry__copy"><strong>研发管理员</strong></span>
           <AppIcon class="operator-entry__chevron" name="chevron" :size="14" />
         </button>
         <Transition name="scope-flyout">
           <div v-if="accountOpen" class="account-modal" @click.self="closeAccount">
-            <section class="account-panel" role="dialog" aria-modal="true" aria-label="账号与退出">
-              <header><div><span>ACCOUNT</span><strong>{{ logoutConfirming ? '确认退出登录' : '账号与退出' }}</strong></div><button type="button" aria-label="关闭账号弹窗" @click="closeAccount">×</button></header>
-              <template v-if="!logoutConfirming">
-                <div class="account-identity"><span class="account-identity__avatar">研</span><div><small>当前登录账号</small><strong>研发管理员</strong></div></div>
-                <dl class="account-details"><div><dt>账号</dt><dd>rd_admin</dd></div><div><dt>角色</dt><dd>系统管理员</dd></div></dl>
-                <footer><button type="button" class="account-logout" @click="logoutConfirming = true"><span>退出登录</span><small>结束当前账号会话</small><b>›</b></button></footer>
-              </template>
-              <template v-else>
-                <div class="logout-confirm"><span class="logout-confirm__icon">↪</span><strong>确定要退出当前账号吗？</strong><p>退出后将返回登录页面，未保存的页面操作不会保留。</p></div>
-                <footer class="logout-actions"><button type="button" @click="logoutConfirming = false">取消</button><button type="button" class="danger" @click="logout">退出登录</button></footer>
-              </template>
+            <section class="utility-dialog" role="dialog" aria-modal="true" aria-labelledby="logout-title">
+              <header><h2 id="logout-title">退出登录</h2><button type="button" aria-label="关闭" @click="closeAccount">×</button></header>
+              <div class="utility-dialog__body"><strong>确定退出研发管理员账号？</strong><p>退出后需重新登录才能继续使用系统。</p></div>
+              <footer><button type="button" @click="closeAccount">取消</button><button type="button" class="danger" @click="logout">退出登录</button></footer>
             </section>
           </div>
         </Transition>
@@ -150,3 +146,26 @@ function logout() { accountOpen.value = false; logoutConfirming.value = false }
     </main>
   </div>
 </template>
+
+<style scoped>
+.footer-utility-group--separate{background:transparent;border:0;overflow:visible}
+.footer-utility-group--separate .navigation-scope{margin:0 0 10px;border:0}
+.footer-utility-group--separate .navigation-scope__trigger{height:52px;background:#152630;border:1px solid #2c414d;border-radius:6px}
+.footer-utility-group--separate .operator-entry{height:46px;min-height:46px;border-radius:6px;background:transparent}
+.footer-utility-group--separate .operator-entry:hover{background:#192c37}
+.utility-dialog{width:min(400px,calc(100vw - 48px));max-height:calc(100vh - 48px);overflow:auto;background:#fff;color:#304b59;border:1px solid #cbd8e0;border-radius:8px;box-shadow:0 20px 60px #05141d40}
+.utility-dialog header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #e3eaf0}
+.utility-dialog h2{margin:0;font:600 17px/24px var(--font-zh)}
+.utility-dialog header button{width:28px;height:28px;background:transparent;color:#738792;font-size:23px;cursor:pointer}
+.utility-dialog__body{padding:22px}
+.utility-dialog__body label{display:block;margin-bottom:9px;font-size:12px;color:#657d8b}
+.utility-dialog__body select{width:100%;height:40px;padding:0 12px;border:1px solid #b9cddc;border-radius:4px;background:#fff;color:#304b59;font:600 13px var(--font-latin)}
+.utility-dialog__body strong{font:500 14px/22px var(--font-zh)}
+.utility-dialog__body p{margin:12px 0 0;color:#7c8e98;font:400 12px/20px var(--font-zh)}
+.utility-dialog footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 22px;border-top:1px solid #e3eaf0;background:#f8fafb}
+.utility-dialog footer button{min-width:72px;height:34px;padding:0 13px;border:1px solid #cbd8e0;border-radius:4px;background:#fff;color:#405663;cursor:pointer}
+.utility-dialog footer .primary{background:#1677e8;border-color:#1677e8;color:#fff}
+.utility-dialog footer .danger{background:#c95353;border-color:#c95353;color:#fff}
+.utility-dialog footer button:disabled{opacity:.4;cursor:not-allowed}
+.utility-dialog button:focus-visible,.utility-dialog select:focus-visible{outline:2px solid #5ca4e8;outline-offset:2px}
+</style>
