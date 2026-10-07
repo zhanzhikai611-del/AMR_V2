@@ -13,6 +13,9 @@ const appliedOverviewQuery = ref({ sn: '', name: '', type: '' })
 const currentPage = ref(1)
 const pageSize = 10
 const relationOpen = ref(false)
+const relationExcelOpen = ref(false)
+const relationExcelFileName = ref('')
+const relationExcelReady = ref(false)
 const selectedAmrId = ref('')
 const amrPickerQuery = ref('')
 const appliedAmrPickerQuery = ref('')
@@ -72,6 +75,15 @@ const someFilteredSelected = computed(() => filteredDevices.value.some((item) =>
 const addedCount = computed(() => selectedDeviceIds.value.filter((id) => !savedDeviceIds.value.includes(id)).length)
 const removedCount = computed(() => savedDeviceIds.value.filter((id) => !selectedDeviceIds.value.includes(id)).length)
 const hasChanges = computed(() => addedCount.value > 0 || removedCount.value > 0)
+const relationExcelPreview = computed(() => {
+  const rows: { amrId: string; amrSn: string; amrName: string; deviceId: string; deviceName: string }[] = []
+  ;[[0, 0], [0, 1], [1, 2], [2, 3]].forEach(([amrIndex, deviceIndexValue]) => {
+    const amr = amrs.value[amrIndex!]
+    const device = devices.value[deviceIndexValue!]
+    if (amr && device) rows.push({ amrId: amr.id, amrSn: amrSn(amr), amrName: amr.name, deviceId: device.id, deviceName: device.name || device.label })
+  })
+  return rows
+})
 
 function openRelation(amr?: Amr) {
   const target = amr ?? amrs.value[0]
@@ -102,6 +114,22 @@ function saveRelations() {
   savedDeviceIds.value = [...selectedDeviceIds.value]
   relationOpen.value = false
 }
+function openRelationExcel() {
+  relationExcelFileName.value = ''; relationExcelReady.value = false; relationExcelOpen.value = true
+}
+function chooseRelationExcel(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  relationExcelFileName.value = file.name
+  relationExcelReady.value = true
+}
+function importRelationsFromExcel() {
+  relationExcelPreview.value.forEach((row) => {
+    const amr = amrs.value.find((item) => item.id === row.amrId)
+    if (amr && !amr.serviceDevices.includes(row.deviceId)) amr.serviceDevices = [...amr.serviceDevices, row.deviceId]
+  })
+  relationExcelOpen.value = false
+}
 
 watch(pageCount, (count) => { if (currentPage.value > count) currentPage.value = count })
 watchEffect(() => { if (selectAllRef.value) selectAllRef.value.indeterminate = someFilteredSelected.value })
@@ -110,7 +138,7 @@ onMounted(async () => { try { const catalog = await getResourceCatalog(); amrs.v
 
 <template>
   <section class="resource-page relation-overview-page">
-    <header class="resource-page__header"><div><p class="page-eyebrow">DEVICE RELATIONS</p><h1>设备关联管理</h1></div><button class="resource-primary-action" type="button" @click="openRelation()">＋ 关联设备</button></header>
+    <header class="resource-page__header"><div><p class="page-eyebrow">DEVICE RELATIONS</p><h1>设备关联管理</h1></div><div class="device-header-actions"><button class="device-secondary-action device-action-outline" type="button" @click="openRelationExcel">⇧ Excel 导入</button><button class="resource-primary-action" type="button" @click="openRelation()">＋ 关联设备</button></div></header>
 
     <div class="resource-toolbar relation-overview-toolbar"><div class="relation-overview-searches"><label><span>⌕</span><input v-model="querySn" placeholder="设备 SN"></label><label><span>⌕</span><input v-model="queryName" placeholder="设备名称"></label><label><span>⌕</span><input v-model="queryType" placeholder="设备类型" @keyup.enter="searchOverview"></label></div><button class="device-query-button" type="button" @click="searchOverview">查询</button></div>
     <div v-if="loading" class="resource-loading">正在读取设备关联</div>
@@ -131,6 +159,19 @@ onMounted(async () => { try { const catalog = await getResourceCatalog(); amrs.v
       </table>
     </div>
     <footer v-if="!loading" class="task-pagination device-ledger-pagination"><span>共 {{ filteredAmrs.length }} 条 · 每页 {{ pageSize }} 条</span><nav><button :disabled="currentPage === 1" @click="currentPage--">‹</button><template v-for="item in paginationItems" :key="item"><button v-if="typeof item === 'number'" :class="{ active: currentPage === item }" @click="currentPage = item">{{ item }}</button><span v-else class="device-pagination-ellipsis">…</span></template><button :disabled="currentPage === pageCount" @click="currentPage++">›</button></nav></footer>
+
+    <div v-if="relationExcelOpen" class="modal-backdrop" @click.self="relationExcelOpen = false">
+      <section class="create-dialog excel-import-dialog relation-excel-dialog">
+        <header><div><span>RELATION EXCEL IMPORT</span><strong>Excel 导入设备关联</strong><small>批量预览 AMR 与服务设备的关联关系</small></div><button aria-label="关闭" @click="relationExcelOpen = false">×</button></header>
+        <div class="excel-import-body">
+          <label class="excel-dropzone"><input type="file" accept=".xlsx,.xls" @change="chooseRelationExcel"><b>⇧</b><strong>{{ relationExcelFileName || '选择关联关系 Excel 文件' }}</strong><span>字段：AMR 设备 SN、AMR 名称、关联设备 SN、关联设备名称</span></label>
+          <div v-if="relationExcelReady" class="excel-summary"><span><b>{{ relationExcelPreview.length }}</b> 条关系</span><span><b>{{ relationExcelPreview.length }}</b> 条可导入</span><span><b>0</b> 条异常</span></div>
+          <div v-if="relationExcelReady" class="excel-preview"><table><thead><tr><th>AMR 设备 SN</th><th>AMR 名称</th><th>关联设备 SN</th><th>关联设备名称</th><th>结果</th></tr></thead><tbody><tr v-for="row in relationExcelPreview" :key="`${row.amrId}-${row.deviceId}`"><td class="type-data">{{ row.amrSn }}</td><td>{{ row.amrName }}</td><td class="type-data">{{ row.deviceId }}</td><td>{{ row.deviceName }}</td><td><em>新增关联</em></td></tr></tbody></table></div>
+          <div v-else class="excel-empty"><strong>尚未选择文件</strong><span>选择文件后将在这里展示关联关系预览。</span></div>
+        </div>
+        <footer><button type="button" @click="relationExcelOpen = false">取消</button><button class="primary" type="button" :disabled="!relationExcelReady" @click="importRelationsFromExcel">确认导入（{{ relationExcelReady ? relationExcelPreview.length : 0 }}）</button></footer>
+      </section>
+    </div>
 
     <div v-if="relationOpen" class="modal-backdrop" @click.self="relationOpen = false">
       <section class="create-dialog relation-setting-dialog">

@@ -2,8 +2,8 @@
 import { computed, onMounted, reactive, ref, watch, watchEffect } from 'vue'
 import { getResourceCatalog } from '../api/modules/resources'
 
-type DeviceType = '复合机器人' | '上下料'
-type DeviceSource = '设备台账' | '维保系统' | '手动录入'
+type DeviceType = string
+type DeviceSource = '设备台账' | '维保系统' | '手动录入' | 'Excel 导入'
 type DeviceRow = { sn: string; name: string; vendor: string; ip: string; type: DeviceType; site: string; updatedAt: string; source: DeviceSource }
 
 const loading = ref(true)
@@ -22,6 +22,10 @@ const editorOpen = ref(false)
 const editorMode = ref<'create' | 'edit'>('create')
 const editorError = ref('')
 const importOpen = ref(false)
+const excelOpen = ref(false)
+const excelFileName = ref('')
+const excelReady = ref(false)
+const deleteTarget = ref<DeviceRow | null>(null)
 const selectedImportSns = ref<string[]>([])
 const importMessage = ref('')
 const lastPulledAt = ref('2026-09-06 18:30')
@@ -29,6 +33,12 @@ const pulledCandidates = ref<(DeviceRow & { action: '新增' | '更新' })[]>([]
 
 const emptyForm = (): DeviceRow => ({ sn: '', name: '', vendor: '', ip: '', type: '复合机器人', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:00', source: '手动录入' })
 const form = reactive<DeviceRow>(emptyForm())
+
+const excelPreview: DeviceRow[] = [
+  { sn: 'SN-AMR-0011', name: '二号线搬运车 01', vendor: '仙工智能', ip: '10.197.137.41', type: '复合机器人', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:32', source: 'Excel 导入' },
+  { sn: 'SN-ARM-D26-131', name: 'D26 一拖二机械手臂', vendor: '新松机器人', ip: '10.197.138.131', type: '上下料', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:32', source: 'Excel 导入' },
+  { sn: 'SN-AUX-E-05', name: '自动门 E-05', vendor: '厂务自动化', ip: '10.197.138.132', type: '上下料', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:32', source: 'Excel 导入' },
+]
 
 const incrementalCandidates = computed<(DeviceRow & { action: '新增' | '更新' })[]>(() => [
   { sn: 'SN-AMR-0001', name: '一号线搬运车 01', vendor: '仙工智能', ip: '10.197.137.31', type: '复合机器人', site: 'GL-C06-4F', updatedAt: '2026-09-07 10:16', source: '维保系统', action: '更新' },
@@ -96,6 +106,30 @@ function saveDevice() {
 function openImport() {
   selectedImportSns.value = []; pulledCandidates.value = []; importMessage.value = ''; importOpen.value = true
 }
+function openExcelImport() {
+  excelFileName.value = ''; excelReady.value = false; excelOpen.value = true
+}
+function chooseExcel(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  excelFileName.value = file.name
+  excelReady.value = true
+}
+function importExcelDevices() {
+  excelPreview.forEach((item) => {
+    const index = deviceRows.value.findIndex((row) => row.sn === item.sn)
+    if (index >= 0) deviceRows.value[index] = { ...item }
+    else deviceRows.value.unshift({ ...item })
+  })
+  excelOpen.value = false
+  currentPage.value = 1
+}
+function confirmDelete() {
+  if (!deleteTarget.value) return
+  deviceRows.value = deviceRows.value.filter((item) => item.sn !== deleteTarget.value?.sn)
+  selectedSns.value = selectedSns.value.filter((sn) => sn !== deleteTarget.value?.sn)
+  deleteTarget.value = null
+}
 function pullLatestDevices() {
   if (selectedSns.value.length) {
     pulledCandidates.value = deviceRows.value.filter((item) => selectedSns.value.includes(item.sn)).map((item, index) => ({ ...item, updatedAt: `2026-09-07 10:${String(24 + index).padStart(2, '0')}`, source: index % 2 ? '维保系统' : '设备台账', action: '更新' }))
@@ -132,7 +166,7 @@ onMounted(async () => {
   <section class="resource-page device-ledger-page">
     <header class="resource-page__header device-ledger-header">
       <div><p class="page-eyebrow">DEVICE LEDGER</p><h1>设备管理</h1></div>
-      <div class="device-header-actions"><button class="device-secondary-action" type="button" @click="openImport">⇩ {{ selectedSns.length ? `更新已选设备（${selectedSns.length}）` : '导入设备' }}</button></div>
+      <div class="device-header-actions"><button class="device-secondary-action device-action-outline" type="button" @click="openCreate">＋ 新增设备</button><button class="device-secondary-action device-action-outline" type="button" @click="openExcelImport">⇧ Excel 导入</button><button class="device-secondary-action" type="button" @click="openImport">⇩ {{ selectedSns.length ? `更新已选设备（${selectedSns.length}）` : '台账导入' }}</button></div>
     </header>
     <div class="resource-toolbar device-ledger-toolbar">
       <label><span>⌕</span><input v-model="querySn" placeholder="设备 SN"></label>
@@ -145,13 +179,30 @@ onMounted(async () => {
     <div v-if="loading" class="resource-loading">正在读取设备数据</div>
     <div v-else class="resource-table-wrap device-ledger-table-wrap">
       <table class="resource-table device-ledger-table">
-        <colgroup><col class="col-check"><col class="col-sn"><col class="col-name"><col class="col-type"><col class="col-vendor"><col class="col-ip"><col class="col-location"><col class="col-updated"><col class="col-action"></colgroup>
-        <thead><tr><th class="device-check-cell"><input ref="selectAllRef" type="checkbox" :checked="allVisibleSelected" aria-label="选择当前页全部设备" @change="toggleAllVisible"></th><th>设备 SN</th><th>设备名称</th><th>设备类型</th><th>厂商</th><th>IP 地址</th><th>厂区 / 楼栋 / 楼层</th><th>更新时间</th><th>操作</th></tr></thead>
+        <colgroup><col class="col-check"><col class="col-sn"><col class="col-name"><col class="col-type"><col class="col-vendor"><col class="col-ip"><col class="col-location"><col class="col-updated"><col class="col-source"><col class="col-action"></colgroup>
+        <thead><tr><th class="device-check-cell"><input ref="selectAllRef" type="checkbox" :checked="allVisibleSelected" aria-label="选择当前页全部设备" @change="toggleAllVisible"></th><th>设备 SN</th><th>设备名称</th><th>设备类型</th><th>厂商</th><th>IP 地址</th><th>厂区 / 楼栋 / 楼层</th><th>更新时间</th><th>设备来源</th><th>操作</th></tr></thead>
         <tbody>
-          <tr v-for="item in paginatedRows" :key="item.sn" :class="{ selected: selectedSns.includes(item.sn) }"><td class="device-check-cell"><input v-model="selectedSns" type="checkbox" :value="item.sn"></td><td class="resource-id type-data">{{ item.sn }}</td><td><strong>{{ item.name }}</strong></td><td><span class="device-type-tag" :class="item.type === '复合机器人' ? 'amr' : 'arm'">{{ item.type }}</span></td><td>{{ item.vendor }}</td><td class="type-data">{{ item.ip }}</td><td>{{ item.site }}</td><td class="type-data device-updated-at">{{ item.updatedAt }}</td><td><button class="table-action" type="button" @click="openEdit(item)">编辑</button></td></tr>
-          <tr v-if="filteredRows.length === 0"><td class="device-empty" colspan="9">没有符合当前条件的设备</td></tr>
+          <tr v-for="item in paginatedRows" :key="item.sn" :class="{ selected: selectedSns.includes(item.sn) }"><td class="device-check-cell"><input v-model="selectedSns" type="checkbox" :value="item.sn"></td><td class="resource-id type-data">{{ item.sn }}</td><td><strong>{{ item.name }}</strong></td><td><span class="device-type-tag" :class="item.type === '复合机器人' ? 'amr' : 'arm'">{{ item.type }}</span></td><td>{{ item.vendor }}</td><td class="type-data">{{ item.ip }}</td><td>{{ item.site }}</td><td class="type-data device-updated-at">{{ item.updatedAt }}</td><td><span class="device-source" :class="{ manual: item.source === '手动录入', excel: item.source === 'Excel 导入' }">{{ item.source }}</span></td><td><div class="device-row-actions"><button class="table-action" type="button" @click="openEdit(item)">编辑</button><button class="table-action danger" type="button" @click="deleteTarget = item">删除</button></div></td></tr>
+          <tr v-if="filteredRows.length === 0"><td class="device-empty" colspan="10">没有符合当前条件的设备</td></tr>
         </tbody>
       </table>
+    </div>
+
+    <div v-if="excelOpen" class="modal-backdrop" @click.self="excelOpen = false">
+      <section class="create-dialog excel-import-dialog">
+        <header><div><span>EXCEL IMPORT</span><strong>Excel 批量导入设备</strong><small>选择设备清单，预览确认后写入当前设备列表</small></div><button aria-label="关闭" @click="excelOpen = false">×</button></header>
+        <div class="excel-import-body">
+          <label class="excel-dropzone"><input type="file" accept=".xlsx,.xls" @change="chooseExcel"><b>⇧</b><strong>{{ excelFileName || '选择 Excel 文件' }}</strong><span>支持 .xlsx、.xls，点击此处选择文件</span></label>
+          <div v-if="excelReady" class="excel-summary"><span><b>{{ excelPreview.length }}</b> 条数据</span><span><b>{{ excelPreview.length }}</b> 条可导入</span><span><b>0</b> 条异常</span></div>
+          <div v-if="excelReady" class="excel-preview"><table><thead><tr><th>设备 SN</th><th>设备名称</th><th>设备类型</th><th>厂商</th><th>IP 地址</th><th>位置</th><th>结果</th></tr></thead><tbody><tr v-for="item in excelPreview" :key="item.sn"><td class="type-data">{{ item.sn }}</td><td>{{ item.name }}</td><td>{{ item.type }}</td><td>{{ item.vendor }}</td><td class="type-data">{{ item.ip }}</td><td>{{ item.site }}</td><td><em>可导入</em></td></tr></tbody></table></div>
+          <div v-else class="excel-empty"><strong>尚未选择文件</strong><span>选择文件后将在这里展示解析结果和设备预览。</span></div>
+        </div>
+        <footer><button type="button" @click="excelOpen = false">取消</button><button class="primary" type="button" :disabled="!excelReady" @click="importExcelDevices">确认导入（{{ excelReady ? excelPreview.length : 0 }}）</button></footer>
+      </section>
+    </div>
+
+    <div v-if="deleteTarget" class="modal-backdrop" @click.self="deleteTarget = null">
+      <section class="create-dialog confirm-dialog"><header><div><span>DELETE DEVICE</span><strong>删除设备</strong></div><button aria-label="关闭" @click="deleteTarget = null">×</button></header><div class="confirm-dialog-body"><strong>确定删除“{{ deleteTarget.name }}”吗？</strong><span>设备 SN：{{ deleteTarget.sn }}</span><p>此操作仅用于当前前端原型展示。</p></div><footer><button type="button" @click="deleteTarget = null">取消</button><button class="danger-confirm" type="button" @click="confirmDelete">确认删除</button></footer></section>
     </div>
     <footer v-if="!loading" class="task-pagination device-ledger-pagination"><span>共 {{ filteredRows.length }} 条 · 每页 {{ pageSize }} 条<span v-if="selectedSns.length"> · 已选择 {{ selectedSns.length }} 条</span></span><nav aria-label="设备列表分页"><button :disabled="currentPage === 1" aria-label="上一页" @click="currentPage--">‹</button><template v-for="item in paginationItems" :key="item"><button v-if="typeof item === 'number'" :class="{ active: currentPage === item }" :aria-label="`第 ${item} 页`" @click="currentPage = item">{{ item }}</button><span v-else class="device-pagination-ellipsis">…</span></template><button :disabled="currentPage === pageCount" aria-label="下一页" @click="currentPage++">›</button></nav></footer>
 
@@ -162,7 +213,7 @@ onMounted(async () => {
           <p v-if="editorError" class="device-form-error">{{ editorError }}</p>
           <label><span>设备 SN</span><input v-model.trim="form.sn" :disabled="editorMode === 'edit'" placeholder="例如 SN-AMR-0010"></label>
           <label><span>设备名称</span><input v-model.trim="form.name" placeholder="请输入设备名称"></label>
-          <label><span>设备类型</span><select v-model="form.type"><option>复合机器人</option><option>上下料</option></select></label>
+          <label><span>设备类型</span><input v-model.trim="form.type" placeholder="请输入设备类型，例如复合机器人"></label>
           <label><span>厂商</span><input v-model.trim="form.vendor" placeholder="请输入厂商"></label>
           <label><span>IP 地址</span><input v-model.trim="form.ip" placeholder="例如 10.197.138.100"></label>
           <label><span>厂区 / 楼栋 / 楼层</span><input v-model.trim="form.site" placeholder="例如 GL-C06-4F"></label>
@@ -173,7 +224,7 @@ onMounted(async () => {
 
     <div v-if="importOpen" class="modal-backdrop" @click.self="importOpen = false">
       <section class="create-dialog device-import-dialog">
-        <header><div><span>IMPORT DEVICE</span><strong>{{ selectedSns.length ? '更新已选设备' : '导入设备' }}</strong><small>{{ selectedSns.length ? `按照主列表勾选的 ${selectedSns.length} 个 SN 获取最新资料` : '从设备台账及维保系统检查新增与更新资料' }}</small></div><button aria-label="关闭" @click="importOpen = false">×</button></header>
+        <header><div><span>LEDGER IMPORT</span><strong>{{ selectedSns.length ? '更新已选设备' : '台账导入' }}</strong><small>{{ selectedSns.length ? `按照主列表勾选的 ${selectedSns.length} 个 SN 获取最新资料` : '从设备台账及维保系统检查新增与更新资料' }}</small></div><button aria-label="关闭" @click="importOpen = false">×</button></header>
         <div class="device-import-meta"><div class="device-sync-status"><span>上次拉取</span><strong>{{ lastPulledAt }}</strong><i v-if="pulledCandidates.length">已发现 {{ pulledCandidates.length }} 条变更</i></div><button class="device-refresh-button" type="button" @click="pullLatestDevices"><b>↻</b>获取最新资料</button></div>
         <p v-if="importMessage" class="device-import-success">{{ importMessage }}</p>
         <div class="device-import-list"><div v-if="pulledCandidates.length === 0" class="device-import-empty"><i>↻</i><strong>等待获取设备资料</strong><span>从设备台账和维保系统检查新增或更新。</span></div><label v-for="item in pulledCandidates" :key="item.sn" :class="{ selected: selectedImportSns.includes(item.sn) }"><input v-model="selectedImportSns" type="checkbox" :value="item.sn"><span><strong>{{ item.name }}</strong><small>{{ item.sn }} · {{ item.ip }} · {{ item.source }}</small></span><em :class="item.action">{{ item.action }}</em></label></div>
